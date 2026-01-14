@@ -472,7 +472,7 @@
 
         <!-- Custom Pasangan -->
         <div class="custom-pasangan">
-            <input type="number" id="custom-input" placeholder="Custom..." min="100" step="100">
+            <input type="number" id="custom-input" placeholder="Min. 100, Max. saldo" min="100" step="100" inputmode="numeric">
             <button id="custom-btn" onclick="setCustomPasangan()">PASANG</button>
         </div>
 
@@ -562,15 +562,22 @@
                 }
             });
 
-            // Input validation untuk custom input
-            document.getElementById('custom-input').addEventListener('input', function(e) {
+            // Validasi saat user keluar dari input (opsional)
+            document.getElementById('custom-input').addEventListener('blur', function(e) {
                 let value = parseInt(e.target.value);
                 if (isNaN(value)) return;
-                if (value > state.saldo) {
-                    e.target.value = state.saldo;
-                }
+                
                 if (value < 100) {
-                    e.target.value = 100;
+                    // Hanya tampilkan pesan, jangan ubah nilainya
+                    alert('Minimal pasangan Rp 100');
+                    // Fokus kembali ke input
+                    e.target.focus();
+                }
+                
+                if (value > state.saldo) {
+                    alert('Saldo tidak cukup!');
+                    // Reset ke nilai maksimum (saldo)
+                    e.target.value = state.saldo;
                 }
             });
         }
@@ -977,27 +984,40 @@
             document.getElementById('btn-kecil').disabled = false;
         }
 
-        // Set custom pasangan
+        // Set custom pasangan - DIPERBAIKI
         function setCustomPasangan() {
             if (!state.bisaMemilih || state.pasanganDipilih || state.last5Seconds) return;
             
             const input = document.getElementById('custom-input');
             let jumlah = parseInt(input.value);
             
-            if (isNaN(jumlah) || jumlah < 100) {
-                alert('Masukkan jumlah minimal Rp 100');
+            // Validasi input kosong
+            if (isNaN(jumlah)) {
+                alert('Masukkan jumlah yang valid!');
+                input.focus();
                 return;
             }
             
+            // Validasi minimal 100
+            if (jumlah < 100) {
+                alert('Minimal pasangan Rp 100!');
+                input.focus();
+                input.select(); // Seleksi teks agar mudah diubah
+                return;
+            }
+            
+            // Validasi maksimal saldo
             if (jumlah > state.saldo) {
-                alert('Saldo tidak cukup!');
-                input.value = state.saldo;
+                alert(`Saldo tidak cukup! Saldo Anda: Rp ${state.saldo.toLocaleString()}`);
+                input.focus();
+                input.select();
                 return;
             }
             
             // Bulatkan ke kelipatan 100
             jumlah = Math.floor(jumlah / 100) * 100;
             
+            // Update state dan UI
             state.pasanganDipilih = jumlah;
             document.getElementById('status-pasangan').textContent = `Rp ${jumlah.toLocaleString()}`;
             
