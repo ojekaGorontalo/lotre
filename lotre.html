@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tebak Besar Kecil - Langsung ke Firebase</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #d70000 0%, #8b0000 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            border: 4px solid #ffcc00;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ffcc00;
+        }
+
+        h1 {
+            color: #d70000;
+            font-size: 26px;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+
+        /* Timer */
+        .timer-container {
+            background: linear-gradient(45deg, #d70000, #8b0000);
+            color: white;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
+        }
+
+        #timer {
+            font-size: 42px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            margin: 5px 0;
+        }
+
+        .timer-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* Saldo */
+        .saldo {
+            background: #f8f9fa;
+            border: 2px dashed #d70000;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .saldo-amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d70000;
+        }
+
+        /* Status Grid */
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .status-box {
+            background: #f0f7ff;
+            border: 2px solid #0066cc;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .status-title {
+            font-size: 11px;
+            color: #0066cc;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Pasangan Grid */
+        .pasangan-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .pasangan-btn {
+            background: white;
+            border: 2px solid #d70000;
+            color: #d70000;
+            padding: 10px 5px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            min-height: 45px;
+        }
+
+        .pasangan-btn:hover:not(:disabled) {
+            background: #d70000;
+            color: white;
+        }
+
+        .pasangan-btn.active {
+            background: #d70000;
+            color: white;
+            transform: scale(1.02);
+            box-shadow: 0 3px 8px rgba(215, 0, 0, 0.3);
+        }
+
+        .pasangan-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Custom Pasangan */
+        .custom-pasangan {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        #custom-input {
+            padding: 10px;
+            border: 2px solid #d70000;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        #custom-btn {
+            background: #d70000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0 15px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* Tombol All In */
+        .all-in-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #ff9900, #ff6600);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.2s;
+        }
+
+        /* Pilihan Besar/Kecil */
+        .pilihan-container {
+            margin-bottom: 15px;
+        }
+
+        .pilihan-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .pilihan-btn {
+            flex: 1;
+            padding: 18px 10px;
+            border: none;
+            border-radius: 12px;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+        }
+
+        #btn-besar {
+            background: linear-gradient(45deg, #d70000, #ff4444);
+        }
+
+        #btn-kecil {
+            background: linear-gradient(45deg, #0066cc, #0099ff);
+        }
+
+        .pilihan-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .pilihan-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pilihan-btn.active {
+            transform: scale(1.03);
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
+        }
+
+        /* History / Hasil Round */
+        .hasil-round-container {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px;
+            background: #f9f9f9;
+            margin-top: 15px;
+        }
+
+        .hasil-round-item {
+            padding: 6px;
+            border-bottom: 1px solid #eee;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .hasil-round-item.besar {
+            background: rgba(255, 0, 0, 0.1);
+            color: #d70000;
+        }
+
+        .hasil-round-item.kecil {
+            background: rgba(0, 102, 204, 0.1);
+            color: #0066cc;
+        }
+
+        /* Popup Hasil */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .popup-content {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 350px;
+            width: 90%;
+            text-align: center;
+            border: 5px solid #ffcc00;
+        }
+
+        .popup-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .popup-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .popup-details {
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .popup-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* Audio Controls */
+        .audio-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+        }
+
+        .audio-btn {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #d70000;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .warning {
+            color: #ff9900;
+            font-weight: bold;
+        }
+
+        /* Last 5 Seconds Warning */
+        .last5-warning {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 20px;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- Audio untuk efek suara -->
+    <audio id="tickAudio" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-retro-game-emergency-alarm-1000.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="countdownAudio" preload="auto">
+        <!-- GANTI DENGAN AUDIO CUSTOM ANDA YANG SUDAH ADA 5 BEEP -->
+        <source src="https://drive.google.com/uc?export=download&id=16BfcfJ5EFNsk1y0_xZFQn9gUt8xFgWf-" type="audio/mpeg">
+    </audio>
+    
+    <audio id="winAudio" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="loseAudio" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-cartoon-falling-whistle-392.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Last 5 Seconds Warning -->
+    <div class="last5-warning" id="last5-warning">⏰ 5 DETIK TERAKHIR!</div>
+
+    <!-- Popup Hasil -->
+    <div class="popup-overlay" id="popup-overlay">
+        <div class="popup-content">
+            <button class="popup-close" onclick="closePopup()">×</button>
+            <div class="popup-icon" id="popup-icon"></div>
+            <div class="popup-title" id="popup-title"></div>
+            <div class="popup-details" id="popup-details"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="audio-controls">
+            <button class="audio-btn" onclick="toggleAudio()">🔊</button>
+        </div>
+
+        <div class="header">
+            <h1>🎯 TEBAK BESAR KECIL</h1>
+            <div class="subtitle">LOTRE TEBAK BESAR - KECIL</div>
+        </div>
+
+        <div class="timer-container">
+            <div class="timer-label">WAKTU TERSISA:</div>
+            <div id="timer">15</div>
+            <div class="timer-label">Round: <span id="round-id">-</span></div>
+        </div>
+
+        <div class="saldo">
+            <div>Saldo Anda:</div>
+            <div class="saldo-amount" id="saldo">Rp 50,000</div>
+        </div>
+
+        <!-- Status Grid -->
+        <div class="status-grid">
+            <div class="status-box">
+                <div class="status-title">PASANGAN</div>
+                <div class="status-value" id="status-pasangan">-</div>
+            </div>
+            <div class="status-box">
+                <div class="status-title">TEBAKAN</div>
+                <div class="status-value" id="status-tebakan">-</div>
+            </div>
+        </div>
+
+        <!-- Pasangan Grid -->
+        <div class="pasangan-container">
+            <div class="pasangan-title" style="color: #d70000; margin-bottom: 8px; font-size: 14px;">PILIH PASANGAN:</div>
+            <div class="pasangan-grid" id="pasangan-grid">
+                <button class="pasangan-btn" onclick="pilihPasangan(1000, this)">Rp 1,000</button>
+                <button class="pasangan-btn" onclick="pilihPasangan(2000, this)">Rp 2,000</button>
+                <button class="pasangan-btn" onclick="pilihPasangan(5000, this)">Rp 5,000</button>
+                <button class="pasangan-btn" onclick="pilihPasangan(10000, this)">Rp 10,000</button>
+            </div>
+        </div>
+
+        <!-- Custom Pasangan -->
+        <div class="custom-pasangan">
+            <input type="number" id="custom-input" placeholder="Custom..." min="100" step="100">
+            <button id="custom-btn" onclick="setCustomPasangan()">PASANG</button>
+        </div>
+
+        <!-- Tombol All In -->
+        <button class="all-in-btn" onclick="setAllIn()" id="all-in-btn">ALL IN 🚀</button>
+
+        <!-- Pilihan Besar/Kecil -->
+        <div class="pilihan-container">
+            <div class="pilihan-buttons">
+                <button id="btn-besar" class="pilihan-btn" onclick="pilih('BESAR')">BESAR 🟥</button>
+                <button id="btn-kecil" class="pilihan-btn" onclick="pilih('KECIL')">KECIL 🟦</button>
+            </div>
+        </div>
+
+        <!-- Hasil Round -->
+        <div class="hasil-round-container" id="hasil-round-list">
+            <div class="hasil-round-item">🔄 Menunggu hasil round...</div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1U76xG1tTco6rt71dGf4dRqj-4fT7RFQ",
+            authDomain: "steady-fin-368617.firebaseapp.com",
+            databaseURL: "https://steady-fin-368617-default-rtdb.firebaseio.com",
+            projectId: "steady-fin-368617",
+            storageBucket: "steady-fin-368617.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // State aplikasi
+        let state = {
+            userId: null,
+            roundId: null,
+            pasanganDipilih: null,
+            pilihanDipilih: null,
+            timer: 15,
+            timerInterval: null,
+            saldo: 50000,
+            bisaMemilih: true,
+            audioEnabled: true,
+            waktuTunggu: 15,
+            taruhanRef: null,
+            roundRef: null,
+            roundListener: null,
+            processingResult: false,
+            last5Seconds: false,
+            hasilRoundListener: null,
+            hasilRoundList: []
+        };
+
+        // Elemen audio
+        const tickAudio = document.getElementById('tickAudio');
+        const countdownAudio = document.getElementById('countdownAudio');
+        const winAudio = document.getElementById('winAudio');
+        const loseAudio = document.getElementById('loseAudio');
+
+        // Flag untuk audio initialization
+        let audioInitialized = false;
+        let audioUnlockAttempted = false;
+
+        // Inisialisasi
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Setup event listeners untuk audio unlock
+            setupAudioUnlock();
+            
+            await initAplikasi();
+            setupEventListeners();
+            loadHasilRound();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Enter key untuk custom input
+            document.getElementById('custom-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    setCustomPasangan();
+                }
+            });
+
+            // Input validation untuk custom input
+            document.getElementById('custom-input').addEventListener('input', function(e) {
+                let value = parseInt(e.target.value);
+                if (isNaN(value)) return;
+                if (value > state.saldo) {
+                    e.target.value = state.saldo;
+                }
+                if (value < 100) {
+                    e.target.value = 100;
+                }
+            });
+        }
+
+        // Setup audio unlock system
+        function setupAudioUnlock() {
+            // Event listener untuk klik di container
+            document.querySelector('.container').addEventListener('click', function() {
+                if (!audioInitialized && !audioUnlockAttempted) {
+                    unlockAudio();
+                }
+            });
+            
+            // Event listener untuk tombol audio
+            document.querySelector('.audio-btn').addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (!audioInitialized) {
+                    unlockAudio();
+                }
+                toggleAudio();
+            });
+        }
+
+        // Generate Round ID dengan format: waktu+tanggal+bulan+tahun+random
+        function generateRoundId() {
+            const now = new Date();
+            
+            // Format: HHmmDDMMYYYY + random 6 digit
+            const jam = String(now.getHours()).padStart(2, '0');
+            const menit = String(now.getMinutes()).padStart(2, '0');
+            const tanggal = String(now.getDate()).padStart(2, '0');
+            const bulan = String(now.getMonth() + 1).padStart(2, '0');
+            const tahun = now.getFullYear();
+            const random = Math.floor(100000 + Math.random() * 900000); // 6 digit random
+            
+            // Contoh: 08341501261234678
+            // 08: jam, 34: menit, 15: tanggal, 01: bulan, 2024: tahun, 1234678: random
+            return jam + menit + tanggal + bulan + tahun + random;
+        }
+
+        // Inisialisasi aplikasi
+        async function initAplikasi() {
+            try {
+                // Get atau buat user ID
+                state.userId = getUserId();
+                console.log("User ID:", state.userId);
+                
+                // Initialize saldo jika belum ada
+                await initSaldo();
+                
+                // Load aturan dari Firebase
+                await loadAturan();
+                
+                // Setup Firebase listeners
+                setupFirebaseListeners();
+                
+                // Buat round baru
+                await buatRoundBaru();
+                
+                // Tampilkan pesan audio jika belum diunlock
+                setTimeout(showAudioUnlockMessage, 1000);
+                
+            } catch (error) {
+                console.error("Error init aplikasi:", error);
+                alert("Gagal menginisialisasi aplikasi. Refresh halaman.");
+            }
+        }
+
+        // Tampilkan pesan unlock audio
+        function showAudioUnlockMessage() {
+            if (!audioInitialized && state.audioEnabled) {
+                const audioBtn = document.querySelector('.audio-btn');
+                audioBtn.style.animation = "pulse 1s infinite";
+                audioBtn.style.color = "#ffcc00";
+                audioBtn.title = "Klik untuk mengaktifkan audio";
+                
+                // Reset setelah 3 detik
+                setTimeout(() => {
+                    if (!audioInitialized) {
+                        audioBtn.style.animation = "";
+                        audioBtn.style.color = "#d70000";
+                    }
+                }, 3000);
+            }
+        }
+
+        // Initialize saldo user
+        async function initSaldo() {
+            try {
+                const saldoRef = database.ref('tebak-angka/saldo/' + state.userId);
+                const snapshot = await saldoRef.once('value');
+                
+                if (!snapshot.exists()) {
+                    // Jika belum ada saldo, buat dengan 50000
+                    await saldoRef.set(50000);
+                    state.saldo = 50000;
+                } else {
+                    const saldoValue = snapshot.val();
+                    state.saldo = saldoValue;
+                    
+                    // Jika saldo negatif atau null, reset ke 50000
+                    if (!saldoValue || saldoValue < 0 || saldoValue === null) {
+                        await saldoRef.set(50000);
+                        state.saldo = 50000;
+                    }
+                }
+                
+                updateSaldo();
+                
+            } catch (error) {
+                console.error("Error init saldo:", error);
+                state.saldo = 50000;
+                updateSaldo();
+            }
+        }
+
+        // Load aturan dari Firebase
+        async function loadAturan() {
+            try {
+                const aturanRef = database.ref('tebak-angka/aturan');
+                const snapshot = await aturanRef.once('value');
+                
+                if (snapshot.exists()) {
+                    const aturan = snapshot.val();
+                    if (aturan.waktu_tunggu) {
+                        state.waktuTunggu = aturan.waktu_tunggu;
+                        state.timer = state.waktuTunggu;
+                        document.getElementById('timer').textContent = state.timer;
+                    }
+                }
+            } catch (error) {
+                console.error("Error load aturan:", error);
+            }
+        }
+
+        // Setup Firebase listeners
+        function setupFirebaseListeners() {
+            // Listen perubahan aturan
+            database.ref('tebak-angka/aturan').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const aturan = snapshot.val();
+                    if (aturan.waktu_tunggu) {
+                        state.waktuTunggu = aturan.waktu_tunggu;
+                    }
+                }
+            });
+
+            // Listen perubahan saldo
+            database.ref('tebak-angka/saldo/' + state.userId).on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const saldo = snapshot.val();
+                    if (saldo !== null) {
+                        state.saldo = saldo;
+                        updateSaldo();
+                    }
+                }
+            });
+        }
+
+        // Load hasil round dari Firebase
+        function loadHasilRound() {
+            // Hapus listener sebelumnya jika ada
+            if (state.hasilRoundListener) {
+                database.ref('tebak-angka/hasil_round').off('value', state.hasilRoundListener);
+            }
+            
+            // Setup listener baru
+            state.hasilRoundListener = database.ref('tebak-angka/hasil_round')
+                .orderByChild('timestamp')
+                .limitToLast(10)
+                .on('value', (snapshot) => {
+                    updateHasilRoundUI(snapshot.val());
+                });
+        }
+
+        // Get user ID
+        function getUserId() {
+            let userId = localStorage.getItem('user_id');
+            if (!userId) {
+                userId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+                localStorage.setItem('user_id', userId);
+            }
+            return userId;
+        }
+
+        // Buat round baru
+        async function buatRoundBaru() {
+            try {
+                // Hentikan timer sebelumnya
+                clearInterval(state.timerInterval);
+                
+                // Hapus listener round sebelumnya
+                if (state.roundListener && state.roundRef) {
+                    state.roundRef.off('value', state.roundListener);
+                }
+                
+                // Generate round ID baru
+                state.roundId = generateRoundId();
+                
+                // Reset state
+                resetStateUntukRoundBaru();
+                
+                // Reset warning
+                document.getElementById('last5-warning').style.display = 'none';
+                
+                // Buat round di Firebase
+                state.roundRef = database.ref('tebak-angka/taruhan/' + state.roundId);
+                
+                const now = Date.now();
+                await state.roundRef.set({
+                    round_id: state.roundId,
+                    status: 'berjalan',
+                    hasil: null,
+                    start_time: now,
+                    end_time: now + (state.waktuTunggu * 1000),
+                    waktu_tunggu: state.waktuTunggu,
+                    created_at: now
+                });
+                
+                // Tampilkan round ID (singkat)
+                const displayId = state.roundId.substring(0, 8) + '...';
+                document.getElementById('round-id').textContent = displayId;
+                
+                // Setup listener untuk round
+                state.roundListener = state.roundRef.on('value', async (snapshot) => {
+                    await handleRoundUpdate(snapshot);
+                });
+                
+                // Mulai timer
+                startTimer();
+                
+            } catch (error) {
+                console.error("Error buat round baru:", error);
+                // Retry setelah 2 detik
+                setTimeout(() => buatRoundBaru(), 2000);
+            }
+        }
+
+        // Handle update round
+        async function handleRoundUpdate(snapshot) {
+            if (!snapshot.exists()) return;
+            
+            const roundData = snapshot.val();
+            
+            // Jika round selesai dan ada hasil, proses hasil
+            if (roundData.status === 'selesai' && roundData.hasil && !state.processingResult) {
+                await prosesHasilRound(roundData.hasil);
+            }
+        }
+
+        // Reset state untuk round baru
+        function resetStateUntukRoundBaru() {
+            state.pasanganDipilih = null;
+            state.pilihanDipilih = null;
+            state.bisaMemilih = true;
+            state.processingResult = false;
+            state.last5Seconds = false;
+            
+            // Reset UI
+            document.getElementById('status-pasangan').textContent = '-';
+            document.getElementById('status-tebakan').textContent = '-';
+            document.getElementById('btn-besar').classList.remove('active');
+            document.getElementById('btn-kecil').classList.remove('active');
+            document.getElementById('btn-besar').disabled = true;
+            document.getElementById('btn-kecil').disabled = true;
+            
+            // Enable tombol pasangan
+            document.querySelectorAll('.pasangan-btn').forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById('custom-input').disabled = false;
+            document.getElementById('custom-btn').disabled = false;
+            document.getElementById('custom-input').value = '';
+            
+            // Update tombol All In
+            updateAllInButton();
+        }
+
+        // Update tombol All In
+        function updateAllInButton() {
+            const allInBtn = document.getElementById('all-in-btn');
+            if (state.saldo >= 100) {
+                allInBtn.textContent = `ALL IN 🚀 (Rp ${state.saldo.toLocaleString()})`;
+                allInBtn.disabled = false;
+            } else {
+                allInBtn.textContent = 'SALDO TIDAK CUKUP';
+                allInBtn.disabled = true;
+            }
+        }
+
+        // Pilih pasangan
+        function pilihPasangan(jumlah, button) {
+            if (!state.bisaMemilih || state.pasanganDipilih || state.last5Seconds) return;
+            if (jumlah > state.saldo) {
+                alert('Saldo tidak cukup!');
+                return;
+            }
+            
+            // Update UI
+            document.querySelectorAll('.pasangan-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            
+            state.pasanganDipilih = jumlah;
+            document.getElementById('status-pasangan').textContent = `Rp ${jumlah.toLocaleString()}`;
+            
+            // Enable tombol BESAR/KECIL
+            document.getElementById('btn-besar').disabled = false;
+            document.getElementById('btn-kecil').disabled = false;
+        }
+
+        // Set custom pasangan
+        function setCustomPasangan() {
+            if (!state.bisaMemilih || state.pasanganDipilih || state.last5Seconds) return;
+            
+            const input = document.getElementById('custom-input');
+            let jumlah = parseInt(input.value);
+            
+            if (isNaN(jumlah) || jumlah < 100) {
+                alert('Masukkan jumlah minimal Rp 100');
+                return;
+            }
+            
+            if (jumlah > state.saldo) {
+                alert('Saldo tidak cukup!');
+                input.value = state.saldo;
+                return;
+            }
+            
+            // Bulatkan ke kelipatan 100
+            jumlah = Math.floor(jumlah / 100) * 100;
+            
+            state.pasanganDipilih = jumlah;
+            document.getElementById('status-pasangan').textContent = `Rp ${jumlah.toLocaleString()}`;
+            
+            // Enable tombol BESAR/KECIL
+            document.getElementById('btn-besar').disabled = false;
+            document.getElementById('btn-kecil').disabled = false;
+            
+            // Reset custom input
+            input.value = '';
+        }
+
+        // Set All In
+        function setAllIn() {
+            if (!state.bisaMemilih || state.pasanganDipilih || state.last5Seconds) return;
+            if (state.saldo < 100) {
+                alert('Saldo minimal Rp 100 untuk bermain!');
+                return;
+            }
+            
+            state.pasanganDipilih = state.saldo;
+            document.getElementById('status-pasangan').textContent = `Rp ${state.saldo.toLocaleString()}`;
+            
+            // Enable tombol BESAR/KECIL
+            document.getElementById('btn-besar').disabled = false;
+            document.getElementById('btn-kecil').disabled = false;
+        }
+
+        // Pilih BESAR/KECIL - LANGSUNG SIMPAN KE FIREBASE
+        async function pilih(pilihan) {
+            if (!state.bisaMemilih || !state.pasanganDipilih || !state.roundId || state.last5Seconds) {
+                if (!state.pasanganDipilih) {
+                    alert('Pilih pasangan terlebih dahulu!');
+                }
+                return;
+            }
+
+            try {
+                // Simpan ke Firebase
+                state.taruhanRef = database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`);
+                
+                const taruhanData = {
+                    user_id: state.userId,
+                    pasangan: state.pasanganDipilih,
+                    pilihan: pilihan,
+                    status: 'menunggu',
+                    waktu_taruhan: Date.now(),
+                    hasil: null
+                };
+                
+                await state.taruhanRef.set(taruhanData);
+                
+                // Update state lokal
+                state.pilihanDipilih = pilihan;
+                state.bisaMemilih = false;
+                
+                // Update UI
+                document.getElementById('status-tebakan').textContent = pilihan;
+                document.getElementById('btn-besar').disabled = true;
+                document.getElementById('btn-kecil').disabled = true;
+                document.getElementById('btn-besar').classList.remove('active');
+                document.getElementById('btn-kecil').classList.remove('active');
+                document.getElementById(`btn-${pilihan.toLowerCase()}`).classList.add('active');
+                
+                // Disable semua tombol
+                disableAllButtons();
+                
+                console.log('Taruhan berhasil disimpan ke Firebase');
+                
+            } catch (error) {
+                console.error('Error menyimpan taruhan:', error);
+                alert('Gagal menyimpan taruhan, coba lagi!');
+            }
+        }
+
+        // Disable semua tombol
+        function disableAllButtons() {
+            document.querySelectorAll('.pasangan-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+            document.getElementById('custom-input').disabled = true;
+            document.getElementById('custom-btn').disabled = true;
+            document.getElementById('all-in-btn').disabled = true;
+        }
+
+        // Timer - MODIFIKASI UNTUK AUDIO 5 BEEP
+        function startTimer() {
+            clearInterval(state.timerInterval);
+            state.timer = state.waktuTunggu;
+            state.last5Seconds = false;
+            document.getElementById('timer').textContent = state.timer;
+            document.getElementById('timer').classList.remove('shake');
+            document.getElementById('timer').style.color = '';
+            document.getElementById('timer').style.textShadow = '';
+            
+            state.timerInterval = setInterval(async () => {
+                state.timer--;
+                document.getElementById('timer').textContent = state.timer;
+                
+                // Di 5 detik terakhir
+                if (state.timer <= 5 && state.timer > 0) {
+                    if (!state.last5Seconds) {
+                        state.last5Seconds = true;
+                        showLast5SecondsWarning();
+                        
+                        // HANYA PLAY countdownAudio SEKALI (yang sudah berisi 5 beep)
+                        if (audioInitialized && state.audioEnabled) {
+                            playAudio(countdownAudio);
+                        } else {
+                            // Fallback visual jika audio tidak bisa diputar
+                            document.getElementById('timer').style.color = '#ff0000';
+                            document.getElementById('timer').style.textShadow = '0 0 10px #ff0000';
+                        }
+                        
+                        // Nonaktifkan semua tombol jika belum memilih
+                        if (state.bisaMemilih) {
+                            disableAllButtons();
+                            document.getElementById('btn-besar').disabled = true;
+                            document.getElementById('btn-kecil').disabled = true;
+                        }
+                    }
+                    
+                    // Efek visual
+                    document.getElementById('timer').classList.add('pulse');
+                    
+                    // TIDAK PERLU play tickAudio lagi karena sudah ada 5 beep dalam 1 audio
+                    // if (audioInitialized && state.audioEnabled) {
+                    //     playAudio(tickAudio);
+                    // }
+                }
+                
+                // Efek visual saat waktu hampir habis
+                if (state.timer <= 3) {
+                    document.getElementById('timer').classList.add('shake');
+                }
+                
+                // Waktu habis
+                if (state.timer <= 0) {
+                    clearInterval(state.timerInterval);
+                    await waktuHabis();
+                }
+            }, 1000);
+        }
+
+        // Tampilkan warning 5 detik terakhir
+        function showLast5SecondsWarning() {
+            const warning = document.getElementById('last5-warning');
+            warning.style.display = 'block';
+            warning.classList.add('shake');
+            
+            setTimeout(() => {
+                warning.style.display = 'none';
+                warning.classList.remove('shake');
+            }, 3000);
+        }
+
+        // Ketika waktu habis
+        async function waktuHabis() {
+            try {
+                document.getElementById('timer').textContent = "HASIL...";
+                
+                // Tentukan hasil berdasarkan aturan
+                const aturan = await getAturan();
+                const hasilRound = tentukanHasil(aturan);
+                
+                // Update round di Firebase dengan hasil
+                await state.roundRef.update({
+                    status: 'selesai',
+                    hasil: hasilRound,
+                    end_time: Date.now()
+                });
+                
+                // Simpan hasil round ke Firebase untuk ditampilkan
+                await database.ref('tebak-angka/hasil_round/' + state.roundId).set({
+                    hasil: hasilRound,
+                    timestamp: Date.now(),
+                    round_id: state.roundId
+                });
+                
+            } catch (error) {
+                console.error("Error waktu habis:", error);
+                // Force buat round baru
+                setTimeout(() => buatRoundBaru(), 2000);
+            }
+        }
+
+        // Proses hasil round
+        async function prosesHasilRound(hasilRound) {
+            if (state.processingResult) return; // Mencegah double processing
+            state.processingResult = true;
+            
+            try {
+                // Ambil data taruhan user untuk round ini
+                const taruhanSnapshot = await database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`).once('value');
+                
+                if (!taruhanSnapshot.exists()) {
+                    // User tidak ikut taruhan di round ini
+                    console.log("User tidak ikut taruhan di round ini");
+                    tampilkanPopupTidakIkut(hasilRound);
+                    
+                    // Buat round baru setelah 3 detik
+                    setTimeout(() => {
+                        closePopup();
+                        buatRoundBaru();
+                    }, 3000);
+                    return;
+                }
+                
+                const taruhanData = taruhanSnapshot.val();
+                
+                // Tentukan hasil user
+                const hasilUser = taruhanData.pilihan === hasilRound ? 'MENANG' : 'KALAH';
+                const statusUser = hasilUser === 'MENANG' ? 'menang' : 'kalah';
+                
+                // Update field yang sama di Firebase
+                await database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`).update({
+                    status: statusUser,
+                    hasil: hasilUser,
+                    waktu_hasil: Date.now()
+                });
+                
+                // Hitung saldo baru
+                let saldoBaru = state.saldo;
+                if (hasilUser === 'MENANG') {
+                    saldoBaru = state.saldo + taruhanData.pasangan;
+                } else {
+                    saldoBaru = state.saldo - taruhanData.pasangan;
+                }
+                
+                // Pastikan saldo tidak negatif
+                if (saldoBaru < 0) saldoBaru = 0;
+                
+                // Update saldo di Firebase
+                await database.ref('tebak-angka/saldo/' + state.userId).set(saldoBaru);
+                
+                // Update state lokal
+                state.saldo = saldoBaru;
+                
+                // Tampilkan popup hasil
+                tampilkanPopupHasil(
+                    hasilUser === 'MENANG',
+                    hasilRound,
+                    taruhanData.pasangan,
+                    saldoBaru
+                );
+                
+                // Play audio jika sudah diinisialisasi
+                if (audioInitialized && state.audioEnabled) {
+                    if (hasilUser === 'MENANG') {
+                        playAudio(winAudio);
+                    } else {
+                        playAudio(loseAudio);
+                    }
+                }
+                
+                // Buat round baru setelah 3 detik
+                setTimeout(() => {
+                    closePopup();
+                    buatRoundBaru();
+                }, 3000);
+                
+            } catch (error) {
+                console.error("Error proses hasil round:", error);
+                // Jika error, tetap buat round baru
+                setTimeout(() => buatRoundBaru(), 2000);
+            }
+        }
+
+        // Dapatkan aturan dari Firebase
+        async function getAturan() {
+            const snapshot = await database.ref('tebak-angka/aturan').once('value');
+            return snapshot.exists() ? snapshot.val() : { mode: 'random' };
+        }
+
+        // Tentukan hasil berdasarkan aturan
+        function tentukanHasil(aturan) {
+            switch (aturan.mode) {
+                case 'harus_besar':
+                    return 'BESAR';
+                case 'harus_kecil':
+                    return 'KECIL';
+                case 'random':
+                default:
+                    return Math.random() > 0.5 ? 'BESAR' : 'KECIL';
+            }
+        }
+
+        // Tampilkan popup hasil
+        function tampilkanPopupHasil(menang, hasilRound, pasangan, saldoBaru) {
+            const overlay = document.getElementById('popup-overlay');
+            const icon = document.getElementById('popup-icon');
+            const title = document.getElementById('popup-title');
+            const details = document.getElementById('popup-details');
+            
+            if (menang) {
+                icon.textContent = '🎉';
+                title.textContent = 'SELAMAT MENANG!';
+                title.style.color = '#28a745';
+                details.innerHTML = `
+                    <div>Hasil: <strong>${hasilRound}</strong></div>
+                    <div>Pasangan: <strong>Rp ${pasangan.toLocaleString()}</strong></div>
+                    <div>Kemenangan: <strong class="success">Rp ${pasangan.toLocaleString()}</strong></div>
+                    <div>Saldo baru: <strong>Rp ${saldoBaru.toLocaleString()}</strong></div>
+                `;
+            } else {
+                icon.textContent = '💥';
+                title.textContent = 'ANDA KALAH';
+                title.style.color = '#dc3545';
+                details.innerHTML = `
+                    <div>Hasil: <strong>${hasilRound}</strong></div>
+                    <div>Pasangan: <strong>Rp ${pasangan.toLocaleString()}</strong></div>
+                    <div>Kerugian: <strong class="error">Rp ${pasangan.toLocaleString()}</strong></div>
+                    <div>Saldo baru: <strong>Rp ${saldoBaru.toLocaleString()}</strong></div>
+                `;
+            }
+            
+            overlay.style.display = 'flex';
+        }
+
+        // Tampilkan popup jika tidak ikut taruhan
+        function tampilkanPopupTidakIkut(hasilRound) {
+            const overlay = document.getElementById('popup-overlay');
+            const icon = document.getElementById('popup-icon');
+            const title = document.getElementById('popup-title');
+            const details = document.getElementById('popup-details');
+            
+            icon.textContent = '⏰';
+            title.textContent = 'TIDAK IKUT TARUHAN';
+            title.style.color = '#ff9900';
+            details.innerHTML = `
+                <div>Anda tidak ikut taruhan di round ini</div>
+                <div>Hasil: <strong>${hasilRound}</strong></div>
+                <div>Saldo tetap: <strong>Rp ${state.saldo.toLocaleString()}</strong></div>
+            `;
+            
+            overlay.style.display = 'flex';
+        }
+
+        // Update hasil round UI
+        function updateHasilRoundUI(hasilRoundData) {
+            const container = document.getElementById('hasil-round-list');
+            if (!hasilRoundData) {
+                container.innerHTML = '<div class="hasil-round-item">🔄 Menunggu hasil round...</div>';
+                return;
+            }
+            
+            let html = '';
+            const items = Object.values(hasilRoundData)
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .slice(0, 10);
+            
+            if (items.length === 0) {
+                html = '<div class="hasil-round-item">🔄 Menunggu hasil round...</div>';
+            } else {
+                items.forEach(item => {
+                    const waktu = new Date(item.timestamp);
+                    const jam = String(waktu.getHours()).padStart(2, '0');
+                    const menit = String(waktu.getMinutes()).padStart(2, '0');
+                    
+                    html += `
+                        <div class="hasil-round-item ${item.hasil === 'BESAR' ? 'besar' : 'kecil'}">
+                            ${jam}:${menit} - Hasil: <strong>${item.hasil}</strong> ${item.hasil === 'BESAR' ? '🟥' : '🟦'}
+                        </div>
+                    `;
+                });
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // Update saldo UI
+        function updateSaldo() {
+            const saldoElement = document.getElementById('saldo');
+            saldoElement.textContent = `Rp ${state.saldo.toLocaleString()}`;
+            
+            // Jika saldo negatif, warning
+            if (state.saldo < 0) {
+                saldoElement.style.color = '#dc3545';
+            } else {
+                saldoElement.style.color = '#d70000';
+            }
+            
+            updateAllInButton();
+        }
+
+        // Audio functions
+        function toggleAudio() {
+            state.audioEnabled = !state.audioEnabled;
+            const audioBtn = document.querySelector('.audio-btn');
+            audioBtn.textContent = state.audioEnabled ? '🔊' : '🔇';
+            
+            // Jika mengaktifkan audio tapi belum diinisialisasi, coba unlock
+            if (state.audioEnabled && !audioInitialized) {
+                unlockAudio();
+            }
+        }
+
+        function unlockAudio() {
+            if (audioUnlockAttempted) return;
+            
+            audioUnlockAttempted = true;
+            console.log("Attempting to unlock audio...");
+            
+            // Coba inisialisasi audio dengan interaksi user
+            const allAudioElements = [tickAudio, countdownAudio, winAudio, loseAudio];
+            let successCount = 0;
+            
+            allAudioElements.forEach((audio, index) => {
+                // Set volume ke 0
+                audio.volume = 0;
+                
+                // Coba play
+                const playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log(`Audio ${index} initialized successfully`);
+                        audio.pause();
+                        audio.currentTime = 0;
+                        audio.volume = 0.3;
+                        successCount++;
+                        
+                        // Jika semua audio berhasil, set audioInitialized
+                        if (successCount === allAudioElements.length) {
+                            audioInitialized = true;
+                            console.log("Audio unlocked successfully!");
+                            
+                            // Update tombol audio
+                            const audioBtn = document.querySelector('.audio-btn');
+                            audioBtn.style.animation = "";
+                            audioBtn.style.color = state.audioEnabled ? "#d70000" : "#999";
+                            audioBtn.title = state.audioEnabled ? "Audio aktif" : "Audio nonaktif";
+                            
+                            // Test play dengan volume rendah
+                            setTimeout(() => {
+                                if (state.audioEnabled) {
+                                    tickAudio.volume = 0.1;
+                                    tickAudio.play().then(() => {
+                                        tickAudio.pause();
+                                        tickAudio.currentTime = 0;
+                                        tickAudio.volume = 0.3;
+                                    }).catch(e => console.log("Test play failed:", e));
+                                }
+                            }, 500);
+                        }
+                    }).catch(e => {
+                        console.log(`Audio ${index} initialization failed:`, e);
+                        
+                        // Coba dengan promise handler
+                        audio.load();
+                        audio.volume = 0;
+                        
+                        // Coba lagi dengan timeout
+                        setTimeout(() => {
+                            audio.play().then(() => {
+                                audio.pause();
+                                audio.currentTime = 0;
+                                audio.volume = 0.3;
+                                successCount++;
+                                
+                                if (successCount === allAudioElements.length) {
+                                    audioInitialized = true;
+                                    console.log("Audio unlocked on retry!");
+                                }
+                            }).catch(e2 => {
+                                console.log(`Audio ${index} retry failed:`, e2);
+                                
+                                // Mark as success anyway untuk kasus tertentu
+                                successCount++;
+                                if (successCount === allAudioElements.length) {
+                                    audioInitialized = true;
+                                    console.log("Audio marked as initialized despite errors");
+                                }
+                            });
+                        }, 100);
+                    });
+                }
+            });
+            
+            // Fallback: Jika gagal, tetap set sebagai initialized setelah timeout
+            setTimeout(() => {
+                if (!audioInitialized) {
+                    audioInitialized = true;
+                    console.log("Audio unlocked via fallback");
+                }
+            }, 1000);
+        }
+
+        function playAudio(audioElement) {
+            if (!state.audioEnabled || !audioInitialized) {
+                console.log("Audio disabled or not initialized");
+                return;
+            }
+            
+            try {
+                audioElement.currentTime = 0;
+                audioElement.volume = 0.3;
+                
+                const playPromise = audioElement.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => {
+                        console.log("Audio play failed:", e.name);
+                        
+                        // Jika NotAllowedError, coba unlock audio
+                        if (e.name === 'NotAllowedError') {
+                            console.log("Attempting to unlock audio...");
+                            if (!audioUnlockAttempted) {
+                                unlockAudio();
+                            }
+                            
+                            // Coba lagi setelah unlock
+                            setTimeout(() => {
+                                if (audioInitialized) {
+                                    audioElement.play().catch(e2 => {
+                                        console.log("Retry play failed:", e2);
+                                    });
+                                }
+                            }, 100);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.log("Play audio error:", error);
+            }
+        }
+
+        function closePopup() {
+            document.getElementById('popup-overlay').style.display = 'none';
+        }
+
+        // Fungsi untuk debug
+        window.resetSaldo = async function() {
+            if (confirm("Reset saldo ke Rp 50,000?")) {
+                await database.ref('tebak-angka/saldo/' + state.userId).set(50000);
+                state.saldo = 50000;
+                updateSaldo();
+            }
+        };
+
+        window.clearHistory = async function() {
+            if (confirm("Hapus semua history?")) {
+                await database.ref('tebak-angka/hasil_round').remove();
+                document.getElementById('hasil-round-list').innerHTML = '<div class="hasil-round-item">🔄 Menunggu hasil round...</div>';
+            }
+        };
+
+        window.debugAudio = function() {
+            console.log("Audio Status:");
+            console.log("- Audio Enabled:", state.audioEnabled);
+            console.log("- Audio Initialized:", audioInitialized);
+            console.log("- Audio Unlock Attempted:", audioUnlockAttempted);
+            
+            // Test play semua audio
+            const audioElements = {
+                tick: tickAudio,
+                countdown: countdownAudio,
+                win: winAudio,
+                lose: loseAudio
+            };
+            
+            Object.keys(audioElements).forEach(key => {
+                console.log(`Testing ${key} audio...`);
+                audioElements[key].play().then(() => {
+                    console.log(`✓ ${key} audio works`);
+                    audioElements[key].pause();
+                    audioElements[key].currentTime = 0;
+                }).catch(e => {
+                    console.log(`✗ ${key} audio failed:`, e.name);
+                });
+            });
+        };
+    </script>
+</body>
+</html>
