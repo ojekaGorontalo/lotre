@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel - Tebak Besar Kecil</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #d70000 0%, #8b0000 100%);
+            min-height: 100vh;
+        }
+        .admin-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h2 {
+            color: #d70000;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #d70000;
+            background: white;
+            color: #d70000;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .mode-btn:hover {
+            background: #ffe6e6;
+        }
+        .mode-btn.active {
+            background: #d70000;
+            color: white;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        input:focus, select:focus {
+            border-color: #d70000;
+            outline: none;
+        }
+        button {
+            background: #d70000;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #b30000;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .live-monitor {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+        .live-monitor h3 {
+            color: #d70000;
+            margin-bottom: 15px;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .history-table th, .history-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .history-table th {
+            background: #e9ecef;
+            color: #333;
+        }
+        .stat-box {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d70000;
+            margin: 5px 0;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+        /* New styles for bet monitoring */
+        .bet-monitor {
+            margin-top: 30px;
+        }
+        .bet-monitor h4 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #d70000;
+        }
+        .bet-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .bet-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-top: 4px solid;
+        }
+        .bet-card.besar {
+            border-top-color: #d70000;
+        }
+        .bet-card.kecil {
+            border-top-color: #0066cc;
+        }
+        .bet-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bet-title.besar {
+            color: #d70000;
+        }
+        .bet-title.kecil {
+            color: #0066cc;
+        }
+        .bet-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .bet-info-item {
+            text-align: center;
+        }
+        .bet-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .bet-label {
+            font-size: 12px;
+            color: #666;
+        }
+        .max-bet {
+            background: #fff3cd;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 15px;
+            text-align: center;
+            border: 1px solid #ffeaa7;
+        }
+        .max-bet-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+        .max-bet-user {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .current-round {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #bbdefb;
+        }
+        .current-round h5 {
+            color: #1976d2;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .no-data {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <h2>📊 ADMIN PANEL - TEBAK BESAR KECIL</h2>
+        
+        <div class="input-group">
+            <label>Mode Permainan:</label>
+            <div class="mode-buttons">
+                <button class="mode-btn" onclick="setMode('random')" id="btn-random">RANDOM</button>
+                <button class="mode-btn" onclick="setMode('harus_besar')" id="btn-besar">HARUS BESAR</button>
+                <button class="mode-btn" onclick="setMode('harus_kecil')" id="btn-kecil">HARUS KECIL</button>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label>Waktu Tunggu (detik):</label>
+            <input type="number" id="waktuTunggu" value="15" min="5" max="60">
+        </div>
+        
+        <div class="input-group">
+            <label>Pasangan (pisahkan dengan koma):</label>
+            <input type="text" id="pasangan" value="1000,2000,5000,10000,20000" placeholder="Contoh: 1000,2000,5000">
+        </div>
+        
+        <button onclick="saveSettings()">💾 SIMPAN PENGATURAN</button>
+        <button onclick="forceResetGame()" style="background: #ff9900;">🔄 RESET PERMAINAN</button>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="live-monitor">
+            <h3>📊 LIVE MONITOR</h3>
+            <div class="stat-box">
+                <div class="stat-item">
+                    <div class="stat-label">Mode Saat Ini</div>
+                    <div class="stat-value" id="current-mode">RANDOM</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Waktu Tunggu</div>
+                    <div class="stat-value" id="current-timer">15 detik</div>
+                </div>
+            </div>
+            
+            <!-- Current Round Bet Monitoring -->
+            <div class="bet-monitor">
+                <h4>🎯 MONITORING TARUHAN ROUND SAAT INI</h4>
+                <div class="current-round">
+                    <h5>Round ID: <span id="current-round-id">-</span></h5>
+                    <div>Status: <span id="current-round-status">-</span></div>
+                    <div>Waktu Tersisa: <span id="current-round-timer">-</span></div>
+                </div>
+                
+                <div class="bet-cards">
+                    <div class="bet-card besar">
+                        <div class="bet-title besar">🟥 BESAR</div>
+                        <div class="bet-info">
+                            <div class="bet-info-item">
+                                <div class="bet-number" id="besar-count">0</div>
+                                <div class="bet-label">Jumlah User</div>
+                            </div>
+                            <div class="bet-info-item">
+                                <div class="bet-number" id="besar-total">0</div>
+                                <div class="bet-label">Total Pasangan</div>
+                            </div>
+                        </div>
+                        <div class="max-bet">
+                            <div class="bet-label">Taruhan Terbesar</div>
+                            <div class="max-bet-value" id="besar-max">-</div>
+                            <div class="max-bet-user" id="besar-max-user">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bet-card kecil">
+                        <div class="bet-title kecil">🟦 KECIL</div>
+                        <div class="bet-info">
+                            <div class="bet-info-item">
+                                <div class="bet-number" id="kecil-count">0</div>
+                                <div class="bet-label">Jumlah User</div>
+                            </div>
+                            <div class="bet-info-item">
+                                <div class="bet-number" id="kecil-total">0</div>
+                                <div class="bet-label">Total Pasangan</div>
+                            </div>
+                        </div>
+                        <div class="max-bet">
+                            <div class="bet-label">Taruhan Terbesar</div>
+                            <div class="max-bet-value" id="kecil-max">-</div>
+                            <div class="max-bet-user" id="kecil-max-user">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h5>📋 DETAIL TARUHAN USER</h5>
+                    <div id="bet-details" class="no-data">Belum ada taruhan</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h4>📈 HISTORY TERBARU (5 Terakhir)</h4>
+                <div id="liveData"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "steady-fin-368617.firebaseapp.com",
+            databaseURL: "https://steady-fin-368617-default-rtdb.firebaseio.com",
+            projectId: "steady-fin-368617",
+            storageBucket: "steady-fin-368617.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        let currentMode = 'random';
+        let currentRoundRef = null;
+        let currentRoundId = null;
+
+        // Load current settings
+        database.ref('tebak-angka/aturan').on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                currentMode = data.mode || 'random';
+                updateModeButtons();
+                document.getElementById('waktuTunggu').value = data.waktu_tunggu || 15;
+                document.getElementById('current-mode').textContent = currentMode.toUpperCase();
+                document.getElementById('current-timer').textContent = (data.waktu_tunggu || 15) + ' detik';
+            }
+        });
+
+        database.ref('tebak-angka/pasangan').on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const pasangan = Object.values(snapshot.val());
+                document.getElementById('pasangan').value = pasangan.join(',');
+            }
+        });
+
+        // Monitor live data - FIXED VERSION
+        database.ref('tebak-angka/history').on('value', (snapshot) => {
+            const container = document.getElementById('liveData');
+            if (snapshot.exists()) {
+                const historyData = snapshot.val();
+                let allHistoryEntries = [];
+                
+                // Process the nested history structure
+                Object.keys(historyData).forEach(userId => {
+                    const userHistory = historyData[userId];
+                    if (userHistory && typeof userHistory === 'object') {
+                        Object.keys(userHistory).forEach(timestampKey => {
+                            const entry = userHistory[timestampKey];
+                            if (entry && typeof entry === 'object') {
+                                allHistoryEntries.push({
+                                    ...entry,
+                                    userId: userId,
+                                    waktu: entry.waktu || parseInt(timestampKey)
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                // Sort by waktu (newest first) and take 5
+                allHistoryEntries.sort((a, b) => b.waktu - a.waktu);
+                const recentHistory = allHistoryEntries.slice(0, 5);
+                
+                if (recentHistory.length > 0) {
+                    let html = '<table class="history-table">';
+                    html += '<tr><th>Waktu</th><th>User</th><th>Pilihan</th><th>Pasangan</th><th>Hasil</th></tr>';
+                    
+                    recentHistory.forEach(item => {
+                        const waktu = new Date(item.waktu).toLocaleTimeString();
+                        const userShort = (item.userId || 'unknown').substring(0, 8) + '...';
+                        html += `
+                            <tr>
+                                <td>${waktu}</td>
+                                <td>${userShort}</td>
+                                <td>${item.pilihan || '-'}</td>
+                                <td>Rp ${(item.pasangan || 0).toLocaleString()}</td>
+                                <td style="color:${item.hasil === 'MENANG' ? 'green' : 'red'}; font-weight:bold">
+                                    ${item.hasil || '-'}
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</table>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p>Belum ada history permainan</p>';
+                }
+            } else {
+                container.innerHTML = '<p>Belum ada history permainan</p>';
+            }
+        });
+
+        // Monitor current round bets - IMPROVED VERSION
+        database.ref('tebak-angka/taruhan').on('value', (snapshot) => {
+            console.log('🔍 Data taruhan diterima dari Firebase:', snapshot.val()); // Debug log
+            
+            if (!snapshot.exists()) {
+                console.log('❌ Tidak ada data taruhan di Firebase');
+                resetDisplay();
+                return;
+            }
+
+            const taruhanData = snapshot.val();
+            let activeRound = null;
+            let activeRoundKey = null;
+
+            // Cari round dengan status "berjalan" yang masih valid
+            const now = Date.now();
+            
+            for (const key in taruhanData) {
+                const round = taruhanData[key];
+                if (!round) continue;
+                
+                console.log(`📊 Memeriksa round ${key}:`, {
+                    status: round.status,
+                    end_time: round.end_time,
+                    waktu_tunggu: round.waktu_tunggu,
+                    has_taruhan_users: !!round.taruhan_users
+                });
+                
+                // Cek apakah round berstatus "berjalan" dan belum expired
+                if (round.status === 'berjalan') {
+                    // Jika round memiliki end_time, cek apakah belum expired
+                    if (round.end_time && round.end_time > now) {
+                        activeRound = round;
+                        activeRoundKey = key;
+                        break;
+                    } else if (!round.end_time) {
+                        // Jika tidak ada end_time, tetap anggap sebagai round aktif
+                        activeRound = round;
+                        activeRoundKey = key;
+                        break;
+                    }
+                }
+            }
+
+            if (activeRound) {
+                console.log('✅ Round aktif ditemukan:', activeRoundKey, activeRound);
+                
+                // Update round info
+                document.getElementById('current-round-id').textContent = 
+                    activeRoundKey ? activeRoundKey.substring(0, 12) + '...' : '-';
+                document.getElementById('current-round-status').textContent = activeRound.status || '-';
+                
+                // Calculate time remaining
+                if (activeRound.end_time) {
+                    const timeLeft = Math.max(0, Math.floor((activeRound.end_time - now) / 1000));
+                    document.getElementById('current-round-timer').textContent = timeLeft + ' detik';
+                    
+                    if (timeLeft <= 0) {
+                        document.getElementById('current-round-status').textContent = 'WAKTU HABIS';
+                        document.getElementById('current-round-timer').style.color = '#ff0000';
+                    } else {
+                        document.getElementById('current-round-timer').style.color = '#333';
+                    }
+                } else {
+                    document.getElementById('current-round-timer').textContent = '-';
+                }
+
+                // Monitor bets in current round
+                if (activeRound.taruhan_users && Object.keys(activeRound.taruhan_users).length > 0) {
+                    console.log('💰 Data taruhan ditemukan:', activeRound.taruhan_users);
+                    processBetData(activeRound.taruhan_users);
+                } else {
+                    console.log('ℹ️ Round aktif tetapi belum ada taruhan');
+                    resetBetMonitoring();
+                    document.getElementById('bet-details').innerHTML = 
+                        '<div class="no-data">Belum ada taruhan di round ini</div>';
+                }
+            } else {
+                console.log('ℹ️ Tidak ada round aktif yang valid');
+                // Coba cari round terbaru untuk ditampilkan (meskipun selesai)
+                let latestRound = null;
+                let latestRoundKey = null;
+                let latestTime = 0;
+                
+                for (const key in taruhanData) {
+                    const round = taruhanData[key];
+                    if (round && round.created_at && round.created_at > latestTime) {
+                        latestTime = round.created_at;
+                        latestRound = round;
+                        latestRoundKey = key;
+                    }
+                }
+                
+                if (latestRound) {
+                    console.log('📅 Menampilkan round terbaru:', latestRoundKey);
+                    document.getElementById('current-round-id').textContent = 
+                        latestRoundKey ? latestRoundKey.substring(0, 12) + '...' : '-';
+                    document.getElementById('current-round-status').textContent = latestRound.status || 'tidak diketahui';
+                    document.getElementById('current-round-timer').textContent = '-';
+                    
+                    if (latestRound.taruhan_users && Object.keys(latestRound.taruhan_users).length > 0) {
+                        processBetData(latestRound.taruhan_users);
+                    } else {
+                        resetDisplay();
+                    }
+                } else {
+                    resetDisplay();
+                }
+            }
+        });
+
+        function processBetData(taruhanUsers) {
+            console.log('📈 Memproses data taruhan:', taruhanUsers);
+            
+            let besarCount = 0;
+            let besarTotal = 0;
+            let besarMax = 0;
+            let besarMaxUser = '';
+            
+            let kecilCount = 0;
+            let kecilTotal = 0;
+            let kecilMax = 0;
+            let kecilMaxUser = '';
+            
+            const betDetails = [];
+
+            // Process each bet
+            for (const userId in taruhanUsers) {
+                const bet = taruhanUsers[userId];
+                if (!bet) continue;
+                
+                const amount = parseInt(bet.pasangan) || 0;
+                const choice = bet.pilihan;
+                const userShort = userId ? (userId.substring(0, 8) + '...') : 'unknown';
+                
+                console.log(`🎯 Taruhan user ${userShort}: ${choice} - ${amount}`);
+                
+                betDetails.push({
+                    user: userShort,
+                    pilihan: choice || 'unknown',
+                    pasangan: amount,
+                    waktu: bet.waktu_taruhan ? new Date(bet.waktu_taruhan).toLocaleTimeString() : '-'
+                });
+
+                if (choice === 'BESAR') {
+                    besarCount++;
+                    besarTotal += amount;
+                    if (amount > besarMax) {
+                        besarMax = amount;
+                        besarMaxUser = userShort;
+                    }
+                } else if (choice === 'KECIL') {
+                    kecilCount++;
+                    kecilTotal += amount;
+                    if (amount > kecilMax) {
+                        kecilMax = amount;
+                        kecilMaxUser = userShort;
+                    }
+                }
+            }
+
+            console.log(`📊 Statistik: BESAR=${besarCount}/${besarTotal}, KECIL=${kecilCount}/${kecilTotal}`);
+
+            // Update besar stats
+            document.getElementById('besar-count').textContent = besarCount;
+            document.getElementById('besar-total').textContent = formatRupiah(besarTotal);
+            document.getElementById('besar-max').textContent = formatRupiah(besarMax);
+            document.getElementById('besar-max-user').textContent = besarMaxUser || '-';
+
+            // Update kecil stats
+            document.getElementById('kecil-count').textContent = kecilCount;
+            document.getElementById('kecil-total').textContent = formatRupiah(kecilTotal);
+            document.getElementById('kecil-max').textContent = formatRupiah(kecilMax);
+            document.getElementById('kecil-max-user').textContent = kecilMaxUser || '-';
+
+            // Update bet details table
+            updateBetDetailsTable(betDetails);
+        }
+
+        function updateBetDetailsTable(betDetails) {
+            const container = document.getElementById('bet-details');
+            
+            if (betDetails.length === 0) {
+                container.innerHTML = '<div class="no-data">Belum ada taruhan</div>';
+                return;
+            }
+
+            let html = '<table class="history-table" style="margin-top:10px;">';
+            html += '<tr><th>User</th><th>Pilihan</th><th>Pasangan</th><th>Waktu</th></tr>';
+            
+            betDetails.forEach(bet => {
+                html += `
+                    <tr>
+                        <td>${bet.user}</td>
+                        <td style="color:${bet.pilihan === 'BESAR' ? '#d70000' : '#0066cc'}; font-weight:bold">
+                            ${bet.pilihan}
+                        </td>
+                        <td>${formatRupiah(bet.pasangan)}</td>
+                        <td>${bet.waktu}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            container.innerHTML = html;
+            console.log('✅ Tabel detail taruhan diperbarui');
+        }
+
+        function resetDisplay() {
+            console.log('🔄 Reset display');
+            document.getElementById('current-round-id').textContent = '-';
+            document.getElementById('current-round-status').textContent = 'Tidak ada round aktif';
+            document.getElementById('current-round-timer').textContent = '-';
+            resetBetMonitoring();
+        }
+
+        function resetBetMonitoring() {
+            console.log('🔄 Reset monitoring taruhan');
+            document.getElementById('besar-count').textContent = '0';
+            document.getElementById('besar-total').textContent = '0';
+            document.getElementById('besar-max').textContent = '-';
+            document.getElementById('besar-max-user').textContent = '-';
+            
+            document.getElementById('kecil-count').textContent = '0';
+            document.getElementById('kecil-total').textContent = '0';
+            document.getElementById('kecil-max').textContent = '-';
+            document.getElementById('kecil-max-user').textContent = '-';
+            
+            document.getElementById('bet-details').innerHTML = '<div class="no-data">Belum ada taruhan</div>';
+        }
+
+        function formatRupiah(amount) {
+            if (!amount || amount === 0) return 'Rp 0';
+            return 'Rp ' + amount.toLocaleString('id-ID');
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            updateModeButtons();
+        }
+
+        function updateModeButtons() {
+            // Reset semua button
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'white';
+                btn.style.color = '#d70000';
+            });
+            
+            // Aktifkan button yang sesuai
+            const btn = document.getElementById(`btn-${currentMode}`);
+            if (btn) {
+                btn.classList.add('active');
+                btn.style.background = '#d70000';
+                btn.style.color = 'white';
+            }
+        }
+
+        async function saveSettings() {
+            const waktuTunggu = parseInt(document.getElementById('waktuTunggu').value);
+            const pasanganInput = document.getElementById('pasangan').value;
+            const pasanganArray = pasanganInput.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p) && p > 0);
+            
+            if (pasanganArray.length === 0) {
+                showStatus('Masukkan minimal 1 pasangan yang valid!', 'error');
+                return;
+            }
+
+            // Convert array to object
+            const pasanganObj = {};
+            pasanganArray.forEach((p, index) => {
+                pasanganObj[index] = p;
+            });
+
+            try {
+                // Save settings
+                await database.ref('tebak-angka/aturan').set({
+                    mode: currentMode,
+                    waktu_tunggu: waktuTunggu,
+                    aktif: true,
+                    last_updated: new Date().toISOString(),
+                    last_updated_by: 'admin'
+                });
+
+                await database.ref('tebak-angka/pasangan').set(pasanganObj);
+
+                // Show success message
+                showStatus('✅ Pengaturan berhasil disimpan!', 'success');
+                
+                // Update display
+                document.getElementById('current-mode').textContent = currentMode.toUpperCase();
+                document.getElementById('current-timer').textContent = waktuTunggu + ' detik';
+
+            } catch (error) {
+                showStatus('❌ Error: ' + error.message, 'error');
+            }
+        }
+
+        async function forceResetGame() {
+            if (confirm('Apakah Anda yakin ingin mereset permainan? Ini akan menghentikan semua ronde yang sedang berjalan.')) {
+                try {
+                    // Simpan pengaturan reset
+                    await database.ref('tebak-angka/reset_flag').set({
+                        reset: true,
+                        timestamp: Date.now()
+                    });
+                    
+                    showStatus('🔄 Permainan telah direset! Aplikasi akan restart otomatis.', 'success');
+                    
+                    // Reset setelah 2 detik
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                    
+                } catch (error) {
+                    showStatus('❌ Error resetting game: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'status';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
