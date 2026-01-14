@@ -305,7 +305,7 @@
 </head>
 <body>
     <div class="admin-container">
-        <h2>⚙️ ADMIN PANEL - TEBAK BESAR KECIL</h2>
+        <h2>📊 ADMIN PANEL - TEBAK BESAR KECIL</h2>
         
         <div class="input-group">
             <label>Mode Permainan:</label>
@@ -331,13 +331,13 @@
             <button onclick="forceResetGame()" style="background: #ff9900;">🔄 RESET PERMAINAN</button>
         </div>
         
-        <button id="start-round-btn" onclick="startNewRound()">🎯 MULAI ROUND BARU</button>
+        <button id="start-round-btn" onclick="startNewRound()">🚀 MULAI ROUND BARU</button>
         <button id="force-result-btn" onclick="forceRoundResult()">⚡ FORCE TENTUKAN HASIL</button>
         
         <div id="status" class="status"></div>
         
         <div class="live-monitor">
-            <h3>📊 LIVE MONITOR</h3>
+            <h3>📡 LIVE MONITOR</h3>
             <div class="stat-box">
                 <div class="stat-item">
                     <div class="stat-label">Mode Saat Ini</div>
@@ -369,7 +369,7 @@
                 
                 <div class="bet-cards">
                     <div class="bet-card besar">
-                        <div class="bet-title besar">🟥 BESAR</div>
+                        <div class="bet-title besar">🔴 BESAR</div>
                         <div class="bet-info">
                             <div class="bet-info-item">
                                 <div class="bet-number" id="besar-count">0</div>
@@ -388,7 +388,7 @@
                     </div>
                     
                     <div class="bet-card kecil">
-                        <div class="bet-title kecil">🟦 KECIL</div>
+                        <div class="bet-title kecil">🔵 KECIL</div>
                         <div class="bet-info">
                             <div class="bet-info-item">
                                 <div class="bet-number" id="kecil-count">0</div>
@@ -414,12 +414,12 @@
             </div>
             
             <div style="margin-top: 20px;">
-                <h4>📈 HISTORY HASIL (10 Terakhir)</h4>
+                <h4>📊 HISTORY HASIL (10 Terakhir)</h4>
                 <div id="result-history" class="round-history"></div>
             </div>
             
             <div style="margin-top: 20px;">
-                <h4>📋 HISTORY TERBARU (5 Terakhir)</h4>
+                <h4>📈 HISTORY TERBARU (5 Terakhir)</h4>
                 <div id="liveData"></div>
             </div>
         </div>
@@ -428,15 +428,14 @@
     <script>
         // Firebase config
         const firebaseConfig = {
-  apiKey: "AIzaSyDtZxsl5LZp3n1KZJfdVAdqQj22ZBPoQbU",
-  authDomain: "steady-fin-368617.firebaseapp.com",
-  databaseURL: "https://steady-fin-368617-default-rtdb.firebaseio.com",
-  projectId: "steady-fin-368617",
-  storageBucket: "steady-fin-368617.firebasestorage.app",
-  messagingSenderId: "626971902484",
-  appId: "1:626971902484:web:98f7cdbd55c5990dfe9d01",
-  measurementId: "G-70D3LR995Y"
-};
+            apiKey: "YOUR_API_KEY",
+            authDomain: "steady-fin-368617.firebaseapp.com",
+            databaseURL: "https://steady-fin-368617-default-rtdb.firebaseio.com",
+            projectId: "steady-fin-368617",
+            storageBucket: "steady-fin-368617.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
@@ -504,7 +503,7 @@
                     recentHistory.forEach(item => {
                         const waktu = new Date(item.waktu).toLocaleTimeString();
                         const userShort = (item.userId || 'unknown').substring(0, 8) + '...';
-                        html += `
+                        html += `  
                             <tr>
                                 <td>${waktu}</td>
                                 <td>${userShort}</td>
@@ -905,19 +904,16 @@
                     
                     // Tentukan apakah user menang
                     const menang = taruhan.pilihan === hasil;
-                    const status = menang ? 'menang' : 'kalah';
                     
                     // Update status taruhan user
                     await database.ref(`tebak-angka/taruhan/${roundId}/taruhan_users/${userId}`).update({
-                        status: status,
+                        status: menang ? 'menang' : 'kalah',
                         hasil: menang ? 'MENANG' : 'KALAH',
                         waktu_hasil: Date.now()
                     });
                     
-                    // Update saldo user jika menang
-                    if (menang) {
-                        await updateUserBalance(userId, taruhan.pasangan);
-                    }
+                    // Update saldo user (baik menang maupun kalah)
+                    await updateUserBalance(userId, taruhan.pasangan, menang);
                     
                     // Simpan ke history user
                     await saveToUserHistory(userId, {
@@ -933,7 +929,7 @@
             }
         }
 
-        async function updateUserBalance(userId, kemenangan) {
+        async function updateUserBalance(userId, pasangan, menang) {
             try {
                 const saldoRef = database.ref(`tebak-angka/saldo/${userId}`);
                 const snapshot = await saldoRef.once('value');
@@ -943,10 +939,27 @@
                     currentBalance = snapshot.val() || 0;
                 }
                 
-                const newBalance = currentBalance + kemenangan;
+                // Kalkulasi saldo baru
+                let newBalance;
+                if (menang) {
+                    // Menang: dapat pasangan + kemenangan (1:1, jadi dapat 2x pasangan)
+                    // Tapi biasanya dapat kembali pasangan + kemenangan yang sama
+                    // Jadi jika pasangan 1000, menang dapat 2000, tapi setelah dipotong pasangan awal
+                    // sebenarnya hanya dapat tambahan 1000 (pasangan kembali + kemenangan 1000)
+                    newBalance = currentBalance + pasangan; // Menang dapat tambahan sebesar pasangan
+                } else {
+                    // Kalah: kehilangan pasangan
+                    newBalance = currentBalance - pasangan;
+                }
+                
+                // Pastikan saldo tidak negatif (untuk safety)
+                if (newBalance < 0) {
+                    newBalance = 0;
+                }
+                
                 await saldoRef.set(newBalance);
                 
-                console.log(`💰 User ${userId.substring(0, 8)}... menang ${kemenangan}, saldo baru: ${newBalance}`);
+                console.log(`💰 User ${userId.substring(0, 8)}... ${menang ? 'menang' : 'kalah'} ${pasangan}, saldo baru: ${newBalance}`);
             } catch (error) {
                 console.error("Error updating user balance:", error);
             }
@@ -990,8 +1003,8 @@
                     mode: currentMode
                 });
                 
-                console.log(`🎯 Round baru dibuat: ${roundId}`);
-                showStatus(`🎯 Round baru dimulai: ${roundId.substring(0, 12)}...`, 'success');
+                console.log(`🚀 Round baru dibuat: ${roundId}`);
+                showStatus(`✅ Round baru dimulai: ${roundId.substring(0, 12)}...`, 'success');
                 
                 return roundId;
             } catch (error) {
