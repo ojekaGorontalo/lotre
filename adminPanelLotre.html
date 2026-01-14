@@ -148,7 +148,6 @@
             font-size: 14px;
             color: #666;
         }
-        /* New styles for bet monitoring */
         .bet-monitor {
             margin-top: 30px;
         }
@@ -244,11 +243,69 @@
             padding: 20px;
             font-style: italic;
         }
+        #start-round-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        #start-round-btn:hover {
+            background: #218838;
+        }
+        #force-result-btn {
+            background: #ff9900;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        #force-result-btn:hover {
+            background: #e68900;
+        }
+        .admin-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .round-history {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background: #f8f9fa;
+        }
+        .round-history-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 12px;
+        }
+        .round-history-item.win {
+            background: rgba(40, 167, 69, 0.1);
+        }
+        .round-history-item.lose {
+            background: rgba(220, 53, 69, 0.1);
+        }
     </style>
 </head>
 <body>
     <div class="admin-container">
-        <h2>📊 ADMIN PANEL - TEBAK BESAR KECIL</h2>
+        <h2>⚙️ ADMIN PANEL - TEBAK BESAR KECIL</h2>
         
         <div class="input-group">
             <label>Mode Permainan:</label>
@@ -269,8 +326,13 @@
             <input type="text" id="pasangan" value="1000,2000,5000,10000,20000" placeholder="Contoh: 1000,2000,5000">
         </div>
         
-        <button onclick="saveSettings()">💾 SIMPAN PENGATURAN</button>
-        <button onclick="forceResetGame()" style="background: #ff9900;">🔄 RESET PERMAINAN</button>
+        <div class="admin-controls">
+            <button onclick="saveSettings()">💾 SIMPAN PENGATURAN</button>
+            <button onclick="forceResetGame()" style="background: #ff9900;">🔄 RESET PERMAINAN</button>
+        </div>
+        
+        <button id="start-round-btn" onclick="startNewRound()">🎯 MULAI ROUND BARU</button>
+        <button id="force-result-btn" onclick="forceRoundResult()">⚡ FORCE TENTUKAN HASIL</button>
         
         <div id="status" class="status"></div>
         
@@ -285,15 +347,24 @@
                     <div class="stat-label">Waktu Tunggu</div>
                     <div class="stat-value" id="current-timer">15 detik</div>
                 </div>
+                <div class="stat-item">
+                    <div class="stat-label">Status Engine</div>
+                    <div class="stat-value" id="engine-status">AKTIF</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Round Aktif</div>
+                    <div class="stat-value" id="active-round-count">0</div>
+                </div>
             </div>
             
             <!-- Current Round Bet Monitoring -->
             <div class="bet-monitor">
-                <h4>🎯 MONITORING TARUHAN ROUND SAAT INI</h4>
+                <h4>🎰 MONITORING TARUHAN ROUND SAAT INI</h4>
                 <div class="current-round">
                     <h5>Round ID: <span id="current-round-id">-</span></h5>
                     <div>Status: <span id="current-round-status">-</span></div>
                     <div>Waktu Tersisa: <span id="current-round-timer">-</span></div>
+                    <div>Mode: <span id="current-round-mode">-</span></div>
                 </div>
                 
                 <div class="bet-cards">
@@ -337,13 +408,18 @@
                 </div>
                 
                 <div style="margin-top: 20px;">
-                    <h5>📋 DETAIL TARUHAN USER</h5>
+                    <h5>👤 DETAIL TARUHAN USER</h5>
                     <div id="bet-details" class="no-data">Belum ada taruhan</div>
                 </div>
             </div>
             
             <div style="margin-top: 20px;">
-                <h4>📈 HISTORY TERBARU (5 Terakhir)</h4>
+                <h4>📈 HISTORY HASIL (10 Terakhir)</h4>
+                <div id="result-history" class="round-history"></div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h4>📋 HISTORY TERBARU (5 Terakhir)</h4>
                 <div id="liveData"></div>
             </div>
         </div>
@@ -364,8 +440,9 @@
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         let currentMode = 'random';
-        let currentRoundRef = null;
-        let currentRoundId = null;
+        let currentGameInterval = null;
+        let activeRoundId = null;
+        let roundHistory = [];
 
         // Load current settings
         database.ref('tebak-angka/aturan').on('value', (snapshot) => {
@@ -376,6 +453,11 @@
                 document.getElementById('waktuTunggu').value = data.waktu_tunggu || 15;
                 document.getElementById('current-mode').textContent = currentMode.toUpperCase();
                 document.getElementById('current-timer').textContent = (data.waktu_tunggu || 15) + ' detik';
+                
+                // Auto-start game engine jika belum berjalan
+                if (data.aktif && !currentGameInterval) {
+                    startGameEngine();
+                }
             }
         });
 
@@ -386,7 +468,7 @@
             }
         });
 
-        // Monitor live data - FIXED VERSION
+        // Monitor live data
         database.ref('tebak-angka/history').on('value', (snapshot) => {
             const container = document.getElementById('liveData');
             if (snapshot.exists()) {
@@ -444,12 +526,9 @@
             }
         });
 
-        // Monitor current round bets - IMPROVED VERSION
+        // Monitor current round bets
         database.ref('tebak-angka/taruhan').on('value', (snapshot) => {
-            console.log('🔍 Data taruhan diterima dari Firebase:', snapshot.val()); // Debug log
-            
             if (!snapshot.exists()) {
-                console.log('❌ Tidak ada data taruhan di Firebase');
                 resetDisplay();
                 return;
             }
@@ -457,6 +536,7 @@
             const taruhanData = snapshot.val();
             let activeRound = null;
             let activeRoundKey = null;
+            let activeRoundCount = 0;
 
             // Cari round dengan status "berjalan" yang masih valid
             const now = Date.now();
@@ -465,36 +545,31 @@
                 const round = taruhanData[key];
                 if (!round) continue;
                 
-                console.log(`📊 Memeriksa round ${key}:`, {
-                    status: round.status,
-                    end_time: round.end_time,
-                    waktu_tunggu: round.waktu_tunggu,
-                    has_taruhan_users: !!round.taruhan_users
-                });
-                
-                // Cek apakah round berstatus "berjalan" dan belum expired
                 if (round.status === 'berjalan') {
+                    activeRoundCount++;
                     // Jika round memiliki end_time, cek apakah belum expired
                     if (round.end_time && round.end_time > now) {
                         activeRound = round;
                         activeRoundKey = key;
-                        break;
                     } else if (!round.end_time) {
                         // Jika tidak ada end_time, tetap anggap sebagai round aktif
                         activeRound = round;
                         activeRoundKey = key;
-                        break;
                     }
                 }
             }
 
+            // Update active round count
+            document.getElementById('active-round-count').textContent = activeRoundCount;
+
             if (activeRound) {
-                console.log('✅ Round aktif ditemukan:', activeRoundKey, activeRound);
+                activeRoundId = activeRoundKey;
                 
                 // Update round info
                 document.getElementById('current-round-id').textContent = 
                     activeRoundKey ? activeRoundKey.substring(0, 12) + '...' : '-';
                 document.getElementById('current-round-status').textContent = activeRound.status || '-';
+                document.getElementById('current-round-mode').textContent = activeRound.mode || currentMode;
                 
                 // Calculate time remaining
                 if (activeRound.end_time) {
@@ -513,51 +588,49 @@
 
                 // Monitor bets in current round
                 if (activeRound.taruhan_users && Object.keys(activeRound.taruhan_users).length > 0) {
-                    console.log('💰 Data taruhan ditemukan:', activeRound.taruhan_users);
                     processBetData(activeRound.taruhan_users);
                 } else {
-                    console.log('ℹ️ Round aktif tetapi belum ada taruhan');
                     resetBetMonitoring();
                     document.getElementById('bet-details').innerHTML = 
                         '<div class="no-data">Belum ada taruhan di round ini</div>';
                 }
             } else {
-                console.log('ℹ️ Tidak ada round aktif yang valid');
-                // Coba cari round terbaru untuk ditampilkan (meskipun selesai)
-                let latestRound = null;
-                let latestRoundKey = null;
-                let latestTime = 0;
+                resetDisplay();
+            }
+        });
+
+        // Load result history
+        database.ref('tebak-angka/hasil_round').orderByChild('timestamp').limitToLast(10).on('value', (snapshot) => {
+            const container = document.getElementById('result-history');
+            if (snapshot.exists()) {
+                const resultData = snapshot.val();
+                roundHistory = [];
                 
-                for (const key in taruhanData) {
-                    const round = taruhanData[key];
-                    if (round && round.created_at && round.created_at > latestTime) {
-                        latestTime = round.created_at;
-                        latestRound = round;
-                        latestRoundKey = key;
-                    }
+                for (const key in resultData) {
+                    roundHistory.push(resultData[key]);
                 }
                 
-                if (latestRound) {
-                    console.log('📅 Menampilkan round terbaru:', latestRoundKey);
-                    document.getElementById('current-round-id').textContent = 
-                        latestRoundKey ? latestRoundKey.substring(0, 12) + '...' : '-';
-                    document.getElementById('current-round-status').textContent = latestRound.status || 'tidak diketahui';
-                    document.getElementById('current-round-timer').textContent = '-';
-                    
-                    if (latestRound.taruhan_users && Object.keys(latestRound.taruhan_users).length > 0) {
-                        processBetData(latestRound.taruhan_users);
-                    } else {
-                        resetDisplay();
-                    }
-                } else {
-                    resetDisplay();
-                }
+                // Sort by timestamp newest first
+                roundHistory.sort((a, b) => b.timestamp - a.timestamp);
+                
+                let html = '';
+                roundHistory.forEach(item => {
+                    const time = new Date(item.timestamp).toLocaleTimeString();
+                    html += `
+                        <div class="round-history-item">
+                            ${time} - Hasil: <strong>${item.hasil}</strong> 
+                            (Mode: ${item.mode || 'random'})
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="no-data">Belum ada hasil round</div>';
             }
         });
 
         function processBetData(taruhanUsers) {
-            console.log('📈 Memproses data taruhan:', taruhanUsers);
-            
             let besarCount = 0;
             let besarTotal = 0;
             let besarMax = 0;
@@ -578,8 +651,6 @@
                 const amount = parseInt(bet.pasangan) || 0;
                 const choice = bet.pilihan;
                 const userShort = userId ? (userId.substring(0, 8) + '...') : 'unknown';
-                
-                console.log(`🎯 Taruhan user ${userShort}: ${choice} - ${amount}`);
                 
                 betDetails.push({
                     user: userShort,
@@ -604,8 +675,6 @@
                     }
                 }
             }
-
-            console.log(`📊 Statistik: BESAR=${besarCount}/${besarTotal}, KECIL=${kecilCount}/${kecilTotal}`);
 
             // Update besar stats
             document.getElementById('besar-count').textContent = besarCount;
@@ -649,19 +718,17 @@
             
             html += '</table>';
             container.innerHTML = html;
-            console.log('✅ Tabel detail taruhan diperbarui');
         }
 
         function resetDisplay() {
-            console.log('🔄 Reset display');
             document.getElementById('current-round-id').textContent = '-';
             document.getElementById('current-round-status').textContent = 'Tidak ada round aktif';
             document.getElementById('current-round-timer').textContent = '-';
+            document.getElementById('current-round-mode').textContent = '-';
             resetBetMonitoring();
         }
 
         function resetBetMonitoring() {
-            console.log('🔄 Reset monitoring taruhan');
             document.getElementById('besar-count').textContent = '0';
             document.getElementById('besar-total').textContent = '0';
             document.getElementById('besar-max').textContent = '-';
@@ -737,26 +804,278 @@
                 document.getElementById('current-mode').textContent = currentMode.toUpperCase();
                 document.getElementById('current-timer').textContent = waktuTunggu + ' detik';
 
+                // Start game engine if not already running
+                if (!currentGameInterval) {
+                    startGameEngine();
+                }
+
             } catch (error) {
                 showStatus('❌ Error: ' + error.message, 'error');
+            }
+        }
+
+        function startGameEngine() {
+            console.log("🚀 Game engine dimulai...");
+            
+            // Hentikan interval sebelumnya jika ada
+            if (currentGameInterval) {
+                clearInterval(currentGameInterval);
+            }
+            
+            // Update engine status
+            document.getElementById('engine-status').textContent = 'AKTIF';
+            document.getElementById('engine-status').style.color = '#28a745';
+            
+            // Mulai interval untuk memeriksa round
+            currentGameInterval = setInterval(() => {
+                checkAndProcessRounds();
+            }, 1000);
+            
+            showStatus('✅ Game engine berhasil dimulai!', 'success');
+        }
+
+        async function checkAndProcessRounds() {
+            try {
+                const snapshot = await database.ref('tebak-angka/taruhan').once('value');
+                if (!snapshot.exists()) return;
+                
+                const rounds = snapshot.val();
+                const now = Date.now();
+                
+                for (const roundId in rounds) {
+                    const round = rounds[roundId];
+                    
+                    // Cek round yang sedang berjalan dan sudah habis waktunya
+                    if (round.status === 'berjalan' && round.end_time && round.end_time <= now) {
+                        console.log(`⏰ Round ${roundId} waktu habis, menentukan hasil...`);
+                        await processRoundResult(roundId, round);
+                    }
+                }
+            } catch (error) {
+                console.error("Error checking rounds:", error);
+            }
+        }
+
+        async function processRoundResult(roundId, roundData) {
+            try {
+                // Tentukan hasil berdasarkan mode
+                let hasil;
+                
+                if (currentMode === 'harus_besar') {
+                    hasil = 'BESAR';
+                } else if (currentMode === 'harus_kecil') {
+                    hasil = 'KECIL';
+                } else {
+                    // Random: 50% besar, 50% kecil
+                    hasil = Math.random() > 0.5 ? 'BESAR' : 'KECIL';
+                }
+                
+                console.log(`🎲 Hasil untuk round ${roundId}: ${hasil} (Mode: ${currentMode})`);
+                
+                // Simpan hasil ke Firebase
+                await database.ref(`tebak-angka/taruhan/${roundId}`).update({
+                    status: 'selesai',
+                    hasil: hasil,
+                    waktu_hasil: Date.now(),
+                    mode_terpakai: currentMode
+                });
+                
+                // Proses kemenangan setiap user
+                await processUserResults(roundId, roundData, hasil);
+                
+                // Simpan ke history hasil
+                await saveToResultHistory(roundId, hasil);
+                
+                showStatus(`✅ Hasil ditentukan: ${hasil} untuk round ${roundId.substring(0, 8)}...`, 'success');
+                
+            } catch (error) {
+                console.error("Error processing round result:", error);
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function processUserResults(roundId, roundData, hasil) {
+            try {
+                const taruhanUsers = roundData.taruhan_users;
+                if (!taruhanUsers) return;
+                
+                for (const userId in taruhanUsers) {
+                    const taruhan = taruhanUsers[userId];
+                    
+                    // Tentukan apakah user menang
+                    const menang = taruhan.pilihan === hasil;
+                    const status = menang ? 'menang' : 'kalah';
+                    
+                    // Update status taruhan user
+                    await database.ref(`tebak-angka/taruhan/${roundId}/taruhan_users/${userId}`).update({
+                        status: status,
+                        hasil: menang ? 'MENANG' : 'KALAH',
+                        waktu_hasil: Date.now()
+                    });
+                    
+                    // Update saldo user jika menang
+                    if (menang) {
+                        await updateUserBalance(userId, taruhan.pasangan);
+                    }
+                    
+                    // Simpan ke history user
+                    await saveToUserHistory(userId, {
+                        round_id: roundId,
+                        pilihan: taruhan.pilihan,
+                        pasangan: taruhan.pasangan,
+                        hasil: menang ? 'MENANG' : 'KALAH',
+                        waktu: Date.now()
+                    });
+                }
+            } catch (error) {
+                console.error("Error processing user results:", error);
+            }
+        }
+
+        async function updateUserBalance(userId, kemenangan) {
+            try {
+                const saldoRef = database.ref(`tebak-angka/saldo/${userId}`);
+                const snapshot = await saldoRef.once('value');
+                
+                let currentBalance = 0;
+                if (snapshot.exists()) {
+                    currentBalance = snapshot.val() || 0;
+                }
+                
+                const newBalance = currentBalance + kemenangan;
+                await saldoRef.set(newBalance);
+                
+                console.log(`💰 User ${userId.substring(0, 8)}... menang ${kemenangan}, saldo baru: ${newBalance}`);
+            } catch (error) {
+                console.error("Error updating user balance:", error);
+            }
+        }
+
+        async function saveToResultHistory(roundId, hasil) {
+            try {
+                await database.ref(`tebak-angka/hasil_round/${roundId}`).set({
+                    hasil: hasil,
+                    timestamp: Date.now(),
+                    round_id: roundId,
+                    mode: currentMode
+                });
+            } catch (error) {
+                console.error("Error saving to result history:", error);
+            }
+        }
+
+        async function saveToUserHistory(userId, data) {
+            try {
+                await database.ref(`tebak-angka/history/${userId}/${Date.now()}`).set(data);
+            } catch (error) {
+                console.error("Error saving user history:", error);
+            }
+        }
+
+        async function startNewRound() {
+            try {
+                const roundId = 'round_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                const waktuTunggu = parseInt(document.getElementById('waktuTunggu').value) || 15;
+                const endTime = Date.now() + (waktuTunggu * 1000);
+                
+                await database.ref(`tebak-angka/taruhan/${roundId}`).set({
+                    round_id: roundId,
+                    status: 'berjalan',
+                    hasil: null,
+                    start_time: Date.now(),
+                    end_time: endTime,
+                    waktu_tunggu: waktuTunggu,
+                    created_at: Date.now(),
+                    mode: currentMode
+                });
+                
+                console.log(`🎯 Round baru dibuat: ${roundId}`);
+                showStatus(`🎯 Round baru dimulai: ${roundId.substring(0, 12)}...`, 'success');
+                
+                return roundId;
+            } catch (error) {
+                console.error("Error starting new round:", error);
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function forceRoundResult() {
+            if (!activeRoundId) {
+                showStatus('❌ Tidak ada round aktif!', 'error');
+                return;
+            }
+            
+            if (confirm('Yakin menentukan hasil untuk round ini sekarang?')) {
+                try {
+                    const snapshot = await database.ref(`tebak-angka/taruhan/${activeRoundId}`).once('value');
+                    if (!snapshot.exists()) {
+                        showStatus('❌ Round tidak ditemukan!', 'error');
+                        return;
+                    }
+                    
+                    const roundData = snapshot.val();
+                    
+                    // Tentukan hasil
+                    let hasil;
+                    if (currentMode === 'harus_besar') {
+                        hasil = 'BESAR';
+                    } else if (currentMode === 'harus_kecil') {
+                        hasil = 'KECIL';
+                    } else {
+                        hasil = Math.random() > 0.5 ? 'BESAR' : 'KECIL';
+                    }
+                    
+                    // Update round dengan hasil
+                    await database.ref(`tebak-angka/taruhan/${activeRoundId}`).update({
+                        status: 'selesai',
+                        hasil: hasil,
+                        end_time: Date.now(),
+                        waktu_hasil: Date.now(),
+                        mode_terpakai: currentMode
+                    });
+                    
+                    // Proses hasil
+                    await processUserResults(activeRoundId, roundData, hasil);
+                    await saveToResultHistory(activeRoundId, hasil);
+                    
+                    showStatus(`✅ Hasil dipaksakan: ${hasil} untuk round ${activeRoundId.substring(0, 8)}...`, 'success');
+                    
+                } catch (error) {
+                    console.error("Error forcing round result:", error);
+                    showStatus(`❌ Error: ${error.message}`, 'error');
+                }
             }
         }
 
         async function forceResetGame() {
             if (confirm('Apakah Anda yakin ingin mereset permainan? Ini akan menghentikan semua ronde yang sedang berjalan.')) {
                 try {
-                    // Simpan pengaturan reset
-                    await database.ref('tebak-angka/reset_flag').set({
-                        reset: true,
-                        timestamp: Date.now()
-                    });
+                    // Hentikan game engine
+                    if (currentGameInterval) {
+                        clearInterval(currentGameInterval);
+                        currentGameInterval = null;
+                        document.getElementById('engine-status').textContent = 'NONAKTIF';
+                        document.getElementById('engine-status').style.color = '#dc3545';
+                    }
                     
-                    showStatus('🔄 Permainan telah direset! Aplikasi akan restart otomatis.', 'success');
+                    // Reset semua data di Firebase
+                    await database.ref('tebak-angka/taruhan').remove();
+                    await database.ref('tebak-angka/hasil_round').remove();
                     
-                    // Reset setelah 2 detik
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
+                    // Reset saldo semua user ke 50000
+                    const usersSnapshot = await database.ref('tebak-angka/saldo').once('value');
+                    if (usersSnapshot.exists()) {
+                        const updates = {};
+                        Object.keys(usersSnapshot.val()).forEach(userId => {
+                            updates[userId] = 50000;
+                        });
+                        await database.ref('tebak-angka/saldo').update(updates);
+                    }
+                    
+                    showStatus('✅ Permainan telah direset!', 'success');
+                    
+                    // Reset UI
+                    resetDisplay();
                     
                 } catch (error) {
                     showStatus('❌ Error resetting game: ' + error.message, 'error');
@@ -772,7 +1091,7 @@
             setTimeout(() => {
                 statusDiv.textContent = '';
                 statusDiv.className = 'status';
-            }, 3000);
+            }, 5000);
         }
     </script>
 </body>
