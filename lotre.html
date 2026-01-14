@@ -248,12 +248,6 @@
             box-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
         }
 
-        .pilihan-label {
-            font-size: 12px;
-            opacity: 0.9;
-            margin-top: 5px;
-        }
-
         .bottom-sheet {
             position: fixed;
             bottom: 0;
@@ -889,11 +883,9 @@
             <div class="pilihan-buttons">
                 <button id="btn-besar" class="pilihan-btn" onclick="pilih('BESAR')">
                     BESAR 🟥
-                    <div class="pilihan-label">Angka 5, 6, 7, 8, 9</div>
                 </button>
                 <button id="btn-kecil" class="pilihan-btn" onclick="pilih('KECIL')">
                     KECIL 🟦
-                    <div class="pilihan-label">Angka 0, 1, 2, 3, 4</div>
                 </button>
             </div>
         </div>
@@ -1353,10 +1345,10 @@
             document.getElementById('btn-besar').disabled = false;
             document.getElementById('btn-kecil').disabled = false;
             
-            // Reset angka buttons
+            // Reset angka buttons - TIDAK DISABLE, hanya reset active state
             document.querySelectorAll('.angka-btn').forEach(btn => {
                 btn.classList.remove('active');
-                btn.disabled = false;
+                btn.disabled = false; // Pastikan tidak disabled
             });
             
             closeBottomSheet();
@@ -1402,7 +1394,7 @@
                 return;
             }
             
-            // Toggle pilihan
+            // Toggle pilihan - angka TIDAK di-disable
             if (state.pilihanDipilih === pilihan) {
                 // Jika sudah dipilih, batalkan pilihan
                 state.pilihanDipilih = null;
@@ -1426,7 +1418,7 @@
                 return;
             }
             
-            // Toggle pilihan angka
+            // Toggle pilihan angka - besar/kecil TIDAK di-disable
             if (state.angkaDipilih === angka) {
                 // Jika sudah dipilih, batalkan pilihan
                 state.angkaDipilih = null;
@@ -1641,7 +1633,7 @@
             document.getElementById('btn-besar').disabled = true;
             document.getElementById('btn-kecil').disabled = true;
             
-            // Nonaktifkan semua angka button
+            // Nonaktifkan semua angka button HANYA saat sudah konfirmasi
             document.querySelectorAll('.angka-btn').forEach(btn => {
                 btn.disabled = true;
             });
@@ -1778,12 +1770,8 @@
                 
                 if (!taruhanSnapshot.exists()) {
                     console.log("User tidak ikut taruhan di round ini");
-                    tampilkanPopupTidakIkut(hasilRound, hasilAngka);
-                    
-                    setTimeout(() => {
-                        closePopup();
-                        findOrCreateRound();
-                    }, 3000);
+                    // TIDAK tampilkan popup, langsung lanjut ke round berikutnya
+                    findOrCreateRound();
                     return;
                 }
                 
@@ -1835,26 +1823,8 @@
                 // Update saldo user
                 await updateUserBalance(saldoNetto);
                 
-                // Tampilkan popup hasil
-                tampilkanPopupHasil(
-                    menangOverall, 
-                    hasilRound, 
-                    hasilAngka, 
-                    taruhanData.pasangan, 
-                    state.saldo, 
-                    taruhanData.pilihan,
-                    taruhanData.angka_tebakan,
-                    menangBesarKecil,
-                    menangAngka,
-                    totalKemenangan,
-                    totalKerugian,
-                    saldoNetto
-                );
-                
-                setTimeout(() => {
-                    closePopup();
-                    findOrCreateRound();
-                }, 5000);
+                // TIDAK tampilkan popup hasil, langsung lanjut ke round berikutnya
+                findOrCreateRound();
                 
             } catch (error) {
                 console.error("Error process round result from admin:", error);
@@ -1880,112 +1850,6 @@
             } catch (error) {
                 console.error("Error updating user balance:", error);
             }
-        }
-
-        function tampilkanPopupHasil(
-            menangOverall, 
-            hasilRound, 
-            hasilAngka, 
-            pasangan, 
-            saldoBaru, 
-            pilihanUser,
-            angkaUser,
-            menangBesarKecil,
-            menangAngka,
-            totalKemenangan,
-            totalKerugian,
-            saldoNetto
-        ) {
-            const overlay = document.getElementById('popup-overlay');
-            const icon = document.getElementById('popup-icon');
-            const title = document.getElementById('popup-title');
-            const details = document.getElementById('popup-details');
-            
-            if (menangOverall) {
-                icon.textContent = '🎉';
-                title.textContent = 'SELAMAT MENANG!';
-                title.style.color = '#28a745';
-            } else {
-                icon.textContent = '💥';
-                title.textContent = 'ANDA KALAH';
-                title.style.color = '#dc3545';
-            }
-            
-            let detailHTML = `
-                <div><strong>HASIL ROUND:</strong></div>
-                <div>Besar/Kecil: <strong>${hasilRound}</strong></div>
-                <div>Angka: <strong>${hasilAngka}</strong></div>
-                <br>
-                <div><strong>TARUHAN ANDA:</strong></div>
-                <div>Pasangan: <strong>Rp ${pasangan.toLocaleString()}</strong></div>
-            `;
-            
-            if (pilihanUser) {
-                detailHTML += `
-                    <div>Besar/Kecil: <strong>${pilihanUser}</strong> 
-                    ${menangBesarKecil ? '✅' : '❌'}</div>
-                `;
-            }
-            
-            if (angkaUser !== null) {
-                detailHTML += `
-                    <div>Angka: <strong>${angkaUser}</strong> 
-                    ${menangAngka ? '✅' : '❌'}</div>
-                `;
-            }
-            
-            if (!pilihanUser && angkaUser === null) {
-                detailHTML += `<div>Tidak ada taruhan</div>`;
-            }
-            
-            detailHTML += `
-                <br>
-                <div><strong>RINCIAN:</strong></div>
-            `;
-            
-            if (pilihanUser) {
-                detailHTML += `
-                    <div>Besar/Kecil: ${menangBesarKecil ? 
-                        `<span class="success">+Rp ${pasangan.toLocaleString()}</span>` : 
-                        `<span class="error">-Rp ${pasangan.toLocaleString()}</span>`}</div>
-                `;
-            }
-            
-            if (angkaUser !== null) {
-                detailHTML += `
-                    <div>Angka: ${menangAngka ? 
-                        `<span class="success">+Rp ${pasangan.toLocaleString()}</span>` : 
-                        `<span class="error">-Rp ${pasangan.toLocaleString()}</span>`}</div>
-                `;
-            }
-            
-            detailHTML += `
-                <br>
-                <div>Total: <strong>${saldoNetto >= 0 ? '+' : ''}Rp ${Math.abs(saldoNetto).toLocaleString()}</strong></div>
-                <div>Saldo baru: <strong>Rp ${saldoBaru.toLocaleString()}</strong></div>
-            `;
-            
-            details.innerHTML = detailHTML;
-            overlay.style.display = 'flex';
-        }
-
-        function tampilkanPopupTidakIkut(hasilRound, hasilAngka) {
-            const overlay = document.getElementById('popup-overlay');
-            const icon = document.getElementById('popup-icon');
-            const title = document.getElementById('popup-title');
-            const details = document.getElementById('popup-details');
-            
-            icon.textContent = '⏰';
-            title.textContent = 'TIDAK IKUT TARUHAN';
-            title.style.color = '#ff9900';
-            details.innerHTML = `
-                <div>Anda tidak ikut taruhan di round ini</div>
-                <div>Hasil Besar/Kecil: <strong>${hasilRound}</strong></div>
-                <div>Hasil Angka: <strong>${hasilAngka}</strong></div>
-                <div>Saldo tetap: <strong>Rp ${state.saldo.toLocaleString()}</strong></div>
-            `;
-            
-            overlay.style.display = 'flex';
         }
 
         function updateHasilRoundUI(hasilRoundData) {
