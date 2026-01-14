@@ -1195,6 +1195,7 @@
                 }
             });
 
+            // ========== PERUBAHAN PENTING: LISTENER UPDATE SALDO ==========
             database.ref('tebak-angka/saldo/' + state.userId).on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     const saldo = snapshot.val();
@@ -1202,6 +1203,7 @@
                         state.saldo = saldo;
                         updateSaldo();
                         updateAllInButton();
+                        console.log("🔄 Saldo diperbarui dari Firebase: Rp", saldo.toLocaleString());
                     }
                 }
             });
@@ -1820,8 +1822,12 @@
                     saldo_netto: saldoNetto
                 });
                 
-                // Update saldo user
-                await updateUserBalance(saldoNetto);
+                // ========== PERUBAHAN PENTING: TIDAK UPDATE SALDO DI SINI ==========
+                // Saldo akan diupdate oleh Admin Panel melalui Firebase transaction
+                // Kita hanya perlu menunggu listener Firebase update saldo kita
+                
+                console.log(`📊 User ${state.userId.substring(0, 8)}...: Menang=${menangOverall}, Netto=${saldoNetto}`);
+                console.log("💡 INFO: Saldo akan diupdate oleh Admin Panel secara otomatis");
                 
                 // TIDAK tampilkan popup hasil, langsung lanjut ke round berikutnya
                 findOrCreateRound();
@@ -1829,26 +1835,6 @@
             } catch (error) {
                 console.error("Error process round result from admin:", error);
                 setTimeout(() => findOrCreateRound(), 2000);
-            }
-        }
-
-        async function updateUserBalance(saldoNetto) {
-            try {
-                const saldoRef = database.ref(`tebak-angka/saldo/${state.userId}`);
-                
-                // Hitung saldo baru
-                const saldoBaru = state.saldo + saldoNetto;
-                
-                // Pastikan saldo tidak negatif
-                const saldoAkhir = Math.max(0, saldoBaru);
-                
-                await saldoRef.set(saldoAkhir);
-                state.saldo = saldoAkhir;
-                updateSaldo();
-                
-                console.log(`Saldo user diupdate: ${saldoNetto >= 0 ? '+' : ''}${saldoNetto} = ${saldoAkhir}`);
-            } catch (error) {
-                console.error("Error updating user balance:", error);
             }
         }
 
