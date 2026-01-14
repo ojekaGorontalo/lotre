@@ -496,14 +496,15 @@
     <script>
         // Firebase Configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyD1U76xG1tTco6rt71dGf4dRqj-4fT7RFQ",
-            authDomain: "steady-fin-368617.firebaseapp.com",
-            databaseURL: "https://steady-fin-368617-default-rtdb.firebaseio.com",
-            projectId: "steady-fin-368617",
-            storageBucket: "steady-fin-368617.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
+  apiKey: "AIzaSyDtZxsl5LZp3n1KZJfdVAdqQj22ZBPoQbU",
+  authDomain: "steady-fin-368617.firebaseapp.com",
+  databaseURL: "https://steady-fin-368617-default-rtdb.firebaseio.com",
+  projectId: "steady-fin-368617",
+  storageBucket: "steady-fin-368617.firebasestorage.app",
+  messagingSenderId: "626971902484",
+  appId: "1:626971902484:web:98f7cdbd55c5990dfe9d01",
+  measurementId: "G-70D3LR995Y"
+};
 
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
@@ -695,10 +696,7 @@
                         state.timer = state.waktuTunggu;
                         document.getElementById('timer').textContent = state.timer;
                     }
-                    if (aturan.mode) {
-                        state.gameMode = aturan.mode.toUpperCase();
-                        document.getElementById('game-mode').textContent = state.gameMode;
-                    }
+                    // Tidak menampilkan mode lagi
                 }
             } catch (error) {
                 console.error("Error load aturan:", error);
@@ -741,10 +739,7 @@
                     if (aturan.waktu_tunggu) {
                         state.waktuTunggu = aturan.waktu_tunggu;
                     }
-                    if (aturan.mode) {
-                        state.gameMode = aturan.mode.toUpperCase();
-                        document.getElementById('game-mode').textContent = state.gameMode;
-                    }
+                    // Tidak perlu update tampilan mode
                 }
             });
 
