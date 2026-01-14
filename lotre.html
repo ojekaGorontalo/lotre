@@ -402,8 +402,7 @@
     </audio>
     
     <audio id="countdownAudio" preload="auto">
-        <!-- GANTI DENGAN AUDIO CUSTOM ANDA YANG SUDAH ADA 5 BEEP -->
-        <source src="https://drive.google.com/uc?export=download&id=16BfcfJ5EFNsk1y0_xZFQn9gUt8xFgWf-" type="audio/mpeg">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-retro-game-emergency-alarm-1000.mp3" type="audio/mpeg">
     </audio>
     
     <audio id="winAudio" preload="auto">
@@ -441,6 +440,7 @@
             <div class="timer-label">WAKTU TERSISA:</div>
             <div id="timer">15</div>
             <div class="timer-label">Round: <span id="round-id">-</span></div>
+            <div class="timer-label">Mode: <span id="game-mode">RANDOM</span></div>
         </div>
 
         <div class="saldo">
@@ -528,7 +528,8 @@
             processingResult: false,
             last5Seconds: false,
             hasilRoundListener: null,
-            hasilRoundList: []
+            hasilRoundList: [],
+            gameMode: 'RANDOM'
         };
 
         // Elemen audio
@@ -549,6 +550,7 @@
             await initAplikasi();
             setupEventListeners();
             loadHasilRound();
+            loadPasanganSettings();
         });
 
         // Setup event listeners
@@ -592,20 +594,16 @@
             });
         }
 
-        // Generate Round ID dengan format: waktu+tanggal+bulan+tahun+random
+        // Generate Round ID
         function generateRoundId() {
             const now = new Date();
-            
-            // Format: HHmmDDMMYYYY + random 6 digit
             const jam = String(now.getHours()).padStart(2, '0');
             const menit = String(now.getMinutes()).padStart(2, '0');
             const tanggal = String(now.getDate()).padStart(2, '0');
             const bulan = String(now.getMonth() + 1).padStart(2, '0');
             const tahun = now.getFullYear();
-            const random = Math.floor(100000 + Math.random() * 900000); // 6 digit random
+            const random = Math.floor(100000 + Math.random() * 900000);
             
-            // Contoh: 08341501261234678
-            // 08: jam, 34: menit, 15: tanggal, 01: bulan, 2024: tahun, 1234678: random
             return jam + menit + tanggal + bulan + tahun + random;
         }
 
@@ -625,8 +623,8 @@
                 // Setup Firebase listeners
                 setupFirebaseListeners();
                 
-                // Buat round baru
-                await buatRoundBaru();
+                // Cari round aktif atau buat baru
+                await findOrCreateRound();
                 
                 // Tampilkan pesan audio jika belum diunlock
                 setTimeout(showAudioUnlockMessage, 1000);
@@ -698,9 +696,40 @@
                         state.timer = state.waktuTunggu;
                         document.getElementById('timer').textContent = state.timer;
                     }
+                    if (aturan.mode) {
+                        state.gameMode = aturan.mode.toUpperCase();
+                        document.getElementById('game-mode').textContent = state.gameMode;
+                    }
                 }
             } catch (error) {
                 console.error("Error load aturan:", error);
+            }
+        }
+
+        // Load pasangan settings
+        async function loadPasanganSettings() {
+            try {
+                const pasanganRef = database.ref('tebak-angka/pasangan');
+                const snapshot = await pasanganRef.once('value');
+                
+                if (snapshot.exists()) {
+                    const pasanganData = snapshot.val();
+                    const pasanganValues = Object.values(pasanganData);
+                    
+                    // Update pasangan grid
+                    const pasanganGrid = document.getElementById('pasangan-grid');
+                    pasanganGrid.innerHTML = '';
+                    
+                    pasanganValues.forEach(pasangan => {
+                        const button = document.createElement('button');
+                        button.className = 'pasangan-btn';
+                        button.textContent = `Rp ${pasangan.toLocaleString()}`;
+                        button.onclick = () => pilihPasangan(pasangan, button);
+                        pasanganGrid.appendChild(button);
+                    });
+                }
+            } catch (error) {
+                console.error("Error load pasangan settings:", error);
             }
         }
 
@@ -713,7 +742,16 @@
                     if (aturan.waktu_tunggu) {
                         state.waktuTunggu = aturan.waktu_tunggu;
                     }
+                    if (aturan.mode) {
+                        state.gameMode = aturan.mode.toUpperCase();
+                        document.getElementById('game-mode').textContent = state.gameMode;
+                    }
                 }
+            });
+
+            // Listen perubahan pasangan
+            database.ref('tebak-angka/pasangan').on('value', (snapshot) => {
+                loadPasanganSettings();
             });
 
             // Listen perubahan saldo
@@ -754,51 +792,104 @@
             return userId;
         }
 
+        // Cari round aktif atau buat baru
+        async function findOrCreateRound() {
+            try {
+                // Cari round yang masih berjalan
+                const snapshot = await database.ref('tebak-angka/taruhan').once('value');
+                
+                if (snapshot.exists()) {
+                    const rounds = snapshot.val();
+                    const now = Date.now();
+                    
+                    for (const roundId in rounds) {
+                        const round = rounds[roundId];
+                        if (round.status === 'berjalan' && round.end_time && round.end_time > now) {
+                            // Gunakan round yang masih berjalan
+                            await setupRound(roundId, round);
+                            return;
+                        }
+                    }
+                }
+                
+                // Jika tidak ada round aktif, buat baru
+                await buatRoundBaru();
+                
+            } catch (error) {
+                console.error("Error find or create round:", error);
+                // Retry setelah 2 detik
+                setTimeout(() => findOrCreateRound(), 2000);
+            }
+        }
+
+        // Setup round
+        async function setupRound(roundId, roundData) {
+            // Hentikan timer sebelumnya
+            clearInterval(state.timerInterval);
+            
+            // Hapus listener round sebelumnya
+            if (state.roundListener && state.roundRef) {
+                state.roundRef.off('value', state.roundListener);
+            }
+            
+            // Set state
+            state.roundId = roundId;
+            state.roundRef = database.ref('tebak-angka/taruhan/' + roundId);
+            
+            // Reset state
+            resetStateUntukRoundBaru();
+            
+            // Reset warning
+            document.getElementById('last5-warning').style.display = 'none';
+            
+            // Tampilkan round ID (singkat)
+            const displayId = roundId.substring(0, 8) + '...';
+            document.getElementById('round-id').textContent = displayId;
+            
+            // Setup listener untuk round
+            state.roundListener = state.roundRef.on('value', async (snapshot) => {
+                await handleRoundUpdate(snapshot);
+            });
+            
+            // Mulai timer berdasarkan end_time
+            const now = Date.now();
+            const endTime = roundData.end_time || (now + (state.waktuTunggu * 1000));
+            const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
+            
+            state.timer = timeLeft;
+            startTimer();
+        }
+
         // Buat round baru
         async function buatRoundBaru() {
             try {
-                // Hentikan timer sebelumnya
-                clearInterval(state.timerInterval);
-                
-                // Hapus listener round sebelumnya
-                if (state.roundListener && state.roundRef) {
-                    state.roundRef.off('value', state.roundListener);
-                }
-                
                 // Generate round ID baru
                 state.roundId = generateRoundId();
-                
-                // Reset state
-                resetStateUntukRoundBaru();
-                
-                // Reset warning
-                document.getElementById('last5-warning').style.display = 'none';
                 
                 // Buat round di Firebase
                 state.roundRef = database.ref('tebak-angka/taruhan/' + state.roundId);
                 
                 const now = Date.now();
+                const endTime = now + (state.waktuTunggu * 1000);
+                
                 await state.roundRef.set({
                     round_id: state.roundId,
                     status: 'berjalan',
                     hasil: null,
                     start_time: now,
-                    end_time: now + (state.waktuTunggu * 1000),
+                    end_time: endTime,
                     waktu_tunggu: state.waktuTunggu,
-                    created_at: now
+                    created_at: now,
+                    mode: state.gameMode.toLowerCase()
                 });
                 
-                // Tampilkan round ID (singkat)
-                const displayId = state.roundId.substring(0, 8) + '...';
-                document.getElementById('round-id').textContent = displayId;
-                
-                // Setup listener untuk round
-                state.roundListener = state.roundRef.on('value', async (snapshot) => {
-                    await handleRoundUpdate(snapshot);
+                // Setup round
+                await setupRound(state.roundId, {
+                    end_time: endTime,
+                    status: 'berjalan'
                 });
                 
-                // Mulai timer
-                startTimer();
+                console.log("Round baru dibuat:", state.roundId);
                 
             } catch (error) {
                 console.error("Error buat round baru:", error);
@@ -813,9 +904,18 @@
             
             const roundData = snapshot.val();
             
-            // Jika round selesai dan ada hasil, proses hasil
+            // Update timer jika round masih berjalan
+            if (roundData.status === 'berjalan' && roundData.end_time) {
+                const timeLeft = Math.max(0, Math.floor((roundData.end_time - Date.now()) / 1000));
+                if (timeLeft !== state.timer && timeLeft <= state.waktuTunggu) {
+                    state.timer = timeLeft;
+                    document.getElementById('timer').textContent = state.timer;
+                }
+            }
+            
+            // Jika round selesai dan admin sudah menentukan hasil
             if (roundData.status === 'selesai' && roundData.hasil && !state.processingResult) {
-                await prosesHasilRound(roundData.hasil);
+                await processRoundResultFromAdmin(roundData.hasil);
             }
         }
 
@@ -988,10 +1088,9 @@
             document.getElementById('all-in-btn').disabled = true;
         }
 
-        // Timer - MODIFIKASI UNTUK AUDIO 5 BEEP
+        // Timer
         function startTimer() {
             clearInterval(state.timerInterval);
-            state.timer = state.waktuTunggu;
             state.last5Seconds = false;
             document.getElementById('timer').textContent = state.timer;
             document.getElementById('timer').classList.remove('shake');
@@ -1008,7 +1107,7 @@
                         state.last5Seconds = true;
                         showLast5SecondsWarning();
                         
-                        // HANYA PLAY countdownAudio SEKALI (yang sudah berisi 5 beep)
+                        // Play countdown audio
                         if (audioInitialized && state.audioEnabled) {
                             playAudio(countdownAudio);
                         } else {
@@ -1027,11 +1126,6 @@
                     
                     // Efek visual
                     document.getElementById('timer').classList.add('pulse');
-                    
-                    // TIDAK PERLU play tickAudio lagi karena sudah ada 5 beep dalam 1 audio
-                    // if (audioInitialized && state.audioEnabled) {
-                    //     playAudio(tickAudio);
-                    // }
                 }
                 
                 // Efek visual saat waktu hampir habis
@@ -1064,34 +1158,41 @@
             try {
                 document.getElementById('timer').textContent = "HASIL...";
                 
-                // Tentukan hasil berdasarkan aturan
-                const aturan = await getAturan();
-                const hasilRound = tentukanHasil(aturan);
+                // Tidak menentukan hasil sendiri, tunggu dari admin panel
+                console.log("⏳ Menunggu hasil dari admin panel...");
                 
-                // Update round di Firebase dengan hasil
-                await state.roundRef.update({
-                    status: 'selesai',
-                    hasil: hasilRound,
-                    end_time: Date.now()
+                // Setup listener untuk hasil dari admin panel
+                const hasilListener = state.roundRef.on('value', (snapshot) => {
+                    if (!snapshot.exists()) return;
+                    
+                    const roundData = snapshot.val();
+                    
+                    // Jika admin sudah menentukan hasil
+                    if (roundData.status === 'selesai' && roundData.hasil) {
+                        // Hapus listener
+                        state.roundRef.off('value', hasilListener);
+                        
+                        // Proses hasil
+                        processRoundResultFromAdmin(roundData.hasil);
+                    }
                 });
                 
-                // Simpan hasil round ke Firebase untuk ditampilkan
-                await database.ref('tebak-angka/hasil_round/' + state.roundId).set({
-                    hasil: hasilRound,
-                    timestamp: Date.now(),
-                    round_id: state.roundId
-                });
+                // Timeout jika admin tidak merespon dalam 10 detik
+                setTimeout(() => {
+                    state.roundRef.off('value', hasilListener);
+                    console.log("Timeout menunggu hasil dari admin");
+                    findOrCreateRound();
+                }, 10000);
                 
             } catch (error) {
                 console.error("Error waktu habis:", error);
-                // Force buat round baru
-                setTimeout(() => buatRoundBaru(), 2000);
+                setTimeout(() => findOrCreateRound(), 2000);
             }
         }
 
-        // Proses hasil round
-        async function prosesHasilRound(hasilRound) {
-            if (state.processingResult) return; // Mencegah double processing
+        // Proses hasil dari admin
+        async function processRoundResultFromAdmin(hasilRound) {
+            if (state.processingResult) return;
             state.processingResult = true;
             
             try {
@@ -1106,87 +1207,79 @@
                     // Buat round baru setelah 3 detik
                     setTimeout(() => {
                         closePopup();
-                        buatRoundBaru();
+                        findOrCreateRound();
                     }, 3000);
                     return;
                 }
                 
                 const taruhanData = taruhanSnapshot.val();
                 
-                // Tentukan hasil user
-                const hasilUser = taruhanData.pilihan === hasilRound ? 'MENANG' : 'KALAH';
-                const statusUser = hasilUser === 'MENANG' ? 'menang' : 'kalah';
-                
-                // Update field yang sama di Firebase
-                await database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`).update({
-                    status: statusUser,
-                    hasil: hasilUser,
-                    waktu_hasil: Date.now()
-                });
-                
-                // Hitung saldo baru
-                let saldoBaru = state.saldo;
-                if (hasilUser === 'MENANG') {
-                    saldoBaru = state.saldo + taruhanData.pasangan;
-                } else {
-                    saldoBaru = state.saldo - taruhanData.pasangan;
-                }
-                
-                // Pastikan saldo tidak negatif
-                if (saldoBaru < 0) saldoBaru = 0;
-                
-                // Update saldo di Firebase
-                await database.ref('tebak-angka/saldo/' + state.userId).set(saldoBaru);
-                
-                // Update state lokal
-                state.saldo = saldoBaru;
-                
-                // Tampilkan popup hasil
-                tampilkanPopupHasil(
-                    hasilUser === 'MENANG',
-                    hasilRound,
-                    taruhanData.pasangan,
-                    saldoBaru
-                );
-                
-                // Play audio jika sudah diinisialisasi
-                if (audioInitialized && state.audioEnabled) {
-                    if (hasilUser === 'MENANG') {
-                        playAudio(winAudio);
-                    } else {
-                        playAudio(loseAudio);
+                // Cek status dari admin
+                if (taruhanData.status === 'menang' || taruhanData.status === 'kalah') {
+                    // Admin sudah memproses hasil
+                    const menang = taruhanData.status === 'menang';
+                    
+                    // Tampilkan popup
+                    tampilkanPopupHasil(
+                        menang,
+                        hasilRound,
+                        taruhanData.pasangan,
+                        state.saldo
+                    );
+                    
+                    // Play audio
+                    if (audioInitialized && state.audioEnabled) {
+                        if (menang) {
+                            playAudio(winAudio);
+                        } else {
+                            playAudio(loseAudio);
+                        }
                     }
+                    
+                    // Buat round baru setelah 3 detik
+                    setTimeout(() => {
+                        closePopup();
+                        findOrCreateRound();
+                    }, 3000);
+                    
+                } else {
+                    // Admin belum memproses, tunggu sebentar
+                    console.log("Admin belum memproses hasil user, menunggu...");
+                    
+                    const checkInterval = setInterval(async () => {
+                        const updatedSnapshot = await database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`).once('value');
+                        if (updatedSnapshot.exists()) {
+                            const updatedData = updatedSnapshot.val();
+                            if (updatedData.status === 'menang' || updatedData.status === 'kalah') {
+                                clearInterval(checkInterval);
+                                
+                                const menang = updatedData.status === 'menang';
+                                tampilkanPopupHasil(
+                                    menang,
+                                    hasilRound,
+                                    updatedData.pasangan,
+                                    state.saldo
+                                );
+                                
+                                // Buat round baru setelah 3 detik
+                                setTimeout(() => {
+                                    closePopup();
+                                    findOrCreateRound();
+                                }, 3000);
+                            }
+                        }
+                    }, 500);
+                    
+                    // Timeout setelah 5 detik
+                    setTimeout(() => {
+                        clearInterval(checkInterval);
+                        findOrCreateRound();
+                    }, 5000);
                 }
-                
-                // Buat round baru setelah 3 detik
-                setTimeout(() => {
-                    closePopup();
-                    buatRoundBaru();
-                }, 3000);
                 
             } catch (error) {
-                console.error("Error proses hasil round:", error);
-                // Jika error, tetap buat round baru
-                setTimeout(() => buatRoundBaru(), 2000);
-            }
-        }
-
-        // Dapatkan aturan dari Firebase
-        async function getAturan() {
-            const snapshot = await database.ref('tebak-angka/aturan').once('value');
-            return snapshot.exists() ? snapshot.val() : { mode: 'random' };
-        }
-
-        // Tentukan hasil berdasarkan aturan
-        function tentukanHasil(aturan) {
-            switch (aturan.mode) {
-                case 'harus_besar':
-                    return 'BESAR';
-                case 'harus_kecil':
-                    return 'KECIL';
-                case 'random':
-                default:
-                    return Math.random() > 0.5 ? 'BESAR' : 'KECIL';
+                console.error("Error process round result from admin:", error);
+                setTimeout(() => findOrCreateRound(), 2000);
             }
         }
 
