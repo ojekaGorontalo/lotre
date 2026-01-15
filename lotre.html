@@ -253,10 +253,9 @@
             background: #f5f5f5;
         }
 
-        /* PERBAIKAN: Tambah padding-bottom agar tidak tertutup bottom navigation */
         .bottom-sheet-content {
             padding: 20px;
-            padding-bottom: 100px; /* Tambah padding untuk menghindari bottom nav */
+            padding-bottom: 100px;
         }
 
         .pasangan-grid {
@@ -521,7 +520,6 @@
             box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
         }
 
-        /* Bottom Navigation */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -614,7 +612,7 @@
             
             .bottom-sheet-content {
                 padding: 15px;
-                padding-bottom: 90px; /* Sesuaikan untuk mobile */
+                padding-bottom: 90px;
             }
             
             .all-in-btn, .confirm-btn {
@@ -861,7 +859,6 @@
             return `RBK${tahun}${bulan}${tanggal}-${jam}${menit}-${random}`;
         }
 
-        // UPDATE: Fungsi getUserId() untuk Firebase
         function getUserId() {
             let userId = localStorage.getItem('user_id_bk');
             if (!userId) {
@@ -881,7 +878,6 @@
             return userId;
         }
 
-        // UPDATE: Fungsi initSaldo() untuk Firebase
         async function initSaldo() {
             try {
                 const userId = state.userId;
@@ -1343,6 +1339,28 @@
             }
 
             try {
+                // ========== PERBAIKAN: POTONG SALDO SAAT TARUHAN ==========
+                const userId = state.userId;
+                const pasangan = state.pasanganDipilih;
+                
+                // Update saldo di Firebase (potong saldo)
+                await database.ref('tebak-angka/saldo/' + userId).transaction((currentBalance) => {
+                    let saldo = currentBalance || 50000;
+                    
+                    // Validasi saldo cukup
+                    if (saldo < pasangan) {
+                        alert('Saldo tidak cukup!');
+                        return; // Abort transaction
+                    }
+                    
+                    // Potong saldo
+                    const newBalance = saldo - pasangan;
+                    console.log(`💰 Potong saldo: ${saldo} - ${pasangan} = ${newBalance}`);
+                    
+                    return newBalance;
+                });
+                // ========== END PERBAIKAN ==========
+                
                 state.taruhanRef = database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`);
                 
                 const taruhanData = {
@@ -1357,16 +1375,19 @@
                 await state.taruhanRef.set(taruhanData);
                 
                 state.bisaMemilih = false;
+                state.saldo -= state.pasanganDipilih; // Update state lokal
+                updateSaldo();
                 
                 closeBottomSheet();
                 
                 disableAllButtons();
                 
-                console.log('Taruhan berhasil disimpan ke Firebase');
+                console.log('💰 Taruhan berhasil disimpan. Saldo dipotong.');
             } catch (error) {
                 console.error('Error menyimpan taruhan:', error);
                 alert('Gagal menyimpan taruhan, coba lagi!');
                 
+                // Reset jika gagal
                 state.pasanganDipilih = null;
                 document.getElementById('status-pasangan').textContent = '-';
             }
@@ -1500,52 +1521,21 @@
                 const taruhanData = taruhanSnapshot.val();
                 
                 const menang = taruhanData.pilihan === hasilRound;
-                const saldoNetto = menang ? taruhanData.pasangan : -taruhanData.pasangan;
                 
-                // Update status taruhan
+                // Update status taruhan (saldo sudah diupdate oleh admin panel)
                 await database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`).update({
                     status: menang ? 'menang' : 'kalah',
                     hasil: menang ? 'MENANG' : 'KALAH',
-                    waktu_hasil: Date.now(),
-                    saldo_netto: saldoNetto
+                    waktu_hasil: Date.now()
                 });
                 
-                // Update saldo user di Firebase
-                await updateUserBalance(saldoNetto);
-                
-                console.log(`📊 User ${state.userId.substring(0, 8)}...: Menang=${menang}, Netto=${saldoNetto}`);
+                console.log(`📊 User ${state.userId.substring(0, 8)}...: Menang=${menang}`);
                 
                 findOrCreateRound();
                 
             } catch (error) {
                 console.error("Error process round result from admin:", error);
                 setTimeout(() => findOrCreateRound(), 2000);
-            }
-        }
-
-        async function updateUserBalance(saldoNetto) {
-            try {
-                const saldoRef = database.ref('tebak-angka/saldo/' + state.userId);
-                
-                // Gunakan transaction untuk menghindari race condition
-                await saldoRef.transaction((currentBalance) => {
-                    if (currentBalance === null || currentBalance === undefined) {
-                        currentBalance = 50000;
-                    }
-                    
-                    let newBalance = Number(currentBalance) + Number(saldoNetto);
-                    
-                    if (newBalance < 0) {
-                        newBalance = 0;
-                    }
-                    
-                    console.log(`Saldo user ${state.userId.substring(0, 8)}...: ${currentBalance} ${saldoNetto >= 0 ? '+' : ''}${saldoNetto} = ${newBalance}`);
-                    
-                    return newBalance;
-                });
-                
-            } catch (error) {
-                console.error("Error update user balance:", error);
             }
         }
 
@@ -1567,11 +1557,10 @@
                 items.forEach(item => {
                     const roundId = item.round_id || 'Unknown Round';
                     const emoji = item.hasil === 'BESAR' ? '🟥' : '🟦';
-                    const angka = item.hasil_angka !== undefined ? ` (${item.hasil_angka})` : '';
                     
                     html += `
                         <div class="hasil-round-item ${item.hasil === 'BESAR' ? 'besar' : 'kecil'}">
-                            ${roundId} - Hasil: <strong>${item.hasil}</strong>${angka} ${emoji}
+                            ${roundId} - Hasil: <strong>${item.hasil}</strong> ${emoji}
                         </div>
                     `;
                 });
