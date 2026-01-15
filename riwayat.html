@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Permainan</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #d70000 0%, #8b0000 100%);
+            min-height: 100vh;
+            padding: 15px;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            border: 4px solid #ffcc00;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ffcc00;
+        }
+
+        h1 {
+            color: #d70000;
+            font-size: 26px;
+            font-weight: bold;
+        }
+
+        .saldo-info {
+            background: #f8f9fa;
+            border: 2px dashed #d70000;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .saldo-amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d70000;
+        }
+
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .history-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item.win {
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .history-item.lose {
+            background: rgba(220, 53, 69, 0.1);
+        }
+
+        .history-details {
+            flex: 1;
+        }
+
+        .history-round {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .history-choice {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .history-result {
+            font-weight: bold;
+            font-size: 14px;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .history-result.win {
+            color: #28a745;
+        }
+
+        .history-result.lose {
+            color: #dc3545;
+        }
+
+        .history-amount {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .no-history {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: #f0f7ff;
+            border: 2px solid #0066cc;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-title {
+            font-size: 12px;
+            color: #0066cc;
+            font-weight: bold;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        /* Bottom Navigation (same as lotre.html) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 2px solid #ffcc00;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #666;
+            flex: 1;
+            padding: 8px 0;
+            transition: all 0.3s;
+        }
+
+        .nav-item.active {
+            color: #d70000;
+            transform: translateY(-5px);
+        }
+
+        .nav-item.active .nav-icon {
+            background: linear-gradient(45deg, #d70000, #ff4444);
+            box-shadow: 0 4px 10px rgba(215, 0, 0, 0.3);
+        }
+
+        .nav-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: #f0f0f0;
+            margin-bottom: 4px;
+            transition: all 0.3s;
+        }
+
+        .nav-label {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 480px) {
+            .nav-icon {
+                width: 35px;
+                height: 35px;
+                font-size: 18px;
+            }
+            
+            .nav-label {
+                font-size: 10px;
+            }
+            
+            body {
+                padding-bottom: 60px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 RIWAYAT PERMAINAN</h1>
+        </div>
+
+        <div class="saldo-info">
+            <div>Saldo Anda:</div>
+            <div class="saldo-amount" id="saldo">Loading...</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-title">TOTAL MENANG</div>
+                <div class="stat-value" id="total-win">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-title">TOTAL KALAH</div>
+                <div class="stat-value" id="total-lose">0</div>
+            </div>
+        </div>
+
+        <div class="history-list" id="history-list">
+            <div class="no-history">Memuat riwayat...</div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="lotre.html" class="nav-item">
+            <div class="nav-icon">🏠</div>
+            <div class="nav-label">Home</div>
+        </a>
+        <a href="riwayat.html" class="nav-item active">
+            <div class="nav-icon">📋</div>
+            <div class="nav-label">Riwayat</div>
+        </a>
+        <a href="games.html" class="nav-item">
+            <div class="nav-icon">🎮</div>
+            <div class="nav-label">Games</div>
+        </a>
+        <a href="akun.html" class="nav-item">
+            <div class="nav-icon">👤</div>
+            <div class="nav-label">Akun</div>
+        </a>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDtZxsl5LZp3n1KZJfdVAdqQj22ZBPoQbU",
+            authDomain: "steady-fin-368617.firebaseapp.com",
+            databaseURL: "https://steady-fin-368617-default-rtdb.firebaseio.com",
+            projectId: "steady-fin-368617",
+            storageBucket: "steady-fin-368617.firebasestorage.app",
+            messagingSenderId: "626971902484",
+            appId: "1:626971902484:web:98f7cdbd55c5990dfe9d01",
+            measurementId: "G-70D3LR995Y"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let userId = localStorage.getItem('user_id');
+
+        if (!userId) {
+            userId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            localStorage.setItem('user_id', userId);
+        }
+
+        // Load saldo
+        database.ref('tebak-angka/saldo/' + userId).on('value', (snapshot) => {
+            const saldo = snapshot.exists() ? snapshot.val() : 50000;
+            document.getElementById('saldo').textContent = `Rp ${saldo.toLocaleString()}`;
+        });
+
+        // Load history
+        database.ref('tebak-angka/history/' + userId)
+            .orderByChild('waktu')
+            .limitToLast(50)
+            .on('value', (snapshot) => {
+                const historyList = document.getElementById('history-list');
+                
+                if (!snapshot.exists()) {
+                    historyList.innerHTML = '<div class="no-history">Belum ada riwayat permainan</div>';
+                    return;
+                }
+
+                const historyData = snapshot.val();
+                const entries = [];
+                
+                for (const key in historyData) {
+                    entries.push({
+                        id: key,
+                        ...historyData[key]
+                    });
+                }
+                
+                // Sort by waktu (newest first)
+                entries.sort((a, b) => b.waktu - a.waktu);
+                
+                let winCount = 0;
+                let loseCount = 0;
+                let html = '';
+                
+                entries.forEach(entry => {
+                    const waktu = new Date(entry.waktu).toLocaleString();
+                    const isWin = entry.hasil === 'MENANG';
+                    const isLose = entry.hasil === 'KALAH';
+                    
+                    if (isWin) winCount++;
+                    if (isLose) loseCount++;
+                    
+                    html += `
+                        <div class="history-item ${isWin ? 'win' : 'lose'}">
+                            <div class="history-details">
+                                <div class="history-round">${waktu}</div>
+                                <div class="history-choice">
+                                    ${entry.pilihan ? `Pilihan: ${entry.pilihan}` : ''}
+                                    ${entry.angka_tebakan !== null ? ` | Angka: ${entry.angka_tebakan}` : ''}
+                                </div>
+                            </div>
+                            <div class="history-result ${isWin ? 'win' : 'lose'}">
+                                <div class="history-amount">${entry.saldo_netto >= 0 ? '+' : ''}${entry.saldo_netto}</div>
+                                <div>${entry.hasil || '-'}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('total-win').textContent = winCount;
+                document.getElementById('total-lose').textContent = loseCount;
+                historyList.innerHTML = html || '<div class="no-history">Belum ada riwayat permainan</div>';
+            });
+    </script>
+</body>
+</html>
