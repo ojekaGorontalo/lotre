@@ -253,8 +253,10 @@
             background: #f5f5f5;
         }
 
+        /* PERBAIKAN: Tambah padding-bottom agar tidak tertutup bottom navigation */
         .bottom-sheet-content {
             padding: 20px;
+            padding-bottom: 100px; /* Tambah padding untuk menghindari bottom nav */
         }
 
         .pasangan-grid {
@@ -612,6 +614,7 @@
             
             .bottom-sheet-content {
                 padding: 15px;
+                padding-bottom: 90px; /* Sesuaikan untuk mobile */
             }
             
             .all-in-btn, .confirm-btn {
@@ -874,7 +877,8 @@
 
         async function initSaldo() {
             try {
-                const saldoRef = database.ref('tebak-besar-kecil/saldo/' + state.userId);
+                // PERUBAHAN: path tebak-angka/saldo/
+                const saldoRef = database.ref('tebak-angka/saldo/' + state.userId);
                 const snapshot = await saldoRef.once('value');
                 
                 if (!snapshot.exists()) {
@@ -900,7 +904,8 @@
 
         async function loadAturan() {
             try {
-                const aturanRef = database.ref('tebak-besar-kecil/aturan');
+                // PERUBAHAN: path tebak-angka/aturan
+                const aturanRef = database.ref('tebak-angka/aturan');
                 const snapshot = await aturanRef.once('value');
                 
                 if (snapshot.exists()) {
@@ -918,12 +923,18 @@
 
         async function loadPasanganSettings() {
             try {
-                const pasanganRef = database.ref('tebak-besar-kecil/pasangan');
+                // PERUBAHAN: path tebak-angka/pasangan
+                const pasanganRef = database.ref('tebak-angka/pasangan');
                 const snapshot = await pasanganRef.once('value');
                 
                 if (snapshot.exists()) {
                     const pasanganData = snapshot.val();
-                    state.pasanganOptions = Object.values(pasanganData);
+                    // Handle both array and object formats
+                    if (Array.isArray(pasanganData)) {
+                        state.pasanganOptions = pasanganData;
+                    } else {
+                        state.pasanganOptions = Object.values(pasanganData);
+                    }
                 }
                 
                 if (state.pasanganOptions.length < 6) {
@@ -955,7 +966,8 @@
         }
 
         function setupFirebaseListeners() {
-            database.ref('tebak-besar-kecil/aturan').on('value', (snapshot) => {
+            // PERUBAHAN: path tebak-angka/aturan
+            database.ref('tebak-angka/aturan').on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     const aturan = snapshot.val();
                     if (aturan.waktu_tunggu) {
@@ -964,15 +976,22 @@
                 }
             });
 
-            database.ref('tebak-besar-kecil/pasangan').on('value', (snapshot) => {
+            // PERUBAHAN: path tebak-angka/pasangan
+            database.ref('tebak-angka/pasangan').on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     const pasanganData = snapshot.val();
-                    state.pasanganOptions = Object.values(pasanganData);
+                    // Handle both array and object formats
+                    if (Array.isArray(pasanganData)) {
+                        state.pasanganOptions = pasanganData;
+                    } else {
+                        state.pasanganOptions = Object.values(pasanganData);
+                    }
                     updatePasanganGrid();
                 }
             });
 
-            database.ref('tebak-besar-kecil/saldo/' + state.userId).on('value', (snapshot) => {
+            // PERUBAHAN: path tebak-angka/saldo/
+            database.ref('tebak-angka/saldo/' + state.userId).on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     const saldo = snapshot.val();
                     if (saldo !== null) {
@@ -987,14 +1006,18 @@
 
         function loadHasilRound() {
             if (state.hasilRoundListener) {
-                database.ref('tebak-besar-kecil/hasil_round').off('value', state.hasilRoundListener);
+                database.ref('tebak-angka/hasil-round').off('value', state.hasilRoundListener);
             }
             
-            state.hasilRoundListener = database.ref('tebak-besar-kecil/hasil_round')
+            // PERUBAHAN: path diubah dari 'tebak-angka/hasil_round' ke 'tebak-angka/hasil-round'
+            state.hasilRoundListener = database.ref('tebak-angka/hasil_round')
                 .orderByChild('timestamp')
                 .limitToLast(10)
                 .on('value', (snapshot) => {
+                    console.log("Hasil Round Data:", snapshot.val());
                     updateHasilRoundUI(snapshot.val());
+                }, (error) => {
+                    console.error("Error loading hasil round:", error);
                 });
         }
 
@@ -1009,7 +1032,8 @@
 
         async function findOrCreateRound() {
             try {
-                const snapshot = await database.ref('tebak-besar-kecil/taruhan').once('value');
+                // PERUBAHAN: path tebak-angka/taruhan
+                const snapshot = await database.ref('tebak-angka/taruhan').once('value');
                 
                 if (snapshot.exists()) {
                     const rounds = snapshot.val();
@@ -1039,7 +1063,8 @@
             }
             
             state.roundId = roundId;
-            state.roundRef = database.ref('tebak-besar-kecil/taruhan/' + roundId);
+            // PERUBAHAN: path tebak-angka/taruhan/
+            state.roundRef = database.ref('tebak-angka/taruhan/' + roundId);
             resetStateUntukRoundBaru();
             document.getElementById('last5-warning').style.display = 'none';
             document.getElementById('round-id').textContent = roundId;
@@ -1058,7 +1083,8 @@
         async function buatRoundBaru() {
             try {
                 state.roundId = generateRoundId();
-                state.roundRef = database.ref('tebak-besar-kecil/taruhan/' + state.roundId);
+                // PERUBAHAN: path tebak-angka/taruhan/
+                state.roundRef = database.ref('tebak-angka/taruhan/' + state.roundId);
                 
                 const now = Date.now();
                 const endTime = now + (state.waktuTunggu * 1000);
@@ -1278,7 +1304,8 @@
             }
 
             try {
-                state.taruhanRef = database.ref(`tebak-besar-kecil/taruhan/${state.roundId}/taruhan_users/${state.userId}`);
+                // PERUBAHAN: path tebak-angka/taruhan/
+                state.taruhanRef = database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`);
                 
                 const taruhanData = {
                     user_id: state.userId,
@@ -1424,7 +1451,8 @@
             state.processingResult = true;
             
             try {
-                const taruhanSnapshot = await database.ref(`tebak-besar-kecil/taruhan/${state.roundId}/taruhan_users/${state.userId}`).once('value');
+                // PERUBAHAN: path tebak-angka/taruhan/
+                const taruhanSnapshot = await database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`).once('value');
                 
                 if (!taruhanSnapshot.exists()) {
                     console.log("User tidak ikut taruhan di round ini");
@@ -1437,12 +1465,16 @@
                 const menang = taruhanData.pilihan === hasilRound;
                 const saldoNetto = menang ? taruhanData.pasangan : -taruhanData.pasangan;
                 
-                await database.ref(`tebak-besar-kecil/taruhan/${state.roundId}/taruhan_users/${state.userId}`).update({
+                // Update status taruhan
+                await database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`).update({
                     status: menang ? 'menang' : 'kalah',
                     hasil: menang ? 'MENANG' : 'KALAH',
                     waktu_hasil: Date.now(),
                     saldo_netto: saldoNetto
                 });
+                
+                // Update saldo user
+                await updateUserBalance(saldoNetto);
                 
                 console.log(`📊 User ${state.userId.substring(0, 8)}...: Menang=${menang}, Netto=${saldoNetto}`);
                 
@@ -1451,6 +1483,32 @@
             } catch (error) {
                 console.error("Error process round result from admin:", error);
                 setTimeout(() => findOrCreateRound(), 2000);
+            }
+        }
+
+        async function updateUserBalance(saldoNetto) {
+            try {
+                const saldoRef = database.ref('tebak-angka/saldo/' + state.userId);
+                
+                // Gunakan transaction untuk menghindari race condition
+                await saldoRef.transaction((currentBalance) => {
+                    if (currentBalance === null || currentBalance === undefined) {
+                        currentBalance = 50000;
+                    }
+                    
+                    let newBalance = Number(currentBalance) + Number(saldoNetto);
+                    
+                    if (newBalance < 0) {
+                        newBalance = 0;
+                    }
+                    
+                    console.log(`Saldo user ${state.userId.substring(0, 8)}...: ${currentBalance} ${saldoNetto >= 0 ? '+' : ''}${saldoNetto} = ${newBalance}`);
+                    
+                    return newBalance;
+                });
+                
+            } catch (error) {
+                console.error("Error update user balance:", error);
             }
         }
 
@@ -1472,10 +1530,11 @@
                 items.forEach(item => {
                     const roundId = item.round_id || 'Unknown Round';
                     const emoji = item.hasil === 'BESAR' ? '🟥' : '🟦';
+                    const angka = item.hasil_angka !== undefined ? ` (${item.hasil_angka})` : '';
                     
                     html += `
                         <div class="hasil-round-item ${item.hasil === 'BESAR' ? 'besar' : 'kecil'}">
-                            ${roundId} - Hasil: <strong>${item.hasil}</strong> ${emoji}
+                            ${roundId} - Hasil: <strong>${item.hasil}</strong>${angka} ${emoji}
                         </div>
                     `;
                 });
@@ -1544,7 +1603,7 @@
 
         window.resetSaldo = async function() {
             if (confirm("Reset saldo ke Rp 50,000?")) {
-                await database.ref('tebak-besar-kecil/saldo/' + state.userId).set(50000);
+                await database.ref('tebak-angka/saldo/' + state.userId).set(50000);
                 state.saldo = 50000;
                 updateSaldo();
             }
