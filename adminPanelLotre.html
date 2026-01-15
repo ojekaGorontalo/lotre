@@ -510,7 +510,8 @@
                         </div>
                     </div>
 
-                    <div class="bet-card angka">
+                    <!-- KARTU ANGKA - HANYA DITAMPILKAN JIKA ADA TARUHAN ANGKA -->
+                    <div class="bet-card angka" id="angka-card" style="display: none;">
                         <div class="bet-title angka">🔢 ANGKA</div>
                         <div class="bet-info">
                             <div class="bet-info-item">
@@ -630,7 +631,7 @@
                         const waktu = new Date(item.waktu).toLocaleTimeString();
                         const userShort = (item.userId || 'unknown').substring(0, 8) + '...';
                         const pilihan = item.pilihan || '-';
-                        const angka = item.angka_tebakan !== null ? item.angka_tebakan : '-';
+                        const angka = (item.angka_tebakan !== null && item.angka_tebakan !== undefined && item.angka_tebakan !== '') ? item.angka_tebakan : '-';
                         
                         html += `  
                             <tr>
@@ -762,6 +763,7 @@
             }
         });
 
+        // PERBAIKAN BESAR: Fungsi processBetData yang diperbaiki
         function processBetData(taruhanUsers) {
             let besarCount = 0;
             let besarTotal = 0;
@@ -779,6 +781,7 @@
             let angkaMaxUser = '';
             
             const betDetails = [];
+            let adaTaruhanAngka = false;
 
             // Process each bet
             for (const userId in taruhanUsers) {
@@ -790,10 +793,13 @@
                 const angkaTebak = bet.angka_tebakan;
                 const userShort = userId ? (userId.substring(0, 8) + '...') : 'unknown';
                 
+                // PERBAIKAN: Cek apakah ada taruhan angka yang valid
+                const isAngkaValid = (angkaTebak !== null && angkaTebak !== undefined && angkaTebak !== '');
+                
                 betDetails.push({
                     user: userShort,
                     pilihan: choice || '-',
-                    angka_tebakan: angkaTebak !== null ? angkaTebak : '-',
+                    angka_tebakan: isAngkaValid ? angkaTebak : '-',
                     pasangan: amount,
                     waktu: bet.waktu_taruhan ? new Date(bet.waktu_taruhan).toLocaleTimeString() : '-'
                 });
@@ -816,9 +822,11 @@
                     }
                 }
                 
-                if (angkaTebak !== null) {
+                // PERBAIKAN: Hanya hitung sebagai taruhan angka jika BENAR-BENAR ada taruhan angka
+                if (isAngkaValid) {
                     angkaCount++;
                     angkaTotal += amount;
+                    adaTaruhanAngka = true;
                     if (amount > angkaMax) {
                         angkaMax = amount;
                         angkaMaxUser = userShort;
@@ -838,11 +846,21 @@
             document.getElementById('kecil-max').textContent = formatRupiah(kecilMax);
             document.getElementById('kecil-max-user').textContent = kecilMaxUser || '-';
 
-            // Update angka stats
-            document.getElementById('angka-count').textContent = angkaCount;
-            document.getElementById('angka-total').textContent = formatRupiah(angkaTotal);
-            document.getElementById('angka-max').textContent = formatRupiah(angkaMax);
-            document.getElementById('angka-max-user').textContent = angkaMaxUser || '-';
+            // PERBAIKAN: Tampilkan/hide kartu angka berdasarkan apakah ada taruhan angka
+            const angkaCard = document.getElementById('angka-card');
+            if (adaTaruhanAngka) {
+                angkaCard.style.display = 'block';
+                document.getElementById('angka-count').textContent = angkaCount;
+                document.getElementById('angka-total').textContent = formatRupiah(angkaTotal);
+                document.getElementById('angka-max').textContent = formatRupiah(angkaMax);
+                document.getElementById('angka-max-user').textContent = angkaMaxUser || '-';
+            } else {
+                angkaCard.style.display = 'none';
+                document.getElementById('angka-count').textContent = '0';
+                document.getElementById('angka-total').textContent = '0';
+                document.getElementById('angka-max').textContent = '-';
+                document.getElementById('angka-max-user').textContent = '-';
+            }
 
             // Update bet details table
             updateBetDetailsTable(betDetails);
@@ -897,6 +915,8 @@
             document.getElementById('kecil-max').textContent = '-';
             document.getElementById('kecil-max-user').textContent = '-';
             
+            // Sembunyikan kartu angka saat reset
+            document.getElementById('angka-card').style.display = 'none';
             document.getElementById('angka-count').textContent = '0';
             document.getElementById('angka-total').textContent = '0';
             document.getElementById('angka-max').textContent = '-';
@@ -1087,6 +1107,7 @@
             }
         }
 
+        // PERBAIKAN: Fungsi processRoundResult yang diperbaiki
         async function processRoundResult(roundId, roundData) {
             try {
                 // Tentukan hasil
@@ -1134,7 +1155,7 @@
                     mode_terpakai: currentMode
                 });
                 
-                // 🚀 PROSES KEMENANGAN SETIAP USER - INI YANG PENTING!
+                // 🚀 PROSES KEMENANGAN SETIAP USER - DENGAN PERBAIKAN
                 await processUserResults(roundId, roundData, hasilBesarKecil, hasilAngka);
                 
                 // Simpan ke history hasil
@@ -1155,6 +1176,7 @@
             }
         }
 
+        // PERBAIKAN BESAR: Fungsi processUserResults yang diperbaiki
         async function processUserResults(roundId, roundData, hasilBesarKecil, hasilAngka) {
             try {
                 const taruhanUsers = roundData.taruhan_users;
@@ -1172,17 +1194,20 @@
                 for (const userId in taruhanUsers) {
                     const taruhan = taruhanUsers[userId];
                     
+                    // PERBAIKAN: Cek apakah user memasang angka
+                    const isUserAngka = (taruhan.angka_tebakan !== null && taruhan.angka_tebakan !== undefined && taruhan.angka_tebakan !== '');
+                    
                     // Tentukan hasil untuk setiap jenis taruhan
                     let menangBesarKecil = false;
                     let menangAngka = false;
                     
-                    // Cek hasil besar/kecil
+                    // Cek hasil besar/kecil - hanya jika user memasang besar/kecil
                     if (taruhan.pilihan) {
                         menangBesarKecil = taruhan.pilihan === hasilBesarKecil;
                     }
                     
-                    // Cek hasil angka
-                    if (taruhan.angka_tebakan !== null) {
+                    // Cek hasil angka - hanya jika user benar-benar memasang angka
+                    if (isUserAngka) {
                         menangAngka = taruhan.angka_tebakan === hasilAngka;
                     }
                     
@@ -1191,15 +1216,34 @@
                     let totalKemenangan = 0;
                     let totalKerugian = 0;
                     
-                    if (menangBesarKecil) totalKemenangan += pasangan;
-                    if (taruhan.pilihan && !menangBesarKecil) totalKerugian += pasangan;
-                    if (menangAngka) totalKemenangan += pasangan; // 1:1 untuk angka
-                    if (taruhan.angka_tebakan !== null && !menangAngka) totalKerugian += pasangan;
+                    // PERBAIKAN: Hanya hitung jika user memasang besar/kecil
+                    if (taruhan.pilihan) {
+                        if (menangBesarKecil) {
+                            totalKemenangan += pasangan; // Menang 1:1
+                        } else {
+                            totalKerugian += pasangan; // Kalah
+                        }
+                    }
+                    
+                    // PERBAIKAN: Hanya hitung jika user memasang angka
+                    if (isUserAngka) {
+                        if (menangAngka) {
+                            totalKemenangan += pasangan; // Menang 1:1 untuk angka
+                        } else {
+                            totalKerugian += pasangan; // Kalah
+                        }
+                    }
                     
                     const saldoNetto = totalKemenangan - totalKerugian;
                     const menangOverall = saldoNetto > 0;
                     
-                    console.log(`  👤 User ${userId.substring(0, 8)}...: Taruhan=${pasangan}, MenangBesarKecil=${menangBesarKecil}, MenangAngka=${menangAngka}, Netto=${saldoNetto}`);
+                    console.log(`  👤 User ${userId.substring(0, 8)}...: 
+                        Pilihan=${taruhan.pilihan || '-'}, 
+                        Angka=${isUserAngka ? taruhan.angka_tebakan : '-'},
+                        Pasangan=${pasangan}, 
+                        MenangBesarKecil=${menangBesarKecil}, 
+                        MenangAngka=${menangAngka}, 
+                        Netto=${saldoNetto}`);
                     
                     // Simpan promise update saldo ke array
                     updatePromises.push(
@@ -1211,7 +1255,7 @@
                         status: menangOverall ? 'menang' : 'kalah',
                         hasil: menangOverall ? 'MENANG' : 'KALAH',
                         hasil_besar_kecil: taruhan.pilihan ? (menangBesarKecil ? 'MENANG' : 'KALAH') : 'TIDAK_TARUH',
-                        hasil_angka: taruhan.angka_tebakan !== null ? (menangAngka ? 'MENANG' : 'KALAH') : 'TIDAK_TARUH',
+                        hasil_angka: isUserAngka ? (menangAngka ? 'MENANG' : 'KALAH') : 'TIDAK_TARUH',
                         waktu_hasil: Date.now(),
                         kemenangan: totalKemenangan,
                         kerugian: totalKerugian,
@@ -1222,11 +1266,11 @@
                     await saveToUserHistory(userId, {
                         round_id: roundId,
                         pilihan: taruhan.pilihan,
-                        angka_tebakan: taruhan.angka_tebakan,
+                        angka_tebakan: isUserAngka ? taruhan.angka_tebakan : null,
                         pasangan: pasangan,
                         hasil: menangOverall ? 'MENANG' : 'KALAH',
                         hasil_besar_kecil: taruhan.pilihan ? (menangBesarKecil ? 'MENANG' : 'KALAH') : 'TIDAK_TARUH',
-                        hasil_angka: taruhan.angka_tebakan !== null ? (menangAngka ? 'MENANG' : 'KALAH') : 'TIDAK_TARUH',
+                        hasil_angka: isUserAngka ? (menangAngka ? 'MENANG' : 'KALAH') : 'TIDAK_TARUH',
                         kemenangan: totalKemenangan,
                         kerugian: totalKerugian,
                         saldo_netto: saldoNetto,
@@ -1248,7 +1292,7 @@
         // ========== FUNGSI UPDATE SALDO YANG DIPERBAIKI ==========
         async function updateUserBalance(userId, saldoNetto) {
             try {
-                console.log(`?? MENGUPDATE SALDO USER: ${userId.substring(0, 8)}..., perubahan: ${saldoNetto}`);
+                console.log(`🔄 MENGUPDATE SALDO USER: ${userId.substring(0, 8)}..., perubahan: ${saldoNetto}`);
                 
                 if (!userId) {
                     console.error('❌ User ID tidak valid');
@@ -1295,11 +1339,6 @@
                         console.log(`⚠️ Transaction tidak tercommit untuk user ${userId}`);
                     } else {
                         console.log(`✅ Berhasil update saldo user ${userId.substring(0, 8)}... Saldo baru: ${snapshot.val()}`);
-                        
-                        // Verifikasi dengan read ulang
-                        saldoRef.once('value').then(verifySnap => {
-                            console.log(`✅ Verifikasi saldo: ${verifySnap.val()}`);
-                        });
                     }
                 });
                 
