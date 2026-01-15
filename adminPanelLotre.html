@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Panel - Tebak Besar Kecil & Angka</title>
+    <title>Admin Panel - Tebak Besar Kecil</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <style>
@@ -176,9 +176,6 @@
         .bet-card.kecil {
             border-top-color: #0066cc;
         }
-        .bet-card.angka {
-            border-top-color: #ff9900;
-        }
         .bet-title {
             font-size: 18px;
             font-weight: bold;
@@ -192,9 +189,6 @@
         }
         .bet-title.kecil {
             color: #0066cc;
-        }
-        .bet-title.angka {
-            color: #ff9900;
         }
         .bet-info {
             display: grid;
@@ -342,32 +336,6 @@
             background: #d70000;
             color: white;
         }
-        .angka-controls {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .angka-admin-btn {
-            background: white;
-            border: 2px solid #666;
-            border-radius: 8px;
-            padding: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-        }
-        .angka-admin-btn:hover {
-            background: #f0f0f0;
-        }
-        .angka-admin-btn.active {
-            background: #ffcc00;
-            border-color: #d70000;
-            color: #d70000;
-            transform: scale(1.05);
-        }
         .selected-hasil {
             text-align: center;
             margin-top: 10px;
@@ -381,7 +349,7 @@
 </head>
 <body>
     <div class="admin-container">
-        <h2>⚙️ ADMIN PANEL - TEBAK BESAR KECIL & ANGKA</h2>
+        <h2>⚙️ ADMIN PANEL - TEBAK BESAR KECIL</h2>
         
         <div class="input-group">
             <label>Mode Permainan:</label>
@@ -409,20 +377,6 @@
             <div class="hasil-buttons">
                 <button class="hasil-btn" onclick="setHasilBesarKecil('BESAR')" id="btn-hasil-besar">BESAR</button>
                 <button class="hasil-btn" onclick="setHasilBesarKecil('KECIL')" id="btn-hasil-kecil">KECIL</button>
-            </div>
-            
-            <div class="hasil-controls-title" style="margin-top: 15px;">Pilih Angka Hasil:</div>
-            <div class="angka-controls">
-                <button class="angka-admin-btn" onclick="setHasilAngka(0)">0</button>
-                <button class="angka-admin-btn" onclick="setHasilAngka(1)">1</button>
-                <button class="angka-admin-btn" onclick="setHasilAngka(2)">2</button>
-                <button class="angka-admin-btn" onclick="setHasilAngka(3)">3</button>
-                <button class="angka-admin-btn" onclick="setHasilAngka(4)">4</button>
-                <button class="angka-admin-btn" onclick="setHasilAngka(5)">5</button>
-                <button class="angka-admin-btn" onclick="setHasilAngka(6)">6</button>
-                <button class="angka-admin-btn" onclick="setHasilAngka(7)">7</button>
-                <button class="angka-admin-btn" onclick="setHasilAngka(8)">8</button>
-                <button class="angka-admin-btn" onclick="setHasilAngka(9)">9</button>
             </div>
             
             <div class="selected-hasil">
@@ -509,26 +463,6 @@
                             <div class="max-bet-user" id="kecil-max-user">-</div>
                         </div>
                     </div>
-
-                    <!-- KARTU ANGKA - HANYA DITAMPILKAN JIKA ADA TARUHAN ANGKA -->
-                    <div class="bet-card angka" id="angka-card" style="display: none;">
-                        <div class="bet-title angka">🔢 ANGKA</div>
-                        <div class="bet-info">
-                            <div class="bet-info-item">
-                                <div class="bet-number" id="angka-count">0</div>
-                                <div class="bet-label">Jumlah User</div>
-                            </div>
-                            <div class="bet-info-item">
-                                <div class="bet-number" id="angka-total">0</div>
-                                <div class="bet-label">Total Pasangan</div>
-                            </div>
-                        </div>
-                        <div class="max-bet">
-                            <div class="bet-label">Taruhan Terbesar</div>
-                            <div class="max-bet-value" id="angka-max">-</div>
-                            <div class="max-bet-user" id="angka-max-user">-</div>
-                        </div>
-                    </div>
                 </div>
                 
                 <div style="margin-top: 20px;">
@@ -569,7 +503,6 @@
         let activeRoundId = null;
         let roundHistory = [];
         let selectedHasilBesarKecil = null;
-        let selectedHasilAngka = null;
 
         // Load current settings
         database.ref('tebak-angka/aturan').on('value', (snapshot) => {
@@ -625,20 +558,18 @@
                 
                 if (recentHistory.length > 0) {
                     let html = '<table class="history-table">';
-                    html += '<tr><th>Waktu</th><th>User</th><th>Pilihan</th><th>Angka</th><th>Pasangan</th><th>Hasil</th></tr>';
+                    html += '<tr><th>Waktu</th><th>User</th><th>Pilihan</th><th>Pasangan</th><th>Hasil</th></tr>';
                     
                     recentHistory.forEach(item => {
                         const waktu = new Date(item.waktu).toLocaleTimeString();
                         const userShort = (item.userId || 'unknown').substring(0, 8) + '...';
                         const pilihan = item.pilihan || '-';
-                        const angka = (item.angka_tebakan !== null && item.angka_tebakan !== undefined && item.angka_tebakan !== '') ? item.angka_tebakan : '-';
                         
                         html += `  
                             <tr>
                                 <td>${waktu}</td>
                                 <td>${userShort}</td>
                                 <td>${pilihan}</td>
-                                <td>${angka}</td>
                                 <td>Rp ${(item.pasangan || 0).toLocaleString()}</td>
                                 <td style="color:${item.hasil === 'MENANG' ? 'green' : 'red'}; font-weight:bold">
                                     ${item.hasil || '-'}
@@ -747,11 +678,10 @@
                 let html = '';
                 roundHistory.forEach(item => {
                     const time = new Date(item.timestamp).toLocaleTimeString();
-                    const angkaHasil = item.hasil_angka !== undefined ? ` (Angka: ${item.hasil_angka})` : '';
                     
                     html += `
                         <div class="round-history-item">
-                            ${time} - Hasil: <strong>${item.hasil}</strong>${angkaHasil}
+                            ${time} - Hasil: <strong>${item.hasil}</strong>
                             (Mode: ${item.mode || 'random'})
                         </div>
                     `;
@@ -763,7 +693,6 @@
             }
         });
 
-        // PERBAIKAN BESAR: Fungsi processBetData yang diperbaiki
         function processBetData(taruhanUsers) {
             let besarCount = 0;
             let besarTotal = 0;
@@ -775,13 +704,7 @@
             let kecilMax = 0;
             let kecilMaxUser = '';
             
-            let angkaCount = 0;
-            let angkaTotal = 0;
-            let angkaMax = 0;
-            let angkaMaxUser = '';
-            
             const betDetails = [];
-            let adaTaruhanAngka = false;
 
             // Process each bet
             for (const userId in taruhanUsers) {
@@ -790,16 +713,11 @@
                 
                 const amount = parseInt(bet.pasangan) || 0;
                 const choice = bet.pilihan;
-                const angkaTebak = bet.angka_tebakan;
                 const userShort = userId ? (userId.substring(0, 8) + '...') : 'unknown';
-                
-                // PERBAIKAN: Cek apakah ada taruhan angka yang valid
-                const isAngkaValid = (angkaTebak !== null && angkaTebak !== undefined && angkaTebak !== '');
                 
                 betDetails.push({
                     user: userShort,
                     pilihan: choice || '-',
-                    angka_tebakan: isAngkaValid ? angkaTebak : '-',
                     pasangan: amount,
                     waktu: bet.waktu_taruhan ? new Date(bet.waktu_taruhan).toLocaleTimeString() : '-'
                 });
@@ -821,17 +739,6 @@
                         kecilMaxUser = userShort;
                     }
                 }
-                
-                // PERBAIKAN: Hanya hitung sebagai taruhan angka jika BENAR-BENAR ada taruhan angka
-                if (isAngkaValid) {
-                    angkaCount++;
-                    angkaTotal += amount;
-                    adaTaruhanAngka = true;
-                    if (amount > angkaMax) {
-                        angkaMax = amount;
-                        angkaMaxUser = userShort;
-                    }
-                }
             }
 
             // Update besar stats
@@ -846,22 +753,6 @@
             document.getElementById('kecil-max').textContent = formatRupiah(kecilMax);
             document.getElementById('kecil-max-user').textContent = kecilMaxUser || '-';
 
-            // PERBAIKAN: Tampilkan/hide kartu angka berdasarkan apakah ada taruhan angka
-            const angkaCard = document.getElementById('angka-card');
-            if (adaTaruhanAngka) {
-                angkaCard.style.display = 'block';
-                document.getElementById('angka-count').textContent = angkaCount;
-                document.getElementById('angka-total').textContent = formatRupiah(angkaTotal);
-                document.getElementById('angka-max').textContent = formatRupiah(angkaMax);
-                document.getElementById('angka-max-user').textContent = angkaMaxUser || '-';
-            } else {
-                angkaCard.style.display = 'none';
-                document.getElementById('angka-count').textContent = '0';
-                document.getElementById('angka-total').textContent = '0';
-                document.getElementById('angka-max').textContent = '-';
-                document.getElementById('angka-max-user').textContent = '-';
-            }
-
             // Update bet details table
             updateBetDetailsTable(betDetails);
         }
@@ -875,7 +766,7 @@
             }
 
             let html = '<table class="history-table" style="margin-top:10px;">';
-            html += '<tr><th>User</th><th>Pilihan</th><th>Angka</th><th>Pasangan</th><th>Waktu</th></tr>';
+            html += '<tr><th>User</th><th>Pilihan</th><th>Pasangan</th><th>Waktu</th></tr>';
             
             betDetails.forEach(bet => {
                 html += `
@@ -885,7 +776,6 @@
                                        bet.pilihan === 'KECIL' ? '#0066cc' : '#666'}; font-weight:bold">
                             ${bet.pilihan}
                         </td>
-                        <td>${bet.angka_tebakan}</td>
                         <td>${formatRupiah(bet.pasangan)}</td>
                         <td>${bet.waktu}</td>
                     </tr>
@@ -914,13 +804,6 @@
             document.getElementById('kecil-total').textContent = '0';
             document.getElementById('kecil-max').textContent = '-';
             document.getElementById('kecil-max-user').textContent = '-';
-            
-            // Sembunyikan kartu angka saat reset
-            document.getElementById('angka-card').style.display = 'none';
-            document.getElementById('angka-count').textContent = '0';
-            document.getElementById('angka-total').textContent = '0';
-            document.getElementById('angka-max').textContent = '-';
-            document.getElementById('angka-max-user').textContent = '-';
             
             document.getElementById('bet-details').innerHTML = '<div class="no-data">Belum ada taruhan</div>';
         }
@@ -959,12 +842,6 @@
             updateSelectedHasilText();
         }
 
-        function setHasilAngka(angka) {
-            selectedHasilAngka = angka;
-            updateAngkaButtons();
-            updateSelectedHasilText();
-        }
-
         function updateHasilButtons() {
             // Reset semua button hasil
             document.querySelectorAll('.hasil-btn').forEach(btn => {
@@ -984,37 +861,13 @@
             }
         }
 
-        function updateAngkaButtons() {
-            // Reset semua button angka
-            document.querySelectorAll('.angka-admin-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Aktifkan button yang sesuai
-            if (selectedHasilAngka !== null) {
-                document.querySelectorAll('.angka-admin-btn').forEach(btn => {
-                    if (parseInt(btn.textContent) === selectedHasilAngka) {
-                        btn.classList.add('active');
-                    }
-                });
-            }
-        }
-
         function updateSelectedHasilText() {
             let text = '';
             
             if (selectedHasilBesarKecil) {
-                text += selectedHasilBesarKecil;
+                text = selectedHasilBesarKecil;
             } else {
-                text += '-';
-            }
-            
-            text += ' / ';
-            
-            if (selectedHasilAngka !== null) {
-                text += selectedHasilAngka;
-            } else {
-                text += '-';
+                text = '-';
             }
             
             document.getElementById('selected-hasil-text').textContent = text;
@@ -1107,12 +960,10 @@
             }
         }
 
-        // PERBAIKAN: Fungsi processRoundResult yang diperbaiki
         async function processRoundResult(roundId, roundData) {
             try {
                 // Tentukan hasil
                 let hasilBesarKecil;
-                let hasilAngka;
                 
                 // Gunakan pilihan admin jika ada, atau generate berdasarkan mode
                 if (selectedHasilBesarKecil) {
@@ -1130,45 +981,28 @@
                     console.log(`🎲 Hasil random: ${hasilBesarKecil}`);
                 }
                 
-                // Gunakan pilihan admin jika ada, atau generate random
-                if (selectedHasilAngka !== null) {
-                    hasilAngka = selectedHasilAngka;
-                    console.log(`🎯 Menggunakan angka admin: ${hasilAngka}`);
-                } else {
-                    // Generate angka random sesuai dengan hasil besar/kecil
-                    if (hasilBesarKecil === 'BESAR') {
-                        hasilAngka = Math.floor(Math.random() * 5) + 5; // 5-9
-                    } else {
-                        hasilAngka = Math.floor(Math.random() * 5); // 0-4
-                    }
-                    console.log(`🎲 Angka generated: ${hasilAngka} (untuk ${hasilBesarKecil})`);
-                }
-                
-                console.log(`🔄 Memproses round ${roundId}: ${hasilBesarKecil} (${hasilAngka})`);
+                console.log(`🔄 Memproses round ${roundId}: ${hasilBesarKecil}`);
                 
                 // Simpan hasil ke Firebase
                 await database.ref(`tebak-angka/taruhan/${roundId}`).update({
                     status: 'selesai',
                     hasil: hasilBesarKecil,
-                    hasil_angka: hasilAngka,
                     waktu_hasil: Date.now(),
                     mode_terpakai: currentMode
                 });
                 
-                // 🚀 PROSES KEMENANGAN SETIAP USER - DENGAN PERBAIKAN
-                await processUserResults(roundId, roundData, hasilBesarKecil, hasilAngka);
+                // 🚀 PROSES KEMENANGAN SETIAP USER
+                await processUserResults(roundId, roundData, hasilBesarKecil);
                 
                 // Simpan ke history hasil
-                await saveToResultHistory(roundId, hasilBesarKecil, hasilAngka);
+                await saveToResultHistory(roundId, hasilBesarKecil);
                 
                 // Reset pilihan admin untuk round berikutnya
                 selectedHasilBesarKecil = null;
-                selectedHasilAngka = null;
                 updateHasilButtons();
-                updateAngkaButtons();
                 updateSelectedHasilText();
                 
-                showStatus(`✅ Hasil ditentukan: ${hasilBesarKecil} (${hasilAngka}) untuk round ${roundId.substring(0, 8)}...`, 'success');
+                showStatus(`✅ Hasil ditentukan: ${hasilBesarKecil} untuk round ${roundId.substring(0, 8)}...`, 'success');
                 
             } catch (error) {
                 console.error("❌ Error memproses hasil round:", error);
@@ -1176,8 +1010,8 @@
             }
         }
 
-        // PERBAIKAN BESAR: Fungsi processUserResults yang diperbaiki
-        async function processUserResults(roundId, roundData, hasilBesarKecil, hasilAngka) {
+        // FUNGSI PROCESS USER RESULTS YANG DIPERBAIKI
+        async function processUserResults(roundId, roundData, hasilBesarKecil) {
             try {
                 const taruhanUsers = roundData.taruhan_users;
                 if (!taruhanUsers) {
@@ -1194,55 +1028,33 @@
                 for (const userId in taruhanUsers) {
                     const taruhan = taruhanUsers[userId];
                     
-                    // PERBAIKAN: Cek apakah user memasang angka
-                    const isUserAngka = (taruhan.angka_tebakan !== null && taruhan.angka_tebakan !== undefined && taruhan.angka_tebakan !== '');
-                    
-                    // Tentukan hasil untuk setiap jenis taruhan
+                    // Cek hasil besar/kecil
                     let menangBesarKecil = false;
-                    let menangAngka = false;
-                    
-                    // Cek hasil besar/kecil - hanya jika user memasang besar/kecil
                     if (taruhan.pilihan) {
                         menangBesarKecil = taruhan.pilihan === hasilBesarKecil;
                     }
                     
-                    // Cek hasil angka - hanya jika user benar-benar memasang angka
-                    if (isUserAngka) {
-                        menangAngka = taruhan.angka_tebakan === hasilAngka;
-                    }
-                    
-                    // Hitung total kemenangan/kerugian
                     const pasangan = Number(taruhan.pasangan) || 0;
                     let totalKemenangan = 0;
-                    let totalKerugian = 0;
                     
-                    // PERBAIKAN: Hanya hitung jika user memasang besar/kecil
                     if (taruhan.pilihan) {
                         if (menangBesarKecil) {
-                            totalKemenangan += pasangan; // Menang 1:1
+                            // MENANG: Dapat 2x pasangan (kembali pasangan + kemenangan 1:1)
+                            totalKemenangan = 2 * pasangan;
                         } else {
-                            totalKerugian += pasangan; // Kalah
+                            // KALAH: Tidak dapat apa-apa (saldo sudah dipotong di frontend)
+                            totalKemenangan = 0;
                         }
                     }
                     
-                    // PERBAIKAN: Hanya hitung jika user memasang angka
-                    if (isUserAngka) {
-                        if (menangAngka) {
-                            totalKemenangan += pasangan; // Menang 1:1 untuk angka
-                        } else {
-                            totalKerugian += pasangan; // Kalah
-                        }
-                    }
-                    
-                    const saldoNetto = totalKemenangan - totalKerugian;
+                    const saldoNetto = totalKemenangan; // Karena kerugian sudah di depan, di sini hanya menambah jika menang
                     const menangOverall = saldoNetto > 0;
                     
                     console.log(`  👤 User ${userId.substring(0, 8)}...: 
                         Pilihan=${taruhan.pilihan || '-'}, 
-                        Angka=${isUserAngka ? taruhan.angka_tebakan : '-'},
                         Pasangan=${pasangan}, 
-                        MenangBesarKecil=${menangBesarKecil}, 
-                        MenangAngka=${menangAngka}, 
+                        Menang=${menangBesarKecil}, 
+                        Kemenangan=${totalKemenangan},
                         Netto=${saldoNetto}`);
                     
                     // Simpan promise update saldo ke array
@@ -1255,10 +1067,8 @@
                         status: menangOverall ? 'menang' : 'kalah',
                         hasil: menangOverall ? 'MENANG' : 'KALAH',
                         hasil_besar_kecil: taruhan.pilihan ? (menangBesarKecil ? 'MENANG' : 'KALAH') : 'TIDAK_TARUH',
-                        hasil_angka: isUserAngka ? (menangAngka ? 'MENANG' : 'KALAH') : 'TIDAK_TARUH',
                         waktu_hasil: Date.now(),
                         kemenangan: totalKemenangan,
-                        kerugian: totalKerugian,
                         saldo_netto: saldoNetto
                     });
                     
@@ -1266,13 +1076,10 @@
                     await saveToUserHistory(userId, {
                         round_id: roundId,
                         pilihan: taruhan.pilihan,
-                        angka_tebakan: isUserAngka ? taruhan.angka_tebakan : null,
                         pasangan: pasangan,
                         hasil: menangOverall ? 'MENANG' : 'KALAH',
                         hasil_besar_kecil: taruhan.pilihan ? (menangBesarKecil ? 'MENANG' : 'KALAH') : 'TIDAK_TARUH',
-                        hasil_angka: isUserAngka ? (menangAngka ? 'MENANG' : 'KALAH') : 'TIDAK_TARUH',
                         kemenangan: totalKemenangan,
-                        kerugian: totalKerugian,
                         saldo_netto: saldoNetto,
                         waktu: Date.now()
                     });
@@ -1289,7 +1096,6 @@
             }
         }
 
-        // ========== FUNGSI UPDATE SALDO YANG DIPERBAIKI ==========
         async function updateUserBalance(userId, saldoNetto) {
             try {
                 console.log(`🔄 MENGUPDATE SALDO USER: ${userId.substring(0, 8)}..., perubahan: ${saldoNetto}`);
@@ -1299,47 +1105,36 @@
                     return;
                 }
                 
-                // Gunakan transaction untuk menghindari race condition
+                // Jika saldoNetto = 0 (kalah), tidak perlu update
+                if (saldoNetto === 0) {
+                    console.log(`  → User kalah, tidak ada perubahan saldo (uang taruhan sudah dipotong di frontend)`);
+                    return;
+                }
+                
+                // Hanya update jika ada kemenangan
                 const saldoRef = database.ref(`tebak-angka/saldo/${userId}`);
                 
                 await saldoRef.transaction((currentBalance) => {
                     console.log(`📊 Transaction dimulai untuk user ${userId.substring(0, 8)}...`);
                     
-                    // Jika null atau undefined, set ke default 50000
                     if (currentBalance === null || currentBalance === undefined) {
                         console.log(`  → User belum punya saldo, set ke 50000`);
                         return 50000 + (saldoNetto || 0);
                     }
                     
-                    // Convert ke number
                     const current = Number(currentBalance);
                     const change = Number(saldoNetto);
                     
                     if (isNaN(current) || isNaN(change)) {
                         console.error('❌ Data saldo tidak valid:', { current, change });
-                        return current; // Return current value tanpa perubahan
+                        return current;
                     }
                     
-                    // Hitung saldo baru
                     let newBalance = current + change;
-                    
-                    // Pastikan saldo tidak negatif
-                    if (newBalance < 0) {
-                        console.log(`  ⚠️ Saldo menjadi negatif, set ke 0`);
-                        newBalance = 0;
-                    }
                     
                     console.log(`  → Perhitungan: ${current} ${change >= 0 ? '+' : ''}${change} = ${newBalance}`);
                     
                     return newBalance;
-                }, (error, committed, snapshot) => {
-                    if (error) {
-                        console.error(`❌ Transaction gagal untuk user ${userId}:`, error);
-                    } else if (!committed) {
-                        console.log(`⚠️ Transaction tidak tercommit untuk user ${userId}`);
-                    } else {
-                        console.log(`✅ Berhasil update saldo user ${userId.substring(0, 8)}... Saldo baru: ${snapshot.val()}`);
-                    }
                 });
                 
             } catch (error) {
@@ -1348,11 +1143,10 @@
             }
         }
 
-        async function saveToResultHistory(roundId, hasilBesarKecil, hasilAngka) {
+        async function saveToResultHistory(roundId, hasilBesarKecil) {
             try {
                 await database.ref(`tebak-angka/hasil_round/${roundId}`).set({
                     hasil: hasilBesarKecil,
-                    hasil_angka: hasilAngka,
                     timestamp: Date.now(),
                     round_id: roundId,
                     mode: currentMode
@@ -1380,7 +1174,6 @@
                     round_id: roundId,
                     status: 'berjalan',
                     hasil: null,
-                    hasil_angka: null,
                     start_time: Date.now(),
                     end_time: endTime,
                     waktu_tunggu: waktuTunggu,
@@ -1416,7 +1209,6 @@
                     
                     // Tentukan hasil
                     let hasilBesarKecil;
-                    let hasilAngka;
                     
                     // Gunakan pilihan admin jika ada
                     if (selectedHasilBesarKecil) {
@@ -1429,38 +1221,25 @@
                         hasilBesarKecil = Math.random() > 0.5 ? 'BESAR' : 'KECIL';
                     }
                     
-                    if (selectedHasilAngka !== null) {
-                        hasilAngka = selectedHasilAngka;
-                    } else {
-                        if (hasilBesarKecil === 'BESAR') {
-                            hasilAngka = Math.floor(Math.random() * 5) + 5;
-                        } else {
-                            hasilAngka = Math.floor(Math.random() * 5);
-                        }
-                    }
-                    
                     // Update round dengan hasil
                     await database.ref(`tebak-angka/taruhan/${activeRoundId}`).update({
                         status: 'selesai',
                         hasil: hasilBesarKecil,
-                        hasil_angka: hasilAngka,
                         end_time: Date.now(),
                         waktu_hasil: Date.now(),
                         mode_terpakai: currentMode
                     });
                     
                     // Proses hasil
-                    await processUserResults(activeRoundId, roundData, hasilBesarKecil, hasilAngka);
-                    await saveToResultHistory(activeRoundId, hasilBesarKecil, hasilAngka);
+                    await processUserResults(activeRoundId, roundData, hasilBesarKecil);
+                    await saveToResultHistory(activeRoundId, hasilBesarKecil);
                     
                     // Reset pilihan admin
                     selectedHasilBesarKecil = null;
-                    selectedHasilAngka = null;
                     updateHasilButtons();
-                    updateAngkaButtons();
                     updateSelectedHasilText();
                     
-                    showStatus(`✅ Hasil dipaksakan: ${hasilBesarKecil} (${hasilAngka}) untuk round ${activeRoundId.substring(0, 8)}...`, 'success');
+                    showStatus(`✅ Hasil dipaksakan: ${hasilBesarKecil} untuk round ${activeRoundId.substring(0, 8)}...`, 'success');
                     
                 } catch (error) {
                     console.error("Error memaksa hasil round:", error);
