@@ -761,7 +761,7 @@
 
     <!-- Bottom Navigation -->
     <div class="bottom-nav">
-        <a href="tebak-besar-kecil.html" class="nav-item active">
+        <a href="lotre.html" class="nav-item active">
             <div class="nav-icon">🎯</div>
             <div class="nav-label">Besar/Kecil</div>
         </a>
@@ -861,36 +861,72 @@
             return `RBK${tahun}${bulan}${tanggal}-${jam}${menit}-${random}`;
         }
 
-        async function initAplikasi() {
-            try {
-                state.userId = getUserId();
-                console.log("User ID:", state.userId);
-                await initSaldo();
-                await loadAturan();
-                setupFirebaseListeners();
-                await findOrCreateRound();
-            } catch (error) {
-                console.error("Error init aplikasi:", error);
-                alert("Gagal menginisialisasi aplikasi. Refresh halaman.");
+        // UPDATE: Fungsi getUserId() untuk Firebase
+        function getUserId() {
+            let userId = localStorage.getItem('user_id_bk');
+            if (!userId) {
+                // Redirect ke halaman login jika belum login
+                if (confirm('Anda belum login. Ingin login sekarang?')) {
+                    window.location.href = 'login.html';
+                    return null;
+                } else {
+                    // Buat user temporary
+                    userId = 'temp_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+                    localStorage.setItem('user_id_bk', userId);
+                    
+                    // Set saldo default untuk temporary user di Firebase
+                    database.ref(`tebak-angka/saldo/${userId}`).set(50000);
+                }
             }
+            return userId;
         }
 
+        // UPDATE: Fungsi initSaldo() untuk Firebase
         async function initSaldo() {
             try {
-                // PERUBAHAN: path tebak-angka/saldo/
-                const saldoRef = database.ref('tebak-angka/saldo/' + state.userId);
-                const snapshot = await saldoRef.once('value');
+                const userId = state.userId;
                 
-                if (!snapshot.exists()) {
-                    await saldoRef.set(50000);
+                if (!userId) {
                     state.saldo = 50000;
-                } else {
-                    const saldoValue = snapshot.val();
-                    state.saldo = saldoValue;
+                    updateSaldo();
+                    return;
+                }
+                
+                // Cek apakah user temporary
+                if (userId.startsWith('temp_')) {
+                    const saldoRef = database.ref('tebak-angka/saldo/' + userId);
+                    const snapshot = await saldoRef.once('value');
                     
-                    if (!saldoValue || saldoValue < 0 || saldoValue === null) {
+                    if (!snapshot.exists()) {
                         await saldoRef.set(50000);
                         state.saldo = 50000;
+                    } else {
+                        const saldoValue = snapshot.val();
+                        state.saldo = saldoValue;
+                        
+                        if (!saldoValue || saldoValue < 0 || saldoValue === null) {
+                            await saldoRef.set(50000);
+                            state.saldo = 50000;
+                        }
+                    }
+                } else {
+                    // User terdaftar - cek di Firebase
+                    const saldoRef = database.ref('tebak-angka/saldo/' + userId);
+                    const snapshot = await saldoRef.once('value');
+                    
+                    if (!snapshot.exists()) {
+                        // Jika tidak ada saldo, buat baru dengan 50000
+                        await saldoRef.set(50000);
+                        state.saldo = 50000;
+                    } else {
+                        const saldoValue = snapshot.val();
+                        state.saldo = saldoValue;
+                        
+                        // Validasi saldo
+                        if (!saldoValue || saldoValue < 0 || saldoValue === null) {
+                            await saldoRef.set(50000);
+                            state.saldo = 50000;
+                        }
                     }
                 }
                 
@@ -904,7 +940,6 @@
 
         async function loadAturan() {
             try {
-                // PERUBAHAN: path tebak-angka/aturan
                 const aturanRef = database.ref('tebak-angka/aturan');
                 const snapshot = await aturanRef.once('value');
                 
@@ -923,13 +958,11 @@
 
         async function loadPasanganSettings() {
             try {
-                // PERUBAHAN: path tebak-angka/pasangan
                 const pasanganRef = database.ref('tebak-angka/pasangan');
                 const snapshot = await pasanganRef.once('value');
                 
                 if (snapshot.exists()) {
                     const pasanganData = snapshot.val();
-                    // Handle both array and object formats
                     if (Array.isArray(pasanganData)) {
                         state.pasanganOptions = pasanganData;
                     } else {
@@ -966,7 +999,6 @@
         }
 
         function setupFirebaseListeners() {
-            // PERUBAHAN: path tebak-angka/aturan
             database.ref('tebak-angka/aturan').on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     const aturan = snapshot.val();
@@ -976,11 +1008,9 @@
                 }
             });
 
-            // PERUBAHAN: path tebak-angka/pasangan
             database.ref('tebak-angka/pasangan').on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     const pasanganData = snapshot.val();
-                    // Handle both array and object formats
                     if (Array.isArray(pasanganData)) {
                         state.pasanganOptions = pasanganData;
                     } else {
@@ -990,26 +1020,28 @@
                 }
             });
 
-            // PERUBAHAN: path tebak-angka/saldo/
-            database.ref('tebak-angka/saldo/' + state.userId).on('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    const saldo = snapshot.val();
-                    if (saldo !== null) {
-                        state.saldo = saldo;
-                        updateSaldo();
-                        updateAllInButton();
-                        console.log("🔄 Saldo diperbarui dari Firebase: Rp", saldo.toLocaleString());
+            // UPDATE: Listener untuk saldo di Firebase
+            const userId = getUserId();
+            if (userId) {
+                database.ref('tebak-angka/saldo/' + userId).on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        const saldo = snapshot.val();
+                        if (saldo !== null) {
+                            state.saldo = saldo;
+                            updateSaldo();
+                            updateAllInButton();
+                            console.log("🔄 Saldo diperbarui dari Firebase: Rp", saldo.toLocaleString());
+                        }
                     }
-                }
-            });
+                });
+            }
         }
 
         function loadHasilRound() {
             if (state.hasilRoundListener) {
-                database.ref('tebak-angka/hasil-round').off('value', state.hasilRoundListener);
+                database.ref('tebak-angka/hasil_round').off('value', state.hasilRoundListener);
             }
             
-            // PERUBAHAN: path diubah dari 'tebak-angka/hasil_round' ke 'tebak-angka/hasil-round'
             state.hasilRoundListener = database.ref('tebak-angka/hasil_round')
                 .orderByChild('timestamp')
                 .limitToLast(10)
@@ -1021,18 +1053,27 @@
                 });
         }
 
-        function getUserId() {
-            let userId = localStorage.getItem('user_id_bk');
-            if (!userId) {
-                userId = 'user_bk_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-                localStorage.setItem('user_id_bk', userId);
+        async function initAplikasi() {
+            try {
+                state.userId = getUserId();
+                console.log("User ID:", state.userId);
+                
+                if (!state.userId) {
+                    return; // Redirect sudah dilakukan di getUserId()
+                }
+                
+                await initSaldo();
+                await loadAturan();
+                setupFirebaseListeners();
+                await findOrCreateRound();
+            } catch (error) {
+                console.error("Error init aplikasi:", error);
+                alert("Gagal menginisialisasi aplikasi. Refresh halaman.");
             }
-            return userId;
         }
 
         async function findOrCreateRound() {
             try {
-                // PERUBAHAN: path tebak-angka/taruhan
                 const snapshot = await database.ref('tebak-angka/taruhan').once('value');
                 
                 if (snapshot.exists()) {
@@ -1063,7 +1104,6 @@
             }
             
             state.roundId = roundId;
-            // PERUBAHAN: path tebak-angka/taruhan/
             state.roundRef = database.ref('tebak-angka/taruhan/' + roundId);
             resetStateUntukRoundBaru();
             document.getElementById('last5-warning').style.display = 'none';
@@ -1083,7 +1123,6 @@
         async function buatRoundBaru() {
             try {
                 state.roundId = generateRoundId();
-                // PERUBAHAN: path tebak-angka/taruhan/
                 state.roundRef = database.ref('tebak-angka/taruhan/' + state.roundId);
                 
                 const now = Date.now();
@@ -1304,7 +1343,6 @@
             }
 
             try {
-                // PERUBAHAN: path tebak-angka/taruhan/
                 state.taruhanRef = database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`);
                 
                 const taruhanData = {
@@ -1451,7 +1489,6 @@
             state.processingResult = true;
             
             try {
-                // PERUBAHAN: path tebak-angka/taruhan/
                 const taruhanSnapshot = await database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`).once('value');
                 
                 if (!taruhanSnapshot.exists()) {
@@ -1473,7 +1510,7 @@
                     saldo_netto: saldoNetto
                 });
                 
-                // Update saldo user
+                // Update saldo user di Firebase
                 await updateUserBalance(saldoNetto);
                 
                 console.log(`📊 User ${state.userId.substring(0, 8)}...: Menang=${menang}, Netto=${saldoNetto}`);
