@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akun Saya - Tebak Besar Kecil</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #d70000 0%, #8b0000 100%);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 4px solid #ffcc00;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        h1 {
+            color: #d70000;
+            font-size: 26px;
+        }
+
+        .profile-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .avatar {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(45deg, #d70000, #ff4444);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+            margin-bottom: 15px;
+            border: 4px solid #ffcc00;
+        }
+
+        .user-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .user-phone {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #d70000;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #d70000, #ff4444);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #b30000, #ff2222);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #ddd;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(45deg, #c82333, #bd2130);
+            transform: translateY(-2px);
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 2px solid #ffcc00;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #666;
+            flex: 1;
+            padding: 8px 0;
+            transition: all 0.3s;
+        }
+
+        .nav-item.active {
+            color: #d70000;
+            transform: translateY(-5px);
+        }
+
+        .nav-item.active .nav-icon {
+            background: linear-gradient(45deg, #d70000, #ff4444);
+            box-shadow: 0 4px 10px rgba(215, 0, 0, 0.3);
+        }
+
+        .nav-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: #f0f0f0;
+            margin-bottom: 4px;
+            transition: all 0.3s;
+        }
+
+        .nav-label {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .temp-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-icon {
+                width: 35px;
+                height: 35px;
+                font-size: 18px;
+            }
+            
+            .nav-label {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👤 AKUN SAYA</h1>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <!-- Warning untuk user temporary -->
+        <div id="temp-warning" class="temp-warning" style="display: none;">
+            ⚠️ Anda menggunakan akun sementara. <a href="login.html" style="color: #d70000; font-weight: bold;">Login</a> 
+            atau <a href="daftar.html" style="color: #d70000; font-weight: bold;">Daftar</a> untuk menyimpan data permanen.
+        </div>
+
+        <div class="profile-section">
+            <div class="avatar" id="avatar">👤</div>
+            <div class="user-name" id="userName">-</div>
+            <div class="user-phone" id="userPhone">-</div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <div class="info-label">SALDO</div>
+                <div class="info-value" id="saldo">Rp 0</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">TOTAL MENANG</div>
+                <div class="info-value" id="totalWin">0</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">TOTAL MAIN</div>
+                <div class="info-value" id="totalPlay">0</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">TERDAFTAR</div>
+                <div class="info-value" id="registeredDate">-</div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="window.location.href='lotre.html'">
+                🎮 MAIN LAGI
+            </button>
+            
+            <button class="btn btn-secondary" id="edit-profile-btn" onclick="editProfile()">
+                ✏️ EDIT PROFIL
+            </button>
+            
+            <button class="btn btn-secondary" id="topup-btn" onclick="topUpSaldo()">
+                💰 TOP UP SALDO
+            </button>
+            
+            <button class="btn btn-danger" onclick="logout()">
+                🚪 LOGOUT
+            </button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="lotre.html" class="nav-item">
+            <div class="nav-icon">🎯</div>
+            <div class="nav-label">Besar/Kecil</div>
+        </a>
+        <a href="tebak-angka.html" class="nav-item">
+            <div class="nav-icon">🔢</div>
+            <div class="nav-label">Tebak Angka</div>
+        </a>
+        <a href="riwayat.html" class="nav-item">
+            <div class="nav-icon">📋</div>
+            <div class="nav-label">Riwayat</div>
+        </a>
+        <a href="akun.html" class="nav-item active">
+            <div class="nav-icon">👤</div>
+            <div class="nav-label">Akun</div>
+        </a>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDtZxsl5LZp3n1KZJfdVAdqQj22ZBPoQbU",
+            authDomain: "steady-fin-368617.firebaseapp.com",
+            databaseURL: "https://steady-fin-368617-default-rtdb.firebaseio.com",
+            projectId: "steady-fin-368617",
+            storageBucket: "steady-fin-368617.firebasestorage.app",
+            messagingSenderId: "626971902484",
+            appId: "1:626971902484:web:98f7cdbd55c5990dfe9d01",
+            measurementId: "G-70D3LR995Y"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        async function loadUserProfile() {
+            const userId = localStorage.getItem('user_id_bk');
+            const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
+            
+            if (!userId) {
+                showMessage('Anda belum login!', 'error');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1500);
+                return;
+            }
+            
+            // Cek jika user temporary
+            if (userId.startsWith('temp_')) {
+                document.getElementById('userName').textContent = 'Guest User';
+                document.getElementById('userPhone').textContent = 'User Sementara';
+                document.getElementById('avatar').textContent = '👤';
+                document.getElementById('registeredDate').textContent = '-';
+                
+                // Load saldo untuk temporary user
+                const saldoSnapshot = await database.ref(`tebak-angka/saldo/${userId}`).once('value');
+                const saldo = saldoSnapshot.exists() ? saldoSnapshot.val() : 50000;
+                document.getElementById('saldo').textContent = `Rp ${(saldo || 0).toLocaleString()}`;
+                
+                // Show temp warning
+                document.getElementById('temp-warning').style.display = 'block';
+                
+                // Hide edit profile and topup buttons for temporary users
+                document.getElementById('edit-profile-btn').style.display = 'none';
+                document.getElementById('topup-btn').style.display = 'none';
+                
+                // Calculate statistics for temp user
+                await calculateStatistics(userId, true);
+                
+                return;
+            }
+            
+            try {
+                // Load user data dari Firebase
+                const userSnapshot = await database.ref(`tebak-angka/users/${userId}`).once('value');
+                
+                if (!userSnapshot.exists()) {
+                    showMessage('Data user tidak ditemukan!', 'error');
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                    return;
+                }
+                
+                const userData = userSnapshot.val();
+                
+                // Tampilkan data user
+                document.getElementById('userName').textContent = userData.name || 'Unknown';
+                document.getElementById('userPhone').textContent = userData.phone || '-';
+                
+                // Avatar menggunakan inisial nama
+                const initials = userData.name ? userData.name.charAt(0).toUpperCase() : '👤';
+                document.getElementById('avatar').textContent = initials;
+                
+                // Format tanggal
+                if (userData.createdAt) {
+                    const date = new Date(userData.createdAt);
+                    document.getElementById('registeredDate').textContent = date.toLocaleDateString('id-ID');
+                } else {
+                    document.getElementById('registeredDate').textContent = '-';
+                }
+                
+                // Load saldo
+                const saldoSnapshot = await database.ref(`tebak-angka/saldo/${userId}`).once('value');
+                const saldo = saldoSnapshot.exists() ? saldoSnapshot.val() : 50000;
+                document.getElementById('saldo').textContent = `Rp ${(saldo || 0).toLocaleString()}`;
+                
+                // Hitung statistik dari history
+                await calculateStatistics(userId, false);
+                
+                // Update current user info di localStorage
+                localStorage.setItem('current_user', JSON.stringify({
+                    id: userId,
+                    name: userData.name,
+                    phone: userData.phone,
+                    address: userData.address,
+                    saldo: saldo
+                }));
+                
+            } catch (error) {
+                console.error('Error loading user profile:', error);
+                showMessage('Gagal memuat data profil', 'error');
+            }
+        }
+
+        async function calculateStatistics(userId, isTemp = false) {
+            try {
+                let totalPlays = 0;
+                let totalWins = 0;
+                
+                if (isTemp) {
+                    // Untuk temp user, hitung dari taruhan yang ada
+                    const taruhanSnapshot = await database.ref('tebak-angka/taruhan').once('value');
+                    
+                    if (taruhanSnapshot.exists()) {
+                        const taruhanData = taruhanSnapshot.val();
+                        
+                        for (const roundId in taruhanData) {
+                            const round = taruhanData[roundId];
+                            if (round.taruhan_users && round.taruhan_users[userId]) {
+                                totalPlays++;
+                                const userBet = round.taruhan_users[userId];
+                                if (userBet.hasil === 'MENANG') {
+                                    totalWins++;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Untuk user terdaftar, hitung dari history
+                    const historySnapshot = await database.ref('tebak-angka/history')
+                        .orderByChild('userId')
+                        .equalTo(userId)
+                        .once('value');
+                    
+                    if (historySnapshot.exists()) {
+                        historySnapshot.forEach((childSnapshot) => {
+                            const history = childSnapshot.val();
+                            totalPlays++;
+                            if (history.hasil === 'MENANG') {
+                                totalWins++;
+                            }
+                        });
+                    }
+                }
+                
+                document.getElementById('totalPlay').textContent = totalPlays;
+                document.getElementById('totalWin').textContent = totalWins;
+                
+                // Update statistik di user data (khusus user terdaftar)
+                if (!isTemp) {
+                    await database.ref(`tebak-angka/users/${userId}`).update({
+                        totalPlays: totalPlays,
+                        totalWins: totalWins,
+                        lastUpdated: Date.now()
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error calculating statistics:', error);
+            }
+        }
+
+        async function editProfile() {
+            const userId = localStorage.getItem('user_id_bk');
+            
+            if (!userId || userId.startsWith('temp_')) {
+                showMessage('User sementara tidak bisa edit profil!', 'error');
+                return;
+            }
+            
+            try {
+                const userSnapshot = await database.ref(`tebak-angka/users/${userId}`).once('value');
+                if (!userSnapshot.exists()) {
+                    showMessage('User tidak ditemukan!', 'error');
+                    return;
+                }
+                
+                const userData = userSnapshot.val();
+                
+                const newName = prompt('Masukkan nama baru:', userData.name || '');
+                if (!newName || newName.trim().length < 3) {
+                    showMessage('Nama minimal 3 karakter!', 'error');
+                    return;
+                }
+                
+                const newAddress = prompt('Masukkan alamat baru:', userData.address || '');
+                if (!newAddress || newAddress.trim().length < 10) {
+                    showMessage('Alamat terlalu pendek!', 'error');
+                    return;
+                }
+                
+                // Update di Firebase
+                await database.ref(`tebak-angka/users/${userId}`).update({
+                    name: newName.trim(),
+                    address: newAddress.trim(),
+                    updatedAt: Date.now()
+                });
+                
+                // Update localStorage
+                const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
+                currentUser.name = newName.trim();
+                currentUser.address = newAddress.trim();
+                localStorage.setItem('current_user', JSON.stringify(currentUser));
+                
+                showMessage('✅ Profil berhasil diperbarui!', 'success');
+                
+                // Reload profile
+                setTimeout(() => {
+                    loadUserProfile();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                showMessage('Gagal memperbarui profil', 'error');
+            }
+        }
+
+        async function topUpSaldo() {
+            const userId = localStorage.getItem('user_id_bk');
+            
+            if (!userId) {
+                showMessage('Anda belum login!', 'error');
+                return;
+            }
+            
+            // Cek jika user temporary
+            if (userId.startsWith('temp_')) {
+                showMessage('User sementara tidak bisa top up! Silakan daftar akun.', 'error');
+                return;
+            }
+            
+            const amount = prompt('Masukkan jumlah top up (min Rp 10.000):', '10000');
+            if (!amount || isNaN(amount) || parseInt(amount) < 10000) {
+                showMessage('Minimal top up Rp 10.000!', 'error');
+                return;
+            }
+            
+            const topUpAmount = parseInt(amount);
+            
+            if (confirm(`Top up Rp ${topUpAmount.toLocaleString()}?`)) {
+                try {
+                    // Get current saldo
+                    const saldoSnapshot = await database.ref(`tebak-angka/saldo/${userId}`).once('value');
+                    const currentSaldo = saldoSnapshot.exists() ? saldoSnapshot.val() : 50000;
+                    
+                    // Calculate new saldo
+                    const newSaldo = currentSaldo + topUpAmount;
+                    
+                    // Update saldo in Firebase
+                    await database.ref(`tebak-angka/saldo/${userId}`).set(newSaldo);
+                    
+                    // Record transaction history
+                    await database.ref(`tebak-angka/transactions/${userId}/${Date.now()}`).set({
+                        type: 'topup',
+                        amount: topUpAmount,
+                        timestamp: Date.now(),
+                        description: 'Top up saldo'
+                    });
+                    
+                    // Update user's total deposit
+                    const userSnapshot = await database.ref(`tebak-angka/users/${userId}`).once('value');
+                    if (userSnapshot.exists()) {
+                        const userData = userSnapshot.val();
+                        const currentDeposit = userData.totalDeposit || 0;
+                        await database.ref(`tebak-angka/users/${userId}`).update({
+                            totalDeposit: currentDeposit + topUpAmount,
+                            lastTopUp: Date.now()
+                        });
+                    }
+                    
+                    // Update localStorage
+                    const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
+                    currentUser.saldo = newSaldo;
+                    localStorage.setItem('current_user', JSON.stringify(currentUser));
+                    
+                    showMessage(`✅ Top up Rp ${topUpAmount.toLocaleString()} berhasil!`, 'success');
+                    
+                    // Reload profile
+                    setTimeout(() => {
+                        loadUserProfile();
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('Error top up:', error);
+                    showMessage('Gagal melakukan top up', 'error');
+                }
+            }
+        }
+
+        function logout() {
+            if (confirm('Yakin ingin logout?')) {
+                // Hapus data login dari localStorage
+                localStorage.removeItem('user_id_bk');
+                localStorage.removeItem('current_user');
+                
+                showMessage('✅ Logout berhasil!', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            }
+        }
+
+        // Load profile saat halaman dimuat
+        window.addEventListener('load', loadUserProfile);
+    </script>
+</body>
+</html>
