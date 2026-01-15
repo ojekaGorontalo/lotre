@@ -1166,6 +1166,9 @@
                 const userCount = Object.keys(taruhanUsers).length;
                 console.log(`📊 Memproses ${userCount} user untuk round ${roundId}`);
                 
+                // Array untuk menyimpan semua promise update saldo
+                const updatePromises = [];
+                
                 for (const userId in taruhanUsers) {
                     const taruhan = taruhanUsers[userId];
                     
@@ -1196,7 +1199,12 @@
                     const saldoNetto = totalKemenangan - totalKerugian;
                     const menangOverall = saldoNetto > 0;
                     
-                    console.log(`  User ${userId.substring(0, 8)}...: Taruhan=${pasangan}, MenangBesarKecil=${menangBesarKecil}, MenangAngka=${menangAngka}, Netto=${saldoNetto}`);
+                    console.log(`  👤 User ${userId.substring(0, 8)}...: Taruhan=${pasangan}, MenangBesarKecil=${menangBesarKecil}, MenangAngka=${menangAngka}, Netto=${saldoNetto}`);
+                    
+                    // Simpan promise update saldo ke array
+                    updatePromises.push(
+                        updateUserBalance(userId, saldoNetto)
+                    );
                     
                     // Update status taruhan user
                     await database.ref(`tebak-angka/taruhan/${roundId}/taruhan_users/${userId}`).update({
@@ -1209,9 +1217,6 @@
                         kerugian: totalKerugian,
                         saldo_netto: saldoNetto
                     });
-                    
-                    // 🚀 UPDATE SALDO USER - INI YANG MENYEBABKAN SALDO TERUPDATE!
-                    await updateUserBalance(userId, saldoNetto);
                     
                     // Simpan ke history user
                     await saveToUserHistory(userId, {
@@ -1229,38 +1234,58 @@
                     });
                 }
                 
+                // Tunggu semua update saldo selesai
+                await Promise.all(updatePromises);
+                
                 console.log(`✅ Berhasil memproses ${userCount} user untuk round ${roundId}`);
                 
             } catch (error) {
                 console.error(`❌ Error memproses hasil user untuk round ${roundId}:`, error);
-                throw error; // Re-throw agar bisa ditangkap di caller
+                throw error;
             }
         }
 
         // ========== FUNGSI UPDATE SALDO YANG DIPERBAIKI ==========
         async function updateUserBalance(userId, saldoNetto) {
             try {
-                const saldoRef = database.ref(`tebak-angka/saldo/${userId}`);
+                console.log(`?? MENGUPDATE SALDO USER: ${userId.substring(0, 8)}..., perubahan: ${saldoNetto}`);
                 
-                console.log(`🔄 Mengupdate saldo user: ${userId.substring(0, 8)}..., perubahan: ${saldoNetto}`);
+                if (!userId) {
+                    console.error('❌ User ID tidak valid');
+                    return;
+                }
                 
                 // Gunakan transaction untuk menghindari race condition
+                const saldoRef = database.ref(`tebak-angka/saldo/${userId}`);
+                
                 await saldoRef.transaction((currentBalance) => {
+                    console.log(`📊 Transaction dimulai untuk user ${userId.substring(0, 8)}...`);
+                    
                     // Jika null atau undefined, set ke default 50000
                     if (currentBalance === null || currentBalance === undefined) {
-                        console.log(`  User ${userId.substring(0, 8)}... tidak punya record saldo, set ke 50000`);
-                        currentBalance = 50000;
+                        console.log(`  → User belum punya saldo, set ke 50000`);
+                        return 50000 + (saldoNetto || 0);
+                    }
+                    
+                    // Convert ke number
+                    const current = Number(currentBalance);
+                    const change = Number(saldoNetto);
+                    
+                    if (isNaN(current) || isNaN(change)) {
+                        console.error('❌ Data saldo tidak valid:', { current, change });
+                        return current; // Return current value tanpa perubahan
                     }
                     
                     // Hitung saldo baru
-                    let newBalance = Number(currentBalance) + Number(saldoNetto);
+                    let newBalance = current + change;
                     
                     // Pastikan saldo tidak negatif
                     if (newBalance < 0) {
+                        console.log(`  ⚠️ Saldo menjadi negatif, set ke 0`);
                         newBalance = 0;
                     }
                     
-                    console.log(`  Perhitungan saldo: ${currentBalance} ${saldoNetto >= 0 ? '+' : ''}${saldoNetto} = ${newBalance}`);
+                    console.log(`  → Perhitungan: ${current} ${change >= 0 ? '+' : ''}${change} = ${newBalance}`);
                     
                     return newBalance;
                 }, (error, committed, snapshot) => {
@@ -1270,11 +1295,17 @@
                         console.log(`⚠️ Transaction tidak tercommit untuk user ${userId}`);
                     } else {
                         console.log(`✅ Berhasil update saldo user ${userId.substring(0, 8)}... Saldo baru: ${snapshot.val()}`);
+                        
+                        // Verifikasi dengan read ulang
+                        saldoRef.once('value').then(verifySnap => {
+                            console.log(`✅ Verifikasi saldo: ${verifySnap.val()}`);
+                        });
                     }
                 });
                 
             } catch (error) {
                 console.error(`❌ Error mengupdate saldo user ${userId}:`, error);
+                throw error;
             }
         }
 
