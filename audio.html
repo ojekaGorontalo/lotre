@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio Fix Test</title>
+
+<style>
+body {
+    background: #111;
+    color: white;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
+}
+
+button {
+    font-size: 18px;
+    padding: 16px 24px;
+    border-radius: 10px;
+    border: none;
+    background: #d70000;
+    color: white;
+}
+</style>
+</head>
+<body>
+
+<button id="playBtn">▶ TAP UNTUK TEST AUDIO</button>
+
+<audio
+    id="audio"
+    src="https://drive.google.com/uc?export=download&id=16BfcfJ5EFNsk1y0_xZFQn9gUt8xFgWf-"
+    preload="auto"
+></audio>
+
+<script>
+const btn = document.getElementById("playBtn");
+const audio = document.getElementById("audio");
+
+btn.addEventListener("click", async () => {
+    try {
+        audio.currentTime = 0;
+        audio.volume = 1;
+
+        await audio.play();
+
+        console.log("✅ AUDIO BERHASIL DIPUTAR");
+        btn.innerText = "🔊 AUDIO AKTIF";
+
+    } catch (e) {
+        console.error("❌ AUDIO GAGAL:", e.name);
+        alert("Audio gagal: " + e.name);
+    }
+});
+</script>
+
+</body>
+</html>
