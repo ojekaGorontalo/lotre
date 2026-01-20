@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Panel - Tebak Besar Kecil</title>
+    <title>Admin Panel - Tebak Besar Kecil & Tebak Angka</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <style>
@@ -12,7 +12,7 @@
             min-height: 100vh;
         }
         .admin-container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
             padding: 30px;
@@ -24,13 +24,50 @@
             text-align: center;
             margin-bottom: 30px;
         }
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .tab-btn {
+            padding: 12px 20px;
+            border: none;
+            background: #f5f5f5;
+            color: #666;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        .tab-btn:hover {
+            background: #e9e9e9;
+        }
+        .tab-btn.active {
+            background: #d70000;
+            color: white;
+            border-color: #d70000;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
         .mode-buttons {
             display: flex;
             gap: 10px;
             margin: 20px 0;
+            flex-wrap: wrap;
         }
         .mode-btn {
             flex: 1;
+            min-width: 120px;
             padding: 15px;
             border: 2px solid #d70000;
             background: white;
@@ -45,6 +82,17 @@
         }
         .mode-btn.active {
             background: #d70000;
+            color: white;
+        }
+        .mode-btn.angka-mode {
+            border-color: #0066cc;
+            color: #0066cc;
+        }
+        .mode-btn.angka-mode:hover {
+            background: #e6f0ff;
+        }
+        .mode-btn.angka-mode.active {
+            background: #0066cc;
             color: white;
         }
         .input-group {
@@ -82,6 +130,12 @@
         }
         button:hover {
             background: #b30000;
+        }
+        button.angka-btn {
+            background: #0066cc;
+        }
+        button.angka-btn:hover {
+            background: #0055aa;
         }
         .status {
             margin-top: 20px;
@@ -159,7 +213,7 @@
         }
         .bet-cards {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -169,30 +223,40 @@
             padding: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border-top: 4px solid;
+            text-align: center;
         }
-        .bet-card.besar {
-            border-top-color: #d70000;
-        }
-        .bet-card.kecil {
-            border-top-color: #0066cc;
-        }
+        .bet-card.angka-0 { border-top-color: #FF6B6B; }
+        .bet-card.angka-1 { border-top-color: #4ECDC4; }
+        .bet-card.angka-2 { border-top-color: #FFD166; }
+        .bet-card.angka-3 { border-top-color: #06D6A0; }
+        .bet-card.angka-4 { border-top-color: #118AB2; }
+        .bet-card.angka-5 { border-top-color: #EF476F; }
+        .bet-card.angka-6 { border-top-color: #7209B7; }
+        .bet-card.angka-7 { border-top-color: #F8961E; }
+        .bet-card.angka-8 { border-top-color: #43AA8B; }
+        .bet-card.angka-9 { border-top-color: #277DA1; }
         .bet-title {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 15px;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
         }
-        .bet-title.besar {
-            color: #d70000;
-        }
-        .bet-title.kecil {
-            color: #0066cc;
-        }
+        .bet-title.angka-0 { color: #FF6B6B; }
+        .bet-title.angka-1 { color: #4ECDC4; }
+        .bet-title.angka-2 { color: #FFD166; }
+        .bet-title.angka-3 { color: #06D6A0; }
+        .bet-title.angka-4 { color: #118AB2; }
+        .bet-title.angka-5 { color: #EF476F; }
+        .bet-title.angka-6 { color: #7209B7; }
+        .bet-title.angka-7 { color: #F8961E; }
+        .bet-title.angka-8 { color: #43AA8B; }
+        .bet-title.angka-9 { color: #277DA1; }
         .bet-info {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 10px;
         }
         .bet-info-item {
@@ -316,24 +380,25 @@
         }
         .hasil-buttons {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 10px;
             margin-bottom: 10px;
         }
         .hasil-btn {
             background: white;
-            border: 2px solid #d70000;
-            color: #d70000;
+            border: 2px solid #0066cc;
+            color: #0066cc;
             padding: 10px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 14px;
         }
         .hasil-btn:hover {
-            background: #ffe6e6;
+            background: #e6f0ff;
         }
         .hasil-btn.active {
-            background: #d70000;
+            background: #0066cc;
             color: white;
         }
         .selected-hasil {
@@ -341,144 +406,327 @@
             margin-top: 10px;
             font-weight: bold;
             color: #333;
+            font-size: 18px;
         }
         .selected-hasil span {
             color: #d70000;
+        }
+        .game-type-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .game-type-bk {
+            background: #ffcccc;
+            color: #d70000;
+        }
+        .game-type-ta {
+            background: #cce5ff;
+            color: #0066cc;
+        }
+        .angka-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+        }
+        .angka-info h4 {
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
+        .angka-rules {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .rule-item {
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .rule-item.besar {
+            background: rgba(215, 0, 0, 0.1);
+            color: #d70000;
+            border: 1px solid rgba(215, 0, 0, 0.2);
+        }
+        .rule-item.kecil {
+            background: rgba(0, 102, 204, 0.1);
+            color: #0066cc;
+            border: 1px solid rgba(0, 102, 204, 0.2);
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
-        <h2>⚙️ ADMIN PANEL - TEBAK BESAR KECIL</h2>
+        <h2>⚙️ ADMIN PANEL - TEBAK BESAR/KECIL & TEBAK ANGKA</h2>
         
-        <div class="input-group">
-            <label>Mode Permainan:</label>
-            <div class="mode-buttons">
-                <button class="mode-btn" onclick="setMode('random')" id="btn-random">RANDOM</button>
-                <button class="mode-btn" onclick="setMode('harus_besar')" id="btn-besar">HARUS BESAR</button>
-                <button class="mode-btn" onclick="setMode('harus_kecil')" id="btn-kecil">HARUS KECIL</button>
-            </div>
-        </div>
-        
-        <div class="input-group">
-            <label>Waktu Tunggu (detik):</label>
-            <input type="number" id="waktuTunggu" value="15" min="5" max="60">
-        </div>
-        
-        <div class="input-group">
-            <label>Pasangan (pisahkan dengan koma):</label>
-            <input type="text" id="pasangan" value="1000,2000,5000,10000,20000" placeholder="Contoh: 1000,2000,5000">
-        </div>
-        
-        <!-- Kontrol Hasil -->
-        <div class="hasil-controls">
-            <div class="hasil-controls-title">Tentukan Hasil Round:</div>
-            
-            <div class="hasil-buttons">
-                <button class="hasil-btn" onclick="setHasilBesarKecil('BESAR')" id="btn-hasil-besar">BESAR</button>
-                <button class="hasil-btn" onclick="setHasilBesarKecil('KECIL')" id="btn-hasil-kecil">KECIL</button>
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('besar-kecil')">🎯 Tebak Besar/Kecil</button>
+                <button class="tab-btn" onclick="showTab('angka')">🔢 Tebak Angka (0-9)</button>
             </div>
             
-            <div class="selected-hasil">
-                Hasil Terpilih: <span id="selected-hasil-text">-</span>
-            </div>
-        </div>
-        
-        <div class="admin-controls">
-            <button onclick="saveSettings()">💾 SIMPAN PENGATURAN</button>
-            <button onclick="forceResetGame()" style="background: #ff9900;">🔄 RESET PERMAINAN</button>
-        </div>
-        
-        <button id="start-round-btn" onclick="startNewRound()">🚀 MULAI ROUND BARU</button>
-        <button id="force-result-btn" onclick="forceRoundResult()">🎯 TENTUKAN HASIL</button>
-        
-        <div id="status" class="status"></div>
-        
-        <div class="live-monitor">
-            <h3>📊 LIVE MONITOR</h3>
-            <div class="stat-box">
-                <div class="stat-item">
-                    <div class="stat-label">Mode Saat Ini</div>
-                    <div class="stat-value" id="current-mode">RANDOM</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Waktu Tunggu</div>
-                    <div class="stat-value" id="current-timer">15 detik</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Status Engine</div>
-                    <div class="stat-value" id="engine-status">AKTIF</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Round Aktif</div>
-                    <div class="stat-value" id="active-round-count">0</div>
-                </div>
-            </div>
-            
-            <!-- Current Round Bet Monitoring -->
-            <div class="bet-monitor">
-                <h4>🎲 MONITORING TARUHAN ROUND SAAT INI</h4>
-                <div class="current-round">
-                    <h5>Round ID: <span id="current-round-id">-</span></h5>
-                    <div>Status: <span id="current-round-status">-</span></div>
-                    <div>Waktu Tersisa: <span id="current-round-timer">-</span></div>
-                    <div>Mode: <span id="current-round-mode">-</span></div>
+            <!-- TAB TEBAK BESAR/KECIL -->
+            <div id="tab-besar-kecil" class="tab-content active">
+                <div class="input-group">
+                    <label>Mode Permainan Besar/Kecil:</label>
+                    <div class="mode-buttons">
+                        <button class="mode-btn" onclick="setModeBk('random_bk')" id="btn-random-bk">RANDOM</button>
+                        <button class="mode-btn" onclick="setModeBk('harus_besar')" id="btn-besar">HARUS BESAR</button>
+                        <button class="mode-btn" onclick="setModeBk('harus_kecil')" id="btn-kecil">HARUS KECIL</button>
+                    </div>
                 </div>
                 
-                <div class="bet-cards">
-                    <div class="bet-card besar">
-                        <div class="bet-title besar">🟥 BESAR</div>
-                        <div class="bet-info">
-                            <div class="bet-info-item">
-                                <div class="bet-number" id="besar-count">0</div>
-                                <div class="bet-label">Jumlah User</div>
-                            </div>
-                            <div class="bet-info-item">
-                                <div class="bet-number" id="besar-total">0</div>
-                                <div class="bet-label">Total Pasangan</div>
-                            </div>
+                <div class="input-group">
+                    <label>Waktu Tunggu (detik):</label>
+                    <input type="number" id="waktuTungguBk" value="15" min="5" max="60">
+                </div>
+                
+                <div class="input-group">
+                    <label>Pasangan (pisahkan dengan koma):</label>
+                    <input type="text" id="pasanganBk" value="1000,2000,5000,10000,20000" placeholder="Contoh: 1000,2000,5000">
+                </div>
+                
+                <!-- Kontrol Hasil Besar/Kecil -->
+                <div class="hasil-controls">
+                    <div class="hasil-controls-title">Tentukan Hasil Round Besar/Kecil:</div>
+                    
+                    <div class="hasil-buttons">
+                        <button class="hasil-btn" onclick="setHasilBesarKecil('BESAR')" id="btn-hasil-besar">BESAR</button>
+                        <button class="hasil-btn" onclick="setHasilBesarKecil('KECIL')" id="btn-hasil-kecil">KECIL</button>
+                    </div>
+                    
+                    <div class="selected-hasil">
+                        Hasil Terpilih: <span id="selected-hasil-bk-text">-</span>
+                    </div>
+                </div>
+                
+                <div class="admin-controls">
+                    <button onclick="saveSettingsBk()">💾 SIMPAN PENGATURAN BESAR/KECIL</button>
+                    <button onclick="forceResetGameBk()" style="background: #ff9900;">🔄 RESET PERMAINAN BESAR/KECIL</button>
+                </div>
+                
+                <button id="start-round-btn-bk" onclick="startNewRoundBk()">🚀 MULAI ROUND BESAR/KECIL</button>
+                <button id="force-result-btn-bk" onclick="forceRoundResultBk()">🎯 TENTUKAN HASIL BESAR/KECIL</button>
+                
+                <div id="status-bk" class="status"></div>
+                
+                <div class="live-monitor">
+                    <h3>📊 LIVE MONITOR BESAR/KECIL</h3>
+                    <div class="stat-box">
+                        <div class="stat-item">
+                            <div class="stat-label">Mode Saat Ini</div>
+                            <div class="stat-value" id="current-mode-bk">RANDOM</div>
                         </div>
-                        <div class="max-bet">
-                            <div class="bet-label">Taruhan Terbesar</div>
-                            <div class="max-bet-value" id="besar-max">-</div>
-                            <div class="max-bet-user" id="besar-max-user">-</div>
+                        <div class="stat-item">
+                            <div class="stat-label">Waktu Tunggu</div>
+                            <div class="stat-value" id="current-timer-bk">15 detik</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Status Engine</div>
+                            <div class="stat-value" id="engine-status-bk">AKTIF</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Round Aktif</div>
+                            <div class="stat-value" id="active-round-count-bk">0</div>
                         </div>
                     </div>
                     
-                    <div class="bet-card kecil">
-                        <div class="bet-title kecil">🟦 KECIL</div>
-                        <div class="bet-info">
-                            <div class="bet-info-item">
-                                <div class="bet-number" id="kecil-count">0</div>
-                                <div class="bet-label">Jumlah User</div>
+                    <!-- Current Round Bet Monitoring -->
+                    <div class="bet-monitor">
+                        <h4>🎲 MONITORING TARUHAN ROUND SAAT INI <span class="game-type-badge game-type-bk">BESAR/KECIL</span></h4>
+                        <div class="current-round">
+                            <h5>Round ID: <span id="current-round-id-bk">-</span></h5>
+                            <div>Status: <span id="current-round-status-bk">-</span></div>
+                            <div>Waktu Tersisa: <span id="current-round-timer-bk">-</span></div>
+                            <div>Mode: <span id="current-round-mode-bk">-</span></div>
+                        </div>
+                        
+                        <div class="bet-cards">
+                            <div class="bet-card besar">
+                                <div class="bet-title">🟥 BESAR (5-9)</div>
+                                <div class="bet-info">
+                                    <div class="bet-info-item">
+                                        <div class="bet-number" id="besar-count">0</div>
+                                        <div class="bet-label">Jumlah User</div>
+                                    </div>
+                                    <div class="bet-info-item">
+                                        <div class="bet-number" id="besar-total">0</div>
+                                        <div class="bet-label">Total Pasangan</div>
+                                    </div>
+                                </div>
+                                <div class="max-bet">
+                                    <div class="bet-label">Taruhan Terbesar</div>
+                                    <div class="max-bet-value" id="besar-max">-</div>
+                                    <div class="max-bet-user" id="besar-max-user">-</div>
+                                </div>
                             </div>
-                            <div class="bet-info-item">
-                                <div class="bet-number" id="kecil-total">0</div>
-                                <div class="bet-label">Total Pasangan</div>
+                            
+                            <div class="bet-card kecil">
+                                <div class="bet-title">🟦 KECIL (0-4)</div>
+                                <div class="bet-info">
+                                    <div class="bet-info-item">
+                                        <div class="bet-number" id="kecil-count">0</div>
+                                        <div class="bet-label">Jumlah User</div>
+                                    </div>
+                                    <div class="bet-info-item">
+                                        <div class="bet-number" id="kecil-total">0</div>
+                                        <div class="bet-label">Total Pasangan</div>
+                                    </div>
+                                </div>
+                                <div class="max-bet">
+                                    <div class="bet-label">Taruhan Terbesar</div>
+                                    <div class="max-bet-value" id="kecil-max">-</div>
+                                    <div class="max-bet-user" id="kecil-max-user">-</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="max-bet">
-                            <div class="bet-label">Taruhan Terbesar</div>
-                            <div class="max-bet-value" id="kecil-max">-</div>
-                            <div class="max-bet-user" id="kecil-max-user">-</div>
+                        
+                        <div style="margin-top: 20px;">
+                            <h5>👥 DETAIL TARUHAN USER</h5>
+                            <div id="bet-details-bk" class="no-data">Belum ada taruhan</div>
                         </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h4>📋 HISTORY HASIL BESAR/KECIL (10 Terakhir)</h4>
+                        <div id="result-history-bk" class="round-history"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TAB TEBAK ANGKA -->
+            <div id="tab-angka" class="tab-content">
+                <div class="angka-info">
+                    <h4>📊 ATURAN TEBAK ANGKA:</h4>
+                    <div class="angka-rules">
+                        <div class="rule-item kecil">
+                            🔵 KECIL: Angka 0, 1, 2, 3, 4
+                        </div>
+                        <div class="rule-item besar">
+                            🔴 BESAR: Angka 5, 6, 7, 8, 9
+                        </div>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                        User memilih angka spesifik (0-9). Hasil akan ditentukan oleh admin.
+                    </p>
+                </div>
+                
+                <div class="input-group">
+                    <label>Mode Permainan Tebak Angka:</label>
+                    <div class="mode-buttons">
+                        <button class="mode-btn angka-mode" onclick="setModeAngka('random_angka')" id="btn-random-angka">RANDOM ANGKA</button>
+                        <button class="mode-btn angka-mode" onclick="setModeAngka('harus_besar')" id="btn-besar-angka">HARUS BESAR (5-9)</button>
+                        <button class="mode-btn angka-mode" onclick="setModeAngka('harus_kecil')" id="btn-kecil-angka">HARUS KECIL (0-4)</button>
                     </div>
                 </div>
                 
-                <div style="margin-top: 20px;">
-                    <h5>👥 DETAIL TARUHAN USER</h5>
-                    <div id="bet-details" class="no-data">Belum ada taruhan</div>
+                <div class="input-group">
+                    <label>Waktu Tunggu (detik):</label>
+                    <input type="number" id="waktuTungguAngka" value="15" min="5" max="60">
                 </div>
-            </div>
-            
-            <div style="margin-top: 20px;">
-                <h4>📋 HISTORY HASIL (10 Terakhir)</h4>
-                <div id="result-history" class="round-history"></div>
-            </div>
-            
-            <div style="margin-top: 20px;">
-                <h4>📈 HISTORY TERBARU (5 Terakhir)</h4>
-                <div id="liveData"></div>
+                
+                <div class="input-group">
+                    <label>Pasangan (pisahkan dengan koma):</label>
+                    <input type="text" id="pasanganAngka" value="1000,2000,5000,10000,20000" placeholder="Contoh: 1000,2000,5000">
+                </div>
+                
+                <!-- Kontrol Hasil Angka -->
+                <div class="hasil-controls">
+                    <div class="hasil-controls-title">Tentukan Hasil Angka (0-9):</div>
+                    
+                    <div class="hasil-buttons">
+                        <button class="hasil-btn" onclick="setHasilAngka(0)" id="btn-hasil-0">0</button>
+                        <button class="hasil-btn" onclick="setHasilAngka(1)" id="btn-hasil-1">1</button>
+                        <button class="hasil-btn" onclick="setHasilAngka(2)" id="btn-hasil-2">2</button>
+                        <button class="hasil-btn" onclick="setHasilAngka(3)" id="btn-hasil-3">3</button>
+                        <button class="hasil-btn" onclick="setHasilAngka(4)" id="btn-hasil-4">4</button>
+                        <button class="hasil-btn" onclick="setHasilAngka(5)" id="btn-hasil-5">5</button>
+                        <button class="hasil-btn" onclick="setHasilAngka(6)" id="btn-hasil-6">6</button>
+                        <button class="hasil-btn" onclick="setHasilAngka(7)" id="btn-hasil-7">7</button>
+                        <button class="hasil-btn" onclick="setHasilAngka(8)" id="btn-hasil-8">8</button>
+                        <button class="hasil-btn" onclick="setHasilAngka(9)" id="btn-hasil-9">9</button>
+                    </div>
+                    
+                    <div class="selected-hasil">
+                        Hasil Angka Terpilih: <span id="selected-hasil-angka-text">-</span>
+                        <span id="selected-hasil-kategori" style="margin-left: 10px; font-size: 14px;"></span>
+                    </div>
+                </div>
+                
+                <div class="admin-controls">
+                    <button class="angka-btn" onclick="saveSettingsAngka()">💾 SIMPAN PENGATURAN TEBAK ANGKA</button>
+                    <button onclick="forceResetGameAngka()" style="background: #ff9900;">🔄 RESET PERMAINAN TEBAK ANGKA</button>
+                </div>
+                
+                <button class="angka-btn" id="start-round-btn-angka" onclick="startNewRoundAngka()">🚀 MULAI ROUND TEBAK ANGKA</button>
+                <button id="force-result-btn-angka" onclick="forceRoundResultAngka()" style="background: #0066cc;">🎯 TENTUKAN HASIL TEBAK ANGKA</button>
+                
+                <div id="status-angka" class="status"></div>
+                
+                <div class="live-monitor">
+                    <h3>📊 LIVE MONITOR TEBAK ANGKA</h3>
+                    <div class="stat-box">
+                        <div class="stat-item">
+                            <div class="stat-label">Mode Saat Ini</div>
+                            <div class="stat-value" id="current-mode-angka">RANDOM ANGKA</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Waktu Tunggu</div>
+                            <div class="stat-value" id="current-timer-angka">15 detik</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Status Engine</div>
+                            <div class="stat-value" id="engine-status-angka">AKTIF</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Round Aktif</div>
+                            <div class="stat-value" id="active-round-count-angka">0</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Current Round Bet Monitoring -->
+                    <div class="bet-monitor">
+                        <h4>🎲 MONITORING TARUHAN ROUND SAAT INI <span class="game-type-badge game-type-ta">TEBAK ANGKA 0-9</span></h4>
+                        <div class="current-round">
+                            <h5>Round ID: <span id="current-round-id-angka">-</span></h5>
+                            <div>Status: <span id="current-round-status-angka">-</span></div>
+                            <div>Waktu Tersisa: <span id="current-round-timer-angka">-</span></div>
+                            <div>Mode: <span id="current-round-mode-angka">-</span></div>
+                        </div>
+                        
+                        <div class="angka-info" style="margin-bottom: 20px;">
+                            <div class="angka-rules">
+                                <div class="rule-item kecil" style="flex: 1;">
+                                    🔵 KECIL (0-4)
+                                </div>
+                                <div class="rule-item besar" style="flex: 1;">
+                                    🔴 BESAR (5-9)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bet-cards">
+                            <!-- Angka 0-9 akan ditampilkan di sini -->
+                        </div>
+                        
+                        <div style="margin-top: 20px;">
+                            <h5>👥 DETAIL TARUHAN USER</h5>
+                            <div id="bet-details-angka" class="no-data">Belum ada taruhan</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h4>📋 HISTORY HASIL TEBAK ANGKA (10 Terakhir)</h4>
+                        <div id="result-history-angka" class="round-history"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -498,337 +746,89 @@
 
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        let currentMode = 'random';
-        let currentGameInterval = null;
-        let activeRoundId = null;
-        let roundHistory = [];
+        
+        // State untuk game Besar/Kecil
+        let currentModeBk = 'random_bk';
+        let currentGameIntervalBk = null;
+        let activeRoundIdBk = null;
         let selectedHasilBesarKecil = null;
+        
+        // State untuk game Tebak Angka
+        let currentModeAngka = 'random_angka';
+        let currentGameIntervalAngka = null;
+        let activeRoundIdAngka = null;
+        let selectedHasilAngka = null;
 
-        // Load current settings
-        database.ref('tebak-angka/aturan').on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                currentMode = data.mode || 'random';
-                updateModeButtons();
-                document.getElementById('waktuTunggu').value = data.waktu_tunggu || 15;
-                document.getElementById('current-mode').textContent = currentMode.toUpperCase();
-                document.getElementById('current-timer').textContent = (data.waktu_tunggu || 15) + ' detik';
-                
-                // Auto-start game engine jika belum berjalan
-                if (data.aktif && !currentGameInterval) {
-                    startGameEngine();
-                }
-            }
-        });
+        // ==================== FUNGSI GENERATE ROUND ID ====================
+        let roundCounter = 99999; // Counter 5 digit, dimulai dari 99999
 
-        database.ref('tebak-angka/pasangan').on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                const pasangan = Object.values(snapshot.val());
-                document.getElementById('pasangan').value = pasangan.join(',');
-            }
-        });
-
-        // Monitor live data
-        database.ref('tebak-angka/history').on('value', (snapshot) => {
-            const container = document.getElementById('liveData');
-            if (snapshot.exists()) {
-                const historyData = snapshot.val();
-                let allHistoryEntries = [];
-                
-                // Process the nested history structure
-                Object.keys(historyData).forEach(userId => {
-                    const userHistory = historyData[userId];
-                    if (userHistory && typeof userHistory === 'object') {
-                        Object.keys(userHistory).forEach(timestampKey => {
-                            const entry = userHistory[timestampKey];
-                            if (entry && typeof entry === 'object') {
-                                allHistoryEntries.push({
-                                    ...entry,
-                                    userId: userId,
-                                    waktu: entry.waktu || parseInt(timestampKey)
-                                });
-                            }
-                        });
-                    }
-                });
-                
-                // Sort by waktu (newest first) and take 5
-                allHistoryEntries.sort((a, b) => b.waktu - a.waktu);
-                const recentHistory = allHistoryEntries.slice(0, 5);
-                
-                if (recentHistory.length > 0) {
-                    let html = '<table class="history-table">';
-                    html += '<tr><th>Waktu</th><th>User</th><th>Pilihan</th><th>Pasangan</th><th>Hasil</th></tr>';
-                    
-                    recentHistory.forEach(item => {
-                        const waktu = new Date(item.waktu).toLocaleTimeString();
-                        const userShort = (item.userId || 'unknown').substring(0, 8) + '...';
-                        const pilihan = item.pilihan || '-';
-                        
-                        html += `  
-                            <tr>
-                                <td>${waktu}</td>
-                                <td>${userShort}</td>
-                                <td>${pilihan}</td>
-                                <td>Rp ${(item.pasangan || 0).toLocaleString()}</td>
-                                <td style="color:${item.hasil === 'MENANG' ? 'green' : 'red'}; font-weight:bold">
-                                    ${item.hasil || '-'}
-                                </td>
-                            </tr>
-                        `;
-                    });
-                    
-                    html += '</table>';
-                    container.innerHTML = html;
-                } else {
-                    container.innerHTML = '<p>Belum ada history permainan</p>';
-                }
-            } else {
-                container.innerHTML = '<p>Belum ada history permainan</p>';
-            }
-        });
-
-        // Monitor current round bets
-        database.ref('tebak-angka/taruhan').on('value', (snapshot) => {
-            if (!snapshot.exists()) {
-                resetDisplay();
-                return;
-            }
-
-            const taruhanData = snapshot.val();
-            let activeRound = null;
-            let activeRoundKey = null;
-            let activeRoundCount = 0;
-
-            // Cari round dengan status "berjalan" yang masih valid
-            const now = Date.now();
+        function generateRoundId() {
+            // Ambil timestamp saat ini (milidetik sejak epoch)
+            const timestamp = Date.now(); // 13 digit
             
-            for (const key in taruhanData) {
-                const round = taruhanData[key];
-                if (!round) continue;
-                
-                if (round.status === 'berjalan') {
-                    activeRoundCount++;
-                    // Jika round memiliki end_time, cek apakah belum expired
-                    if (round.end_time && round.end_time > now) {
-                        activeRound = round;
-                        activeRoundKey = key;
-                    } else if (!round.end_time) {
-                        // Jika tidak ada end_time, tetap anggap sebagai round aktif
-                        activeRound = round;
-                        activeRoundKey = key;
-                    }
-                }
-            }
-
-            // Update active round count
-            document.getElementById('active-round-count').textContent = activeRoundCount;
-
-            if (activeRound) {
-                activeRoundId = activeRoundKey;
-                
-                // Update round info
-                document.getElementById('current-round-id').textContent = 
-                    activeRoundKey ? activeRoundKey.substring(0, 12) + '...' : '-';
-                document.getElementById('current-round-status').textContent = activeRound.status || '-';
-                document.getElementById('current-round-mode').textContent = activeRound.mode || currentMode;
-                
-                // Calculate time remaining
-                if (activeRound.end_time) {
-                    const timeLeft = Math.max(0, Math.floor((activeRound.end_time - now) / 1000));
-                    document.getElementById('current-round-timer').textContent = timeLeft + ' detik';
-                    
-                    if (timeLeft <= 0) {
-                        document.getElementById('current-round-status').textContent = 'WAKTU HABIS';
-                        document.getElementById('current-round-timer').style.color = '#ff0000';
-                    } else {
-                        document.getElementById('current-round-timer').style.color = '#333';
-                    }
-                } else {
-                    document.getElementById('current-round-timer').textContent = '-';
-                }
-
-                // Monitor bets in current round
-                if (activeRound.taruhan_users && Object.keys(activeRound.taruhan_users).length > 0) {
-                    processBetData(activeRound.taruhan_users);
-                } else {
-                    resetBetMonitoring();
-                    document.getElementById('bet-details').innerHTML = 
-                        '<div class="no-data">Belum ada taruhan di round ini</div>';
-                }
-            } else {
-                resetDisplay();
-            }
-        });
-
-        // Load result history
-        database.ref('tebak-angka/hasil_round').orderByChild('timestamp').limitToLast(10).on('value', (snapshot) => {
-            const container = document.getElementById('result-history');
-            if (snapshot.exists()) {
-                const resultData = snapshot.val();
-                roundHistory = [];
-                
-                for (const key in resultData) {
-                    roundHistory.push(resultData[key]);
-                }
-                
-                // Sort by timestamp newest first
-                roundHistory.sort((a, b) => b.timestamp - a.timestamp);
-                
-                let html = '';
-                roundHistory.forEach(item => {
-                    const time = new Date(item.timestamp).toLocaleTimeString();
-                    
-                    html += `
-                        <div class="round-history-item">
-                            ${time} - Hasil: <strong>${item.hasil}</strong>
-                            (Mode: ${item.mode || 'random'})
-                        </div>
-                    `;
-                });
-                
-                container.innerHTML = html;
-            } else {
-                container.innerHTML = '<div class="no-data">Belum ada hasil round</div>';
-            }
-        });
-
-        function processBetData(taruhanUsers) {
-            let besarCount = 0;
-            let besarTotal = 0;
-            let besarMax = 0;
-            let besarMaxUser = '';
+            // Format: timestamp (13 digit) + counter (5 digit) = 18 digit
+            // Counter akan berkurang setiap pembuatan round
+            const roundId = timestamp.toString() + roundCounter.toString().padStart(5, '0');
             
-            let kecilCount = 0;
-            let kecilTotal = 0;
-            let kecilMax = 0;
-            let kecilMaxUser = '';
+            // Kurangi counter untuk round berikutnya
+            roundCounter--;
             
-            const betDetails = [];
-
-            // Process each bet
-            for (const userId in taruhanUsers) {
-                const bet = taruhanUsers[userId];
-                if (!bet) continue;
-                
-                const amount = parseInt(bet.pasangan) || 0;
-                const choice = bet.pilihan;
-                const userShort = userId ? (userId.substring(0, 8) + '...') : 'unknown';
-                
-                betDetails.push({
-                    user: userShort,
-                    pilihan: choice || '-',
-                    pasangan: amount,
-                    waktu: bet.waktu_taruhan ? new Date(bet.waktu_taruhan).toLocaleTimeString() : '-'
-                });
-
-                if (choice === 'BESAR') {
-                    besarCount++;
-                    besarTotal += amount;
-                    if (amount > besarMax) {
-                        besarMax = amount;
-                        besarMaxUser = userShort;
-                    }
-                }
-                
-                if (choice === 'KECIL') {
-                    kecilCount++;
-                    kecilTotal += amount;
-                    if (amount > kecilMax) {
-                        kecilMax = amount;
-                        kecilMaxUser = userShort;
-                    }
-                }
+            // Jika counter sudah habis, reset ke 99999
+            if (roundCounter < 0) {
+                roundCounter = 99999;
             }
-
-            // Update besar stats
-            document.getElementById('besar-count').textContent = besarCount;
-            document.getElementById('besar-total').textContent = formatRupiah(besarTotal);
-            document.getElementById('besar-max').textContent = formatRupiah(besarMax);
-            document.getElementById('besar-max-user').textContent = besarMaxUser || '-';
-
-            // Update kecil stats
-            document.getElementById('kecil-count').textContent = kecilCount;
-            document.getElementById('kecil-total').textContent = formatRupiah(kecilTotal);
-            document.getElementById('kecil-max').textContent = formatRupiah(kecilMax);
-            document.getElementById('kecil-max-user').textContent = kecilMaxUser || '-';
-
-            // Update bet details table
-            updateBetDetailsTable(betDetails);
+            
+            return roundId;
         }
 
-        function updateBetDetailsTable(betDetails) {
-            const container = document.getElementById('bet-details');
-            
-            if (betDetails.length === 0) {
-                container.innerHTML = '<div class="no-data">Belum ada taruhan</div>';
-                return;
-            }
-
-            let html = '<table class="history-table" style="margin-top:10px;">';
-            html += '<tr><th>User</th><th>Pilihan</th><th>Pasangan</th><th>Waktu</th></tr>';
-            
-            betDetails.forEach(bet => {
-                html += `
-                    <tr>
-                        <td>${bet.user}</td>
-                        <td style="color:${bet.pilihan === 'BESAR' ? '#d70000' : 
-                                       bet.pilihan === 'KECIL' ? '#0066cc' : '#666'}; font-weight:bold">
-                            ${bet.pilihan}
-                        </td>
-                        <td>${formatRupiah(bet.pasangan)}</td>
-                        <td>${bet.waktu}</td>
-                    </tr>
-                `;
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
             });
             
-            html += '</table>';
-            container.innerHTML = html;
-        }
-
-        function resetDisplay() {
-            document.getElementById('current-round-id').textContent = '-';
-            document.getElementById('current-round-status').textContent = 'Tidak ada round aktif';
-            document.getElementById('current-round-timer').textContent = '-';
-            document.getElementById('current-round-mode').textContent = '-';
-            resetBetMonitoring();
-        }
-
-        function resetBetMonitoring() {
-            document.getElementById('besar-count').textContent = '0';
-            document.getElementById('besar-total').textContent = '0';
-            document.getElementById('besar-max').textContent = '-';
-            document.getElementById('besar-max-user').textContent = '-';
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
             
-            document.getElementById('kecil-count').textContent = '0';
-            document.getElementById('kecil-total').textContent = '0';
-            document.getElementById('kecil-max').textContent = '-';
-            document.getElementById('kecil-max-user').textContent = '-';
+            // Show selected tab
+            document.getElementById('tab-' + tabName).classList.add('active');
             
-            document.getElementById('bet-details').innerHTML = '<div class="no-data">Belum ada taruhan</div>';
+            // Activate selected tab button
+            document.querySelector(`.tab-btn[onclick="showTab('${tabName}')"]`).classList.add('active');
+            
+            // Load data for the selected tab
+            if (tabName === 'besar-kecil') {
+                loadBkSettings();
+            } else if (tabName === 'angka') {
+                loadAngkaSettings();
+            }
         }
 
-        function formatRupiah(amount) {
-            if (!amount || amount === 0) return 'Rp 0';
-            return 'Rp ' + amount.toLocaleString('id-ID');
+        // ==================== FUNGSI UNTUK GAME BESAR/KECIL ====================
+
+        function setModeBk(mode) {
+            currentModeBk = mode;
+            updateModeButtonsBk();
         }
 
-        function setMode(mode) {
-            currentMode = mode;
-            updateModeButtons();
-            updateSelectedHasilText();
-        }
-
-        function updateModeButtons() {
+        function updateModeButtonsBk() {
             // Reset semua button
-            document.querySelectorAll('.mode-btn').forEach(btn => {
+            document.querySelectorAll('.mode-btn:not(.angka-mode)').forEach(btn => {
                 btn.classList.remove('active');
                 btn.style.background = 'white';
                 btn.style.color = '#d70000';
             });
             
             // Aktifkan button yang sesuai
-            const btn = document.getElementById(`btn-${currentMode}`);
+            let btnId = '';
+            if (currentModeBk === 'random_bk') btnId = 'btn-random-bk';
+            else if (currentModeBk === 'harus_besar') btnId = 'btn-besar';
+            else if (currentModeBk === 'harus_kecil') btnId = 'btn-kecil';
+            
+            const btn = document.getElementById(btnId);
             if (btn) {
                 btn.classList.add('active');
                 btn.style.background = '#d70000';
@@ -838,16 +838,17 @@
 
         function setHasilBesarKecil(hasil) {
             selectedHasilBesarKecil = hasil;
-            updateHasilButtons();
-            updateSelectedHasilText();
+            updateHasilButtonsBk();
         }
 
-        function updateHasilButtons() {
+        function updateHasilButtonsBk() {
             // Reset semua button hasil
             document.querySelectorAll('.hasil-btn').forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'white';
-                btn.style.color = '#d70000';
+                if (btn.id.startsWith('btn-hasil-besar') || btn.id.startsWith('btn-hasil-kecil')) {
+                    btn.classList.remove('active');
+                    btn.style.background = 'white';
+                    btn.style.color = '#0066cc';
+                }
             });
             
             // Aktifkan button yang sesuai
@@ -855,31 +856,43 @@
                 const btn = document.getElementById(`btn-hasil-${selectedHasilBesarKecil.toLowerCase()}`);
                 if (btn) {
                     btn.classList.add('active');
-                    btn.style.background = '#d70000';
+                    btn.style.background = '#0066cc';
                     btn.style.color = 'white';
                 }
             }
+            
+            document.getElementById('selected-hasil-bk-text').textContent = 
+                selectedHasilBesarKecil ? selectedHasilBesarKecil : '-';
         }
 
-        function updateSelectedHasilText() {
-            let text = '';
-            
-            if (selectedHasilBesarKecil) {
-                text = selectedHasilBesarKecil;
-            } else {
-                text = '-';
+        async function loadBkSettings() {
+            try {
+                const snapshot = await database.ref('tebak-angka/aturan').once('value');
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    currentModeBk = data.mode || 'random_bk';
+                    updateModeButtonsBk();
+                    document.getElementById('waktuTungguBk').value = data.waktu_tunggu || 15;
+                    document.getElementById('current-mode-bk').textContent = currentModeBk.toUpperCase();
+                    document.getElementById('current-timer-bk').textContent = (data.waktu_tunggu || 15) + ' detik';
+                    
+                    // Auto-start game engine jika belum berjalan
+                    if (data.aktif && !currentGameIntervalBk) {
+                        startGameEngineBk();
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading BK settings:", error);
             }
-            
-            document.getElementById('selected-hasil-text').textContent = text;
         }
 
-        async function saveSettings() {
-            const waktuTunggu = parseInt(document.getElementById('waktuTunggu').value);
-            const pasanganInput = document.getElementById('pasangan').value;
+        async function saveSettingsBk() {
+            const waktuTunggu = parseInt(document.getElementById('waktuTungguBk').value);
+            const pasanganInput = document.getElementById('pasanganBk').value;
             const pasanganArray = pasanganInput.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p) && p > 0);
             
             if (pasanganArray.length === 0) {
-                showStatus('Masukkan minimal 1 pasangan yang valid!', 'error');
+                showStatusBk('Masukkan minimal 1 pasangan yang valid!', 'error');
                 return;
             }
 
@@ -892,53 +905,54 @@
             try {
                 // Save settings
                 await database.ref('tebak-angka/aturan').set({
-                    mode: currentMode,
+                    mode: currentModeBk,
                     waktu_tunggu: waktuTunggu,
                     aktif: true,
                     last_updated: new Date().toISOString(),
-                    last_updated_by: 'admin'
+                    last_updated_by: 'admin',
+                    game_type: 'besar_kecil'
                 });
 
                 await database.ref('tebak-angka/pasangan').set(pasanganObj);
 
                 // Show success message
-                showStatus('✅ Pengaturan berhasil disimpan!', 'success');
+                showStatusBk('✅ Pengaturan Besar/Kecil berhasil disimpan!', 'success');
                 
                 // Update display
-                document.getElementById('current-mode').textContent = currentMode.toUpperCase();
-                document.getElementById('current-timer').textContent = waktuTunggu + ' detik';
+                document.getElementById('current-mode-bk').textContent = currentModeBk.toUpperCase();
+                document.getElementById('current-timer-bk').textContent = waktuTunggu + ' detik';
 
                 // Start game engine if not already running
-                if (!currentGameInterval) {
-                    startGameEngine();
+                if (!currentGameIntervalBk) {
+                    startGameEngineBk();
                 }
 
             } catch (error) {
-                showStatus('❌ Error: ' + error.message, 'error');
+                showStatusBk('❌ Error: ' + error.message, 'error');
             }
         }
 
-        function startGameEngine() {
-            console.log("🚀 Game engine dimulai...");
+        function startGameEngineBk() {
+            console.log("🚀 Game engine Besar/Kecil dimulai...");
             
             // Hentikan interval sebelumnya jika ada
-            if (currentGameInterval) {
-                clearInterval(currentGameInterval);
+            if (currentGameIntervalBk) {
+                clearInterval(currentGameIntervalBk);
             }
             
             // Update engine status
-            document.getElementById('engine-status').textContent = 'AKTIF';
-            document.getElementById('engine-status').style.color = '#28a745';
+            document.getElementById('engine-status-bk').textContent = 'AKTIF';
+            document.getElementById('engine-status-bk').style.color = '#28a745';
             
             // Mulai interval untuk memeriksa round
-            currentGameInterval = setInterval(() => {
-                checkAndProcessRounds();
+            currentGameIntervalBk = setInterval(() => {
+                checkAndProcessRoundsBk();
             }, 1000);
             
-            showStatus('✅ Game engine berhasil dimulai!', 'success');
+            showStatusBk('✅ Game engine Besar/Kecil berhasil dimulai!', 'success');
         }
 
-        async function checkAndProcessRounds() {
+        async function checkAndProcessRoundsBk() {
             try {
                 const snapshot = await database.ref('tebak-angka/taruhan').once('value');
                 if (!snapshot.exists()) return;
@@ -949,18 +963,22 @@
                 for (const roundId in rounds) {
                     const round = rounds[roundId];
                     
+                    // Hanya proses round dengan game_type 'besar_kecil' atau tanpa game_type (legacy)
+                    const gameType = round.game_type || 'besar_kecil';
+                    if (gameType !== 'besar_kecil') continue;
+                    
                     // Cek round yang sedang berjalan dan sudah habis waktunya
                     if (round.status === 'berjalan' && round.end_time && round.end_time <= now) {
                         console.log(`⏰ Round ${roundId} waktu habis, menentukan hasil...`);
-                        await processRoundResult(roundId, round);
+                        await processRoundResultBk(roundId, round);
                     }
                 }
             } catch (error) {
-                console.error("Error checking rounds:", error);
+                console.error("Error checking BK rounds:", error);
             }
         }
 
-        async function processRoundResult(roundId, roundData) {
+        async function processRoundResultBk(roundId, roundData) {
             try {
                 // Tentukan hasil
                 let hasilBesarKecil;
@@ -969,10 +987,10 @@
                 if (selectedHasilBesarKecil) {
                     hasilBesarKecil = selectedHasilBesarKecil;
                     console.log(`🎯 Menggunakan hasil admin: ${hasilBesarKecil}`);
-                } else if (currentMode === 'harus_besar') {
+                } else if (currentModeBk === 'harus_besar') {
                     hasilBesarKecil = 'BESAR';
                     console.log(`🎰 Mode 'harus_besar': ${hasilBesarKecil}`);
-                } else if (currentMode === 'harus_kecil') {
+                } else if (currentModeBk === 'harus_kecil') {
                     hasilBesarKecil = 'KECIL';
                     console.log(`🎰 Mode 'harus_kecil': ${hasilBesarKecil}`);
                 } else {
@@ -983,35 +1001,42 @@
                 
                 console.log(`🔄 Memproses round ${roundId}: ${hasilBesarKecil}`);
                 
+                // Generate angka random berdasarkan hasil
+                let angkaHasil;
+                if (hasilBesarKecil === 'BESAR') {
+                    angkaHasil = Math.floor(Math.random() * 5) + 5; // 5-9
+                } else {
+                    angkaHasil = Math.floor(Math.random() * 5); // 0-4
+                }
+                
                 // Simpan hasil ke Firebase
                 await database.ref(`tebak-angka/taruhan/${roundId}`).update({
                     status: 'selesai',
                     hasil: hasilBesarKecil,
+                    angka_hasil: angkaHasil,
                     waktu_hasil: Date.now(),
-                    mode_terpakai: currentMode
+                    mode_terpakai: currentModeBk
                 });
                 
-                // 🚀 PROSES KEMENANGAN SETIAP USER
-                await processUserResults(roundId, roundData, hasilBesarKecil);
+                // PROSES KEMENANGAN SETIAP USER
+                await processUserResultsBk(roundId, roundData, hasilBesarKecil);
                 
                 // Simpan ke history hasil
-                await saveToResultHistory(roundId, hasilBesarKecil);
+                await saveToResultHistoryBk(roundId, hasilBesarKecil, angkaHasil);
                 
                 // Reset pilihan admin untuk round berikutnya
                 selectedHasilBesarKecil = null;
-                updateHasilButtons();
-                updateSelectedHasilText();
+                updateHasilButtonsBk();
                 
-                showStatus(`✅ Hasil ditentukan: ${hasilBesarKecil} untuk round ${roundId.substring(0, 8)}...`, 'success');
+                showStatusBk(`✅ Hasil ditentukan: ${hasilBesarKecil} (Angka: ${angkaHasil}) untuk round ${roundId}`, 'success');
                 
             } catch (error) {
-                console.error("❌ Error memproses hasil round:", error);
-                showStatus(`❌ Error: ${error.message}`, 'error');
+                console.error("❌ Error memproses hasil round BK:", error);
+                showStatusBk(`❌ Error: ${error.message}`, 'error');
             }
         }
 
-        // FUNGSI PROCESS USER RESULTS YANG DIPERBAIKI
-        async function processUserResults(roundId, roundData, hasilBesarKecil) {
+        async function processUserResultsBk(roundId, roundData, hasilBesarKecil) {
             try {
                 const taruhanUsers = roundData.taruhan_users;
                 if (!taruhanUsers) {
@@ -1047,7 +1072,7 @@
                         }
                     }
                     
-                    const saldoNetto = totalKemenangan; // Karena kerugian sudah di depan, di sini hanya menambah jika menang
+                    const saldoNetto = totalKemenangan;
                     const menangOverall = saldoNetto > 0;
                     
                     console.log(`  👤 User ${userId.substring(0, 8)}...: 
@@ -1143,16 +1168,18 @@
             }
         }
 
-        async function saveToResultHistory(roundId, hasilBesarKecil) {
+        async function saveToResultHistoryBk(roundId, hasilBesarKecil, angkaHasil) {
             try {
                 await database.ref(`tebak-angka/hasil_round/${roundId}`).set({
                     hasil: hasilBesarKecil,
+                    angka_hasil: angkaHasil,
                     timestamp: Date.now(),
                     round_id: roundId,
-                    mode: currentMode
+                    mode: currentModeBk,
+                    game_type: 'besar_kecil'
                 });
             } catch (error) {
-                console.error("Error menyimpan ke history hasil:", error);
+                console.error("Error menyimpan ke history hasil BK:", error);
             }
         }
 
@@ -1164,44 +1191,46 @@
             }
         }
 
-        async function startNewRound() {
+        async function startNewRoundBk() {
             try {
-                const roundId = 'round_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                const waktuTunggu = parseInt(document.getElementById('waktuTunggu').value) || 15;
+                const roundId = generateRoundId(); // Contoh: 20260120100052119
+                const waktuTunggu = parseInt(document.getElementById('waktuTungguBk').value) || 15;
                 const endTime = Date.now() + (waktuTunggu * 1000);
                 
                 await database.ref(`tebak-angka/taruhan/${roundId}`).set({
                     round_id: roundId,
                     status: 'berjalan',
                     hasil: null,
+                    angka_hasil: null,
                     start_time: Date.now(),
                     end_time: endTime,
                     waktu_tunggu: waktuTunggu,
                     created_at: Date.now(),
-                    mode: currentMode
+                    mode: currentModeBk,
+                    game_type: 'besar_kecil'
                 });
                 
-                console.log(`🚀 Round baru dibuat: ${roundId}`);
-                showStatus(`✅ Round baru dimulai: ${roundId.substring(0, 12)}...`, 'success');
+                console.log(`🚀 Round BK baru dibuat: ${roundId}`);
+                showStatusBk(`✅ Round BK baru dimulai: ${roundId}`, 'success');
                 
                 return roundId;
             } catch (error) {
-                console.error("Error membuat round baru:", error);
-                showStatus(`❌ Error: ${error.message}`, 'error');
+                console.error("Error membuat round BK baru:", error);
+                showStatusBk(`❌ Error: ${error.message}`, 'error');
             }
         }
 
-        async function forceRoundResult() {
-            if (!activeRoundId) {
-                showStatus('❌ Tidak ada round aktif!', 'error');
+        async function forceRoundResultBk() {
+            if (!activeRoundIdBk) {
+                showStatusBk('❌ Tidak ada round BK aktif!', 'error');
                 return;
             }
             
-            if (confirm('Yakin menentukan hasil untuk round ini sekarang?')) {
+            if (confirm('Yakin menentukan hasil untuk round BK ini sekarang?')) {
                 try {
-                    const snapshot = await database.ref(`tebak-angka/taruhan/${activeRoundId}`).once('value');
+                    const snapshot = await database.ref(`tebak-angka/taruhan/${activeRoundIdBk}`).once('value');
                     if (!snapshot.exists()) {
-                        showStatus('❌ Round tidak ditemukan!', 'error');
+                        showStatusBk('❌ Round BK tidak ditemukan!', 'error');
                         return;
                     }
                     
@@ -1213,79 +1242,106 @@
                     // Gunakan pilihan admin jika ada
                     if (selectedHasilBesarKecil) {
                         hasilBesarKecil = selectedHasilBesarKecil;
-                    } else if (currentMode === 'harus_besar') {
+                    } else if (currentModeBk === 'harus_besar') {
                         hasilBesarKecil = 'BESAR';
-                    } else if (currentMode === 'harus_kecil') {
+                    } else if (currentModeBk === 'harus_kecil') {
                         hasilBesarKecil = 'KECIL';
                     } else {
                         hasilBesarKecil = Math.random() > 0.5 ? 'BESAR' : 'KECIL';
                     }
                     
+                    // Generate angka random berdasarkan hasil
+                    let angkaHasil;
+                    if (hasilBesarKecil === 'BESAR') {
+                        angkaHasil = Math.floor(Math.random() * 5) + 5; // 5-9
+                    } else {
+                        angkaHasil = Math.floor(Math.random() * 5); // 0-4
+                    }
+                    
                     // Update round dengan hasil
-                    await database.ref(`tebak-angka/taruhan/${activeRoundId}`).update({
+                    await database.ref(`tebak-angka/taruhan/${activeRoundIdBk}`).update({
                         status: 'selesai',
                         hasil: hasilBesarKecil,
+                        angka_hasil: angkaHasil,
                         end_time: Date.now(),
                         waktu_hasil: Date.now(),
-                        mode_terpakai: currentMode
+                        mode_terpakai: currentModeBk
                     });
                     
                     // Proses hasil
-                    await processUserResults(activeRoundId, roundData, hasilBesarKecil);
-                    await saveToResultHistory(activeRoundId, hasilBesarKecil);
+                    await processUserResultsBk(activeRoundIdBk, roundData, hasilBesarKecil);
+                    await saveToResultHistoryBk(activeRoundIdBk, hasilBesarKecil, angkaHasil);
                     
                     // Reset pilihan admin
                     selectedHasilBesarKecil = null;
-                    updateHasilButtons();
-                    updateSelectedHasilText();
+                    updateHasilButtonsBk();
                     
-                    showStatus(`✅ Hasil dipaksakan: ${hasilBesarKecil} untuk round ${activeRoundId.substring(0, 8)}...`, 'success');
+                    showStatusBk(`✅ Hasil BK dipaksakan: ${hasilBesarKecil} (Angka: ${angkaHasil}) untuk round ${activeRoundIdBk}`, 'success');
                     
                 } catch (error) {
-                    console.error("Error memaksa hasil round:", error);
-                    showStatus(`❌ Error: ${error.message}`, 'error');
+                    console.error("Error memaksa hasil round BK:", error);
+                    showStatusBk(`❌ Error: ${error.message}`, 'error');
                 }
             }
         }
 
-        async function forceResetGame() {
-            if (confirm('Apakah Anda yakin ingin mereset permainan? Ini akan menghentikan semua ronde yang sedang berjalan.')) {
+        async function forceResetGameBk() {
+            if (confirm('Apakah Anda yakin ingin mereset permainan Besar/Kecil? Ini akan menghentikan semua ronde yang sedang berjalan.')) {
                 try {
                     // Hentikan game engine
-                    if (currentGameInterval) {
-                        clearInterval(currentGameInterval);
-                        currentGameInterval = null;
-                        document.getElementById('engine-status').textContent = 'NONAKTIF';
-                        document.getElementById('engine-status').style.color = '#dc3545';
+                    if (currentGameIntervalBk) {
+                        clearInterval(currentGameIntervalBk);
+                        currentGameIntervalBk = null;
+                        document.getElementById('engine-status-bk').textContent = 'NONAKTIF';
+                        document.getElementById('engine-status-bk').style.color = '#dc3545';
                     }
                     
-                    // Reset semua data di Firebase
-                    await database.ref('tebak-angka/taruhan').remove();
-                    await database.ref('tebak-angka/hasil_round').remove();
-                    
-                    // Reset saldo semua user ke 50000
-                    const usersSnapshot = await database.ref('tebak-angka/saldo').once('value');
-                    if (usersSnapshot.exists()) {
+                    // Reset semua data di Firebase (hanya yang game_type = 'besar_kecil' atau tanpa game_type)
+                    const snapshot = await database.ref('tebak-angka/taruhan').once('value');
+                    if (snapshot.exists()) {
+                        const rounds = snapshot.val();
                         const updates = {};
-                        Object.keys(usersSnapshot.val()).forEach(userId => {
-                            updates[userId] = 50000;
-                        });
-                        await database.ref('tebak-angka/saldo').update(updates);
+                        
+                        for (const roundId in rounds) {
+                            const round = rounds[roundId];
+                            const gameType = round.game_type || 'besar_kecil';
+                            if (gameType === 'besar_kecil') {
+                                updates[roundId] = null;
+                            }
+                        }
+                        
+                        await database.ref('tebak-angka/taruhan').update(updates);
                     }
                     
-                    showStatus('✅ Permainan telah direset!', 'success');
+                    // Reset hasil round history
+                    const historySnapshot = await database.ref('tebak-angka/hasil_round').once('value');
+                    if (historySnapshot.exists()) {
+                        const history = historySnapshot.val();
+                        const updates = {};
+                        
+                        for (const roundId in history) {
+                            const item = history[roundId];
+                            if (item.game_type === 'besar_kecil' || !item.game_type) {
+                                updates[roundId] = null;
+                            }
+                        }
+                        
+                        await database.ref('tebak-angka/hasil_round').update(updates);
+                    }
+                    
+                    showStatusBk('✅ Permainan Besar/Kecil telah direset!', 'success');
                     
                     // Reset UI
-                    resetDisplay();
+                    resetDisplayBk();
                     
                 } catch (error) {
-                    showStatus('❌ Error resetting game: ' + error.message, 'error');
+                    showStatusBk('❌ Error resetting game BK: ' + error.message, 'error');
                 }
             }
         }
 
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('status');
+        function showStatusBk(message, type) {
+            const statusDiv = document.getElementById('status-bk');
             statusDiv.textContent = message;
             statusDiv.className = 'status ' + type;
             
@@ -1294,6 +1350,1001 @@
                 statusDiv.className = 'status';
             }, 5000);
         }
+
+        function resetDisplayBk() {
+            document.getElementById('current-round-id-bk').textContent = '-';
+            document.getElementById('current-round-status-bk').textContent = 'Tidak ada round aktif';
+            document.getElementById('current-round-timer-bk').textContent = '-';
+            document.getElementById('current-round-mode-bk').textContent = '-';
+            resetBetMonitoringBk();
+        }
+
+        function resetBetMonitoringBk() {
+            document.getElementById('besar-count').textContent = '0';
+            document.getElementById('besar-total').textContent = '0';
+            document.getElementById('besar-max').textContent = '-';
+            document.getElementById('besar-max-user').textContent = '-';
+            
+            document.getElementById('kecil-count').textContent = '0';
+            document.getElementById('kecil-total').textContent = '0';
+            document.getElementById('kecil-max').textContent = '-';
+            document.getElementById('kecil-max-user').textContent = '-';
+            
+            document.getElementById('bet-details-bk').innerHTML = '<div class="no-data">Belum ada taruhan</div>';
+        }
+
+        // ==================== FUNGSI UNTUK GAME TEBAK ANGKA ====================
+
+        function setModeAngka(mode) {
+            currentModeAngka = mode;
+            updateModeButtonsAngka();
+        }
+
+        function updateModeButtonsAngka() {
+            // Reset semua button angka
+            document.querySelectorAll('.mode-btn.angka-mode').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'white';
+                btn.style.color = '#0066cc';
+            });
+            
+            // Aktifkan button yang sesuai
+            let btnId = '';
+            if (currentModeAngka === 'random_angka') btnId = 'btn-random-angka';
+            else if (currentModeAngka === 'harus_besar') btnId = 'btn-besar-angka';
+            else if (currentModeAngka === 'harus_kecil') btnId = 'btn-kecil-angka';
+            
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.classList.add('active');
+                btn.style.background = '#0066cc';
+                btn.style.color = 'white';
+            }
+        }
+
+        function setHasilAngka(angka) {
+            selectedHasilAngka = angka;
+            updateHasilButtonsAngka();
+            updateSelectedHasilAngkaText();
+        }
+
+        function updateHasilButtonsAngka() {
+            // Reset semua button hasil angka
+            document.querySelectorAll('.hasil-btn').forEach(btn => {
+                if (btn.id.startsWith('btn-hasil-') && !isNaN(parseInt(btn.id.split('-')[2]))) {
+                    btn.classList.remove('active');
+                    btn.style.background = 'white';
+                    btn.style.color = '#0066cc';
+                }
+            });
+            
+            // Aktifkan button yang sesuai
+            if (selectedHasilAngka !== null) {
+                const btn = document.getElementById(`btn-hasil-${selectedHasilAngka}`);
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.style.background = '#0066cc';
+                    btn.style.color = 'white';
+                }
+            }
+        }
+
+        function updateSelectedHasilAngkaText() {
+            if (selectedHasilAngka !== null) {
+                const angka = selectedHasilAngka;
+                const kategori = angka >= 5 ? 'BESAR' : 'KECIL';
+                const warna = angka >= 5 ? '#d70000' : '#0066cc';
+                const emoji = angka >= 5 ? '🔴' : '🔵';
+                
+                document.getElementById('selected-hasil-angka-text').textContent = angka;
+                document.getElementById('selected-hasil-kategori').innerHTML = 
+                    `<span style="color:${warna}">${emoji} ${kategori}</span>`;
+            } else {
+                document.getElementById('selected-hasil-angka-text').textContent = '-';
+                document.getElementById('selected-hasil-kategori').textContent = '';
+            }
+        }
+
+        async function loadAngkaSettings() {
+            try {
+                const snapshot = await database.ref('tebak-angka/aturan_angka').once('value');
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    currentModeAngka = data.mode || 'random_angka';
+                    updateModeButtonsAngka();
+                    document.getElementById('waktuTungguAngka').value = data.waktu_tunggu || 15;
+                    
+                    let modeText = 'RANDOM ANGKA';
+                    if (currentModeAngka === 'harus_besar') modeText = 'HARUS BESAR (5-9)';
+                    else if (currentModeAngka === 'harus_kecil') modeText = 'HARUS KECIL (0-4)';
+                    
+                    document.getElementById('current-mode-angka').textContent = modeText;
+                    document.getElementById('current-timer-angka').textContent = (data.waktu_tunggu || 15) + ' detik';
+                    
+                    // Auto-start game engine jika belum berjalan
+                    if (data.aktif && !currentGameIntervalAngka) {
+                        startGameEngineAngka();
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading Angka settings:", error);
+            }
+        }
+
+        async function saveSettingsAngka() {
+            const waktuTunggu = parseInt(document.getElementById('waktuTungguAngka').value);
+            const pasanganInput = document.getElementById('pasanganAngka').value;
+            const pasanganArray = pasanganInput.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p) && p > 0);
+            
+            if (pasanganArray.length === 0) {
+                showStatusAngka('Masukkan minimal 1 pasangan yang valid!', 'error');
+                return;
+            }
+
+            // Convert array to object
+            const pasanganObj = {};
+            pasanganArray.forEach((p, index) => {
+                pasanganObj[index] = p;
+            });
+
+            try {
+                // Save settings untuk game angka
+                await database.ref('tebak-angka/aturan_angka').set({
+                    mode: currentModeAngka,
+                    waktu_tunggu: waktuTunggu,
+                    aktif: true,
+                    last_updated: new Date().toISOString(),
+                    last_updated_by: 'admin',
+                    game_type: 'tebak_angka'
+                });
+
+                await database.ref('tebak-angka/pasangan_angka').set(pasanganObj);
+
+                // Show success message
+                showStatusAngka('✅ Pengaturan Tebak Angka berhasil disimpan!', 'success');
+                
+                // Update display
+                let modeText = 'RANDOM ANGKA';
+                if (currentModeAngka === 'harus_besar') modeText = 'HARUS BESAR (5-9)';
+                else if (currentModeAngka === 'harus_kecil') modeText = 'HARUS KECIL (0-4)';
+                
+                document.getElementById('current-mode-angka').textContent = modeText;
+                document.getElementById('current-timer-angka').textContent = waktuTunggu + ' detik';
+
+                // Start game engine if not already running
+                if (!currentGameIntervalAngka) {
+                    startGameEngineAngka();
+                }
+
+            } catch (error) {
+                showStatusAngka('❌ Error: ' + error.message, 'error');
+            }
+        }
+
+        function startGameEngineAngka() {
+            console.log("🚀 Game engine Tebak Angka dimulai...");
+            
+            // Hentikan interval sebelumnya jika ada
+            if (currentGameIntervalAngka) {
+                clearInterval(currentGameIntervalAngka);
+            }
+            
+            // Update engine status
+            document.getElementById('engine-status-angka').textContent = 'AKTIF';
+            document.getElementById('engine-status-angka').style.color = '#28a745';
+            
+            // Mulai interval untuk memeriksa round
+            currentGameIntervalAngka = setInterval(() => {
+                checkAndProcessRoundsAngka();
+            }, 1000);
+            
+            showStatusAngka('✅ Game engine Tebak Angka berhasil dimulai!', 'success');
+        }
+
+        async function checkAndProcessRoundsAngka() {
+            try {
+                const snapshot = await database.ref('tebak-angka/taruhan_angka').once('value');
+                if (!snapshot.exists()) return;
+                
+                const rounds = snapshot.val();
+                const now = Date.now();
+                
+                for (const roundId in rounds) {
+                    const round = rounds[roundId];
+                    
+                    // Hanya proses round dengan game_type 'tebak_angka'
+                    const gameType = round.game_type || 'tebak_angka';
+                    if (gameType !== 'tebak_angka') continue;
+                    
+                    // Cek round yang sedang berjalan dan sudah habis waktunya
+                    if (round.status === 'berjalan' && round.end_time && round.end_time <= now) {
+                        console.log(`⏰ Round Angka ${roundId} waktu habis, menentukan hasil...`);
+                        await processRoundResultAngka(roundId, round);
+                    }
+                }
+            } catch (error) {
+                console.error("Error checking Angka rounds:", error);
+            }
+        }
+
+        async function processRoundResultAngka(roundId, roundData) {
+            try {
+                // Tentukan hasil angka
+                let angkaHasil;
+                
+                // Gunakan pilihan admin jika ada, atau generate berdasarkan mode
+                if (selectedHasilAngka !== null) {
+                    angkaHasil = selectedHasilAngka;
+                    console.log(`🎯 Menggunakan hasil admin: Angka ${angkaHasil}`);
+                } else if (currentModeAngka === 'harus_besar') {
+                    // Random angka 5-9
+                    angkaHasil = Math.floor(Math.random() * 5) + 5;
+                    console.log(`🎰 Mode 'harus_besar': Angka ${angkaHasil}`);
+                } else if (currentModeAngka === 'harus_kecil') {
+                    // Random angka 0-4
+                    angkaHasil = Math.floor(Math.random() * 5);
+                    console.log(`🎰 Mode 'harus_kecil': Angka ${angkaHasil}`);
+                } else {
+                    // Random: angka 0-9
+                    angkaHasil = Math.floor(Math.random() * 10);
+                    console.log(`🎲 Hasil random: Angka ${angkaHasil}`);
+                }
+                
+                // Tentukan kategori berdasarkan angka
+                const kategoriHasil = angkaHasil >= 5 ? 'BESAR' : 'KECIL';
+                
+                console.log(`🔄 Memproses round angka ${roundId}: Angka ${angkaHasil} (${kategoriHasil})`);
+                
+                // Simpan hasil ke Firebase
+                await database.ref(`tebak-angka/taruhan_angka/${roundId}`).update({
+                    status: 'selesai',
+                    hasil: angkaHasil.toString(),
+                    kategori_hasil: kategoriHasil,
+                    waktu_hasil: Date.now(),
+                    mode_terpakai: currentModeAngka
+                });
+                
+                // PROSES KEMENANGAN SETIAP USER
+                await processUserResultsAngka(roundId, roundData, angkaHasil);
+                
+                // Simpan ke history hasil
+                await saveToResultHistoryAngka(roundId, angkaHasil, kategoriHasil);
+                
+                // Reset pilihan admin untuk round berikutnya
+                selectedHasilAngka = null;
+                updateHasilButtonsAngka();
+                updateSelectedHasilAngkaText();
+                
+                showStatusAngka(`✅ Hasil ditentukan: Angka ${angkaHasil} (${kategoriHasil}) untuk round ${roundId}`, 'success');
+                
+            } catch (error) {
+                console.error("❌ Error memproses hasil round Angka:", error);
+                showStatusAngka(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function processUserResultsAngka(roundId, roundData, angkaHasil) {
+            try {
+                const taruhanUsers = roundData.taruhan_users;
+                if (!taruhanUsers) {
+                    console.log(`📭 Tidak ada user untuk round angka ${roundId}`);
+                    return;
+                }
+                
+                const userCount = Object.keys(taruhanUsers).length;
+                console.log(`📊 Memproses ${userCount} user untuk round angka ${roundId}`);
+                
+                // Tentukan kategori berdasarkan angka hasil
+                const kategoriHasil = angkaHasil >= 5 ? 'BESAR' : 'KECIL';
+                
+                // Array untuk menyimpan semua promise update saldo
+                const updatePromises = [];
+                
+                for (const userId in taruhanUsers) {
+                    const taruhan = taruhanUsers[userId];
+                    
+                    // Cek hasil angka
+                    const angkaTebakan = parseInt(taruhan.angka_tebakan);
+                    const menang = angkaTebakan === angkaHasil;
+                    
+                    const pasangan = Number(taruhan.pasangan) || 0;
+                    let totalKemenangan = 0;
+                    
+                    if (menang) {
+                        // MENANG: Dapat 2x pasangan (kembali pasangan + kemenangan 1:1)
+                        totalKemenangan = 2 * pasangan;
+                    } else {
+                        // KALAH: Tidak dapat apa-apa (saldo sudah dipotong di frontend)
+                        totalKemenangan = 0;
+                    }
+                    
+                    const saldoNetto = totalKemenangan;
+                    const menangOverall = saldoNetto > 0;
+                    
+                    console.log(`  👤 User ${userId.substring(0, 8)}...: 
+                        Angka Tebakan=${angkaTebakan}, 
+                        Pasangan=${pasangan}, 
+                        Menang=${menang}, 
+                        Kemenangan=${totalKemenangan},
+                        Netto=${saldoNetto}`);
+                    
+                    // Simpan promise update saldo ke array
+                    updatePromises.push(
+                        updateUserBalance(userId, saldoNetto)
+                    );
+                    
+                    // Update status taruhan user
+                    await database.ref(`tebak-angka/taruhan_angka/${roundId}/taruhan_users/${userId}`).update({
+                        status: menangOverall ? 'menang' : 'kalah',
+                        hasil: menangOverall ? 'MENANG' : 'KALAH',
+                        hasil_angka: menang ? 'MENANG' : 'KALAH',
+                        waktu_hasil: Date.now(),
+                        kemenangan: totalKemenangan,
+                        saldo_netto: saldoNetto
+                    });
+                    
+                    // Simpan ke history user
+                    await saveToUserHistoryAngka(userId, {
+                        round_id: roundId,
+                        angka_tebakan: angkaTebakan,
+                        pasangan: pasangan,
+                        hasil: menangOverall ? 'MENANG' : 'KALAH',
+                        hasil_angka: menang ? 'MENANG' : 'KALAH',
+                        kemenangan: totalKemenangan,
+                        saldo_netto: saldoNetto,
+                        waktu: Date.now()
+                    });
+                }
+                
+                // Tunggu semua update saldo selesai
+                await Promise.all(updatePromises);
+                
+                console.log(`✅ Berhasil memproses ${userCount} user untuk round angka ${roundId}`);
+                
+            } catch (error) {
+                console.error(`❌ Error memproses hasil user untuk round angka ${roundId}:`, error);
+                throw error;
+            }
+        }
+
+        async function saveToResultHistoryAngka(roundId, angkaHasil, kategoriHasil) {
+            try {
+                await database.ref(`tebak-angka/hasil_round_angka/${roundId}`).set({
+                    hasil: angkaHasil.toString(),
+                    kategori: kategoriHasil,
+                    timestamp: Date.now(),
+                    round_id: roundId,
+                    mode: currentModeAngka,
+                    game_type: 'tebak_angka'
+                });
+            } catch (error) {
+                console.error("Error menyimpan ke history hasil Angka:", error);
+            }
+        }
+
+        async function saveToUserHistoryAngka(userId, data) {
+            try {
+                await database.ref(`tebak-angka/history_angka/${userId}/${Date.now()}`).set(data);
+            } catch (error) {
+                console.error("Error menyimpan history user angka:", error);
+            }
+        }
+
+        async function startNewRoundAngka() {
+            try {
+                const roundId = generateRoundId(); // Contoh: 20260120100052118
+                const waktuTunggu = parseInt(document.getElementById('waktuTungguAngka').value) || 15;
+                const endTime = Date.now() + (waktuTunggu * 1000);
+                
+                await database.ref(`tebak-angka/taruhan_angka/${roundId}`).set({
+                    round_id: roundId,
+                    status: 'berjalan',
+                    hasil: null,
+                    kategori_hasil: null,
+                    start_time: Date.now(),
+                    end_time: endTime,
+                    waktu_tunggu: waktuTunggu,
+                    created_at: Date.now(),
+                    mode: currentModeAngka,
+                    game_type: 'tebak_angka'
+                });
+                
+                console.log(`🚀 Round Angka baru dibuat: ${roundId}`);
+                showStatusAngka(`✅ Round Angka baru dimulai: ${roundId}`, 'success');
+                
+                return roundId;
+            } catch (error) {
+                console.error("Error membuat round Angka baru:", error);
+                showStatusAngka(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function forceRoundResultAngka() {
+            if (!activeRoundIdAngka) {
+                showStatusAngka('❌ Tidak ada round Angka aktif!', 'error');
+                return;
+            }
+            
+            if (confirm('Yakin menentukan hasil untuk round Angka ini sekarang?')) {
+                try {
+                    const snapshot = await database.ref(`tebak-angka/taruhan_angka/${activeRoundIdAngka}`).once('value');
+                    if (!snapshot.exists()) {
+                        showStatusAngka('❌ Round Angka tidak ditemukan!', 'error');
+                        return;
+                    }
+                    
+                    const roundData = snapshot.val();
+                    
+                    // Tentukan hasil angka
+                    let angkaHasil;
+                    
+                    // Gunakan pilihan admin jika ada
+                    if (selectedHasilAngka !== null) {
+                        angkaHasil = selectedHasilAngka;
+                    } else if (currentModeAngka === 'harus_besar') {
+                        // Random angka 5-9
+                        angkaHasil = Math.floor(Math.random() * 5) + 5;
+                    } else if (currentModeAngka === 'harus_kecil') {
+                        // Random angka 0-4
+                        angkaHasil = Math.floor(Math.random() * 5);
+                    } else {
+                        // Random: angka 0-9
+                        angkaHasil = Math.floor(Math.random() * 10);
+                    }
+                    
+                    // Tentukan kategori berdasarkan angka
+                    const kategoriHasil = angkaHasil >= 5 ? 'BESAR' : 'KECIL';
+                    
+                    // Update round dengan hasil
+                    await database.ref(`tebak-angka/taruhan_angka/${activeRoundIdAngka}`).update({
+                        status: 'selesai',
+                        hasil: angkaHasil.toString(),
+                        kategori_hasil: kategoriHasil,
+                        end_time: Date.now(),
+                        waktu_hasil: Date.now(),
+                        mode_terpakai: currentModeAngka
+                    });
+                    
+                    // Proses hasil
+                    await processUserResultsAngka(activeRoundIdAngka, roundData, angkaHasil);
+                    await saveToResultHistoryAngka(activeRoundIdAngka, angkaHasil, kategoriHasil);
+                    
+                    // Reset pilihan admin
+                    selectedHasilAngka = null;
+                    updateHasilButtonsAngka();
+                    updateSelectedHasilAngkaText();
+                    
+                    showStatusAngka(`✅ Hasil Angka dipaksakan: Angka ${angkaHasil} (${kategoriHasil}) untuk round ${activeRoundIdAngka}`, 'success');
+                    
+                } catch (error) {
+                    console.error("Error memaksa hasil round Angka:", error);
+                    showStatusAngka(`❌ Error: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function forceResetGameAngka() {
+            if (confirm('Apakah Anda yakin ingin mereset permainan Tebak Angka? Ini akan menghentikan semua ronde yang sedang berjalan.')) {
+                try {
+                    // Hentikan game engine
+                    if (currentGameIntervalAngka) {
+                        clearInterval(currentGameIntervalAngka);
+                        currentGameIntervalAngka = null;
+                        document.getElementById('engine-status-angka').textContent = 'NONAKTIF';
+                        document.getElementById('engine-status-angka').style.color = '#dc3545';
+                    }
+                    
+                    // Reset semua data di Firebase untuk game angka
+                    await database.ref('tebak-angka/taruhan_angka').remove();
+                    await database.ref('tebak-angka/hasil_round_angka').remove();
+                    
+                    showStatusAngka('✅ Permainan Tebak Angka telah direset!', 'success');
+                    
+                    // Reset UI
+                    resetDisplayAngka();
+                    
+                } catch (error) {
+                    showStatusAngka('❌ Error resetting game Angka: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function showStatusAngka(message, type) {
+            const statusDiv = document.getElementById('status-angka');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'status';
+            }, 5000);
+        }
+
+        function resetDisplayAngka() {
+            document.getElementById('current-round-id-angka').textContent = '-';
+            document.getElementById('current-round-status-angka').textContent = 'Tidak ada round aktif';
+            document.getElementById('current-round-timer-angka').textContent = '-';
+            document.getElementById('current-round-mode-angka').textContent = '-';
+            resetBetMonitoringAngka();
+        }
+
+        function resetBetMonitoringAngka() {
+            const betCardsContainer = document.querySelector('#tab-angka .bet-cards');
+            betCardsContainer.innerHTML = '';
+            
+            // Buat 10 kartu untuk angka 0-9
+            for (let i = 0; i < 10; i++) {
+                const betCard = document.createElement('div');
+                betCard.className = `bet-card angka-${i}`;
+                betCard.id = `bet-card-${i}`;
+                betCard.innerHTML = `
+                    <div class="bet-title angka-${i}">${i}</div>
+                    <div class="bet-info">
+                        <div class="bet-info-item">
+                            <div class="bet-number" id="angka-${i}-count">0</div>
+                            <div class="bet-label">Jumlah User</div>
+                        </div>
+                        <div class="bet-info-item">
+                            <div class="bet-number" id="angka-${i}-total">0</div>
+                            <div class="bet-label">Total Pasangan</div>
+                        </div>
+                    </div>
+                    <div class="max-bet">
+                        <div class="bet-label">Taruhan Terbesar</div>
+                        <div class="max-bet-value" id="angka-${i}-max">-</div>
+                        <div class="max-bet-user" id="angka-${i}-max-user">-</div>
+                    </div>
+                `;
+                betCardsContainer.appendChild(betCard);
+            }
+            
+            document.getElementById('bet-details-angka').innerHTML = '<div class="no-data">Belum ada taruhan</div>';
+        }
+
+        // ==================== MONITORING REAL-TIME ====================
+
+        // Monitor current round bets untuk Besar/Kecil
+        database.ref('tebak-angka/taruhan').orderByChild('status').equalTo('berjalan').on('value', (snapshot) => {
+            if (!snapshot.exists()) {
+                resetDisplayBk();
+                return;
+            }
+
+            const taruhanData = snapshot.val();
+            let activeRound = null;
+            let activeRoundKey = null;
+            let activeRoundCount = 0;
+
+            // Cari round dengan status "berjalan" yang masih valid
+            const now = Date.now();
+            
+            for (const key in taruhanData) {
+                const round = taruhanData[key];
+                if (!round) continue;
+                
+                // Hanya tampilkan round dengan game_type 'besar_kecil' atau tanpa game_type
+                const gameType = round.game_type || 'besar_kecil';
+                if (gameType !== 'besar_kecil') continue;
+                
+                if (round.status === 'berjalan') {
+                    activeRoundCount++;
+                    // Jika round memiliki end_time, cek apakah belum expired
+                    if (round.end_time && round.end_time > now) {
+                        activeRound = round;
+                        activeRoundKey = key;
+                    } else if (!round.end_time) {
+                        // Jika tidak ada end_time, tetap anggap sebagai round aktif
+                        activeRound = round;
+                        activeRoundKey = key;
+                    }
+                }
+            }
+
+            // Update active round count
+            document.getElementById('active-round-count-bk').textContent = activeRoundCount;
+
+            if (activeRound) {
+                activeRoundIdBk = activeRoundKey;
+                
+                // Update round info
+                document.getElementById('current-round-id-bk').textContent = 
+                    activeRoundKey ? activeRoundKey : '-';
+                document.getElementById('current-round-status-bk').textContent = activeRound.status || '-';
+                document.getElementById('current-round-mode-bk').textContent = activeRound.mode || currentModeBk;
+                
+                // Calculate time remaining
+                if (activeRound.end_time) {
+                    const timeLeft = Math.max(0, Math.floor((activeRound.end_time - now) / 1000));
+                    document.getElementById('current-round-timer-bk').textContent = timeLeft + ' detik';
+                    
+                    if (timeLeft <= 0) {
+                        document.getElementById('current-round-status-bk').textContent = 'WAKTU HABIS';
+                        document.getElementById('current-round-timer-bk').style.color = '#ff0000';
+                    } else {
+                        document.getElementById('current-round-timer-bk').style.color = '#333';
+                    }
+                } else {
+                    document.getElementById('current-round-timer-bk').textContent = '-';
+                }
+
+                // Monitor bets in current round
+                if (activeRound.taruhan_users && Object.keys(activeRound.taruhan_users).length > 0) {
+                    processBetDataBk(activeRound.taruhan_users);
+                } else {
+                    resetBetMonitoringBk();
+                    document.getElementById('bet-details-bk').innerHTML = 
+                        '<div class="no-data">Belum ada taruhan di round ini</div>';
+                }
+            } else {
+                resetDisplayBk();
+            }
+        });
+
+        // Monitor current round bets untuk Tebak Angka
+        database.ref('tebak-angka/taruhan_angka').orderByChild('status').equalTo('berjalan').on('value', (snapshot) => {
+            if (!snapshot.exists()) {
+                resetDisplayAngka();
+                return;
+            }
+
+            const taruhanData = snapshot.val();
+            let activeRound = null;
+            let activeRoundKey = null;
+            let activeRoundCount = 0;
+
+            // Cari round dengan status "berjalan" yang masih valid
+            const now = Date.now();
+            
+            for (const key in taruhanData) {
+                const round = taruhanData[key];
+                if (!round) continue;
+                
+                // Hanya tampilkan round dengan game_type 'tebak_angka'
+                const gameType = round.game_type || 'tebak_angka';
+                if (gameType !== 'tebak_angka') continue;
+                
+                if (round.status === 'berjalan') {
+                    activeRoundCount++;
+                    // Jika round memiliki end_time, cek apakah belum expired
+                    if (round.end_time && round.end_time > now) {
+                        activeRound = round;
+                        activeRoundKey = key;
+                    } else if (!round.end_time) {
+                        // Jika tidak ada end_time, tetap anggap sebagai round aktif
+                        activeRound = round;
+                        activeRoundKey = key;
+                    }
+                }
+            }
+
+            // Update active round count
+            document.getElementById('active-round-count-angka').textContent = activeRoundCount;
+
+            if (activeRound) {
+                activeRoundIdAngka = activeRoundKey;
+                
+                // Update round info
+                document.getElementById('current-round-id-angka').textContent = 
+                    activeRoundKey ? activeRoundKey : '-';
+                document.getElementById('current-round-status-angka').textContent = activeRound.status || '-';
+                document.getElementById('current-round-mode-angka').textContent = activeRound.mode || currentModeAngka;
+                
+                // Calculate time remaining
+                if (activeRound.end_time) {
+                    const timeLeft = Math.max(0, Math.floor((activeRound.end_time - now) / 1000));
+                    document.getElementById('current-round-timer-angka').textContent = timeLeft + ' detik';
+                    
+                    if (timeLeft <= 0) {
+                        document.getElementById('current-round-status-angka').textContent = 'WAKTU HABIS';
+                        document.getElementById('current-round-timer-angka').style.color = '#ff0000';
+                    } else {
+                        document.getElementById('current-round-timer-angka').style.color = '#333';
+                    }
+                } else {
+                    document.getElementById('current-round-timer-angka').textContent = '-';
+                }
+
+                // Monitor bets in current round
+                if (activeRound.taruhan_users && Object.keys(activeRound.taruhan_users).length > 0) {
+                    processBetDataAngka(activeRound.taruhan_users);
+                } else {
+                    resetBetMonitoringAngka();
+                    document.getElementById('bet-details-angka').innerHTML = 
+                        '<div class="no-data">Belum ada taruhan di round ini</div>';
+                }
+            } else {
+                resetDisplayAngka();
+            }
+        });
+
+        function processBetDataBk(taruhanUsers) {
+            let besarCount = 0;
+            let besarTotal = 0;
+            let besarMax = 0;
+            let besarMaxUser = '';
+            
+            let kecilCount = 0;
+            let kecilTotal = 0;
+            let kecilMax = 0;
+            let kecilMaxUser = '';
+            
+            const betDetails = [];
+
+            // Process each bet
+            for (const userId in taruhanUsers) {
+                const bet = taruhanUsers[userId];
+                if (!bet) continue;
+                
+                const amount = parseInt(bet.pasangan) || 0;
+                const choice = bet.pilihan;
+                const userShort = userId ? (userId.substring(0, 8) + '...') : 'unknown';
+                
+                betDetails.push({
+                    user: userShort,
+                    pilihan: choice || '-',
+                    pasangan: amount,
+                    waktu: bet.waktu_taruhan ? new Date(bet.waktu_taruhan).toLocaleTimeString() : '-'
+                });
+
+                if (choice === 'BESAR') {
+                    besarCount++;
+                    besarTotal += amount;
+                    if (amount > besarMax) {
+                        besarMax = amount;
+                        besarMaxUser = userShort;
+                    }
+                }
+                
+                if (choice === 'KECIL') {
+                    kecilCount++;
+                    kecilTotal += amount;
+                    if (amount > kecilMax) {
+                        kecilMax = amount;
+                        kecilMaxUser = userShort;
+                    }
+                }
+            }
+
+            // Update besar stats
+            document.getElementById('besar-count').textContent = besarCount;
+            document.getElementById('besar-total').textContent = formatRupiah(besarTotal);
+            document.getElementById('besar-max').textContent = formatRupiah(besarMax);
+            document.getElementById('besar-max-user').textContent = besarMaxUser || '-';
+
+            // Update kecil stats
+            document.getElementById('kecil-count').textContent = kecilCount;
+            document.getElementById('kecil-total').textContent = formatRupiah(kecilTotal);
+            document.getElementById('kecil-max').textContent = formatRupiah(kecilMax);
+            document.getElementById('kecil-max-user').textContent = kecilMaxUser || '-';
+
+            // Update bet details table
+            updateBetDetailsTableBk(betDetails);
+        }
+
+        function processBetDataAngka(taruhanUsers) {
+            // Reset semua angka terlebih dahulu
+            for (let i = 0; i < 10; i++) {
+                document.getElementById(`angka-${i}-count`).textContent = '0';
+                document.getElementById(`angka-${i}-total`).textContent = '0';
+                document.getElementById(`angka-${i}-max`).textContent = '-';
+                document.getElementById(`angka-${i}-max-user`).textContent = '-';
+            }
+            
+            const betDetails = [];
+
+            // Process each bet
+            for (const userId in taruhanUsers) {
+                const bet = taruhanUsers[userId];
+                if (!bet) continue;
+                
+                const amount = parseInt(bet.pasangan) || 0;
+                const angkaTebakan = parseInt(bet.angka_tebakan);
+                const userShort = userId ? (userId.substring(0, 8) + '...') : 'unknown';
+                
+                if (!isNaN(angkaTebakan) && angkaTebakan >= 0 && angkaTebakan <= 9) {
+                    betDetails.push({
+                        user: userShort,
+                        angka: angkaTebakan,
+                        pasangan: amount,
+                        waktu: bet.waktu_taruhan ? new Date(bet.waktu_taruhan).toLocaleTimeString() : '-'
+                    });
+
+                    // Update stats untuk angka ini
+                    const countElement = document.getElementById(`angka-${angkaTebakan}-count`);
+                    const totalElement = document.getElementById(`angka-${angkaTebakan}-total`);
+                    const maxElement = document.getElementById(`angka-${angkaTebakan}-max`);
+                    const maxUserElement = document.getElementById(`angka-${angkaTebakan}-max-user`);
+                    
+                    // Update count
+                    let currentCount = parseInt(countElement.textContent) || 0;
+                    countElement.textContent = currentCount + 1;
+                    
+                    // Update total
+                    let currentTotal = parseFloat(totalElement.textContent.replace(/[^0-9]/g, '')) || 0;
+                    totalElement.textContent = formatRupiah(currentTotal + amount);
+                    
+                    // Update max bet
+                    let currentMax = parseFloat(maxElement.textContent.replace(/[^0-9]/g, '')) || 0;
+                    if (amount > currentMax) {
+                        maxElement.textContent = formatRupiah(amount);
+                        maxUserElement.textContent = userShort;
+                    }
+                }
+            }
+
+            // Update bet details table
+            updateBetDetailsTableAngka(betDetails);
+        }
+
+        function updateBetDetailsTableBk(betDetails) {
+            const container = document.getElementById('bet-details-bk');
+            
+            if (betDetails.length === 0) {
+                container.innerHTML = '<div class="no-data">Belum ada taruhan</div>';
+                return;
+            }
+
+            let html = '<table class="history-table" style="margin-top:10px;">';
+            html += '<tr><th>User</th><th>Pilihan</th><th>Pasangan</th><th>Waktu</th></tr>';
+            
+            betDetails.forEach(bet => {
+                html += `
+                    <tr>
+                        <td>${bet.user}</td>
+                        <td style="color:${bet.pilihan === 'BESAR' ? '#d70000' : 
+                                       bet.pilihan === 'KECIL' ? '#0066cc' : '#666'}; font-weight:bold">
+                            ${bet.pilihan}
+                        </td>
+                        <td>${formatRupiah(bet.pasangan)}</td>
+                        <td>${bet.waktu}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        function updateBetDetailsTableAngka(betDetails) {
+            const container = document.getElementById('bet-details-angka');
+            
+            if (betDetails.length === 0) {
+                container.innerHTML = '<div class="no-data">Belum ada taruhan</div>';
+                return;
+            }
+
+            let html = '<table class="history-table" style="margin-top:10px;">';
+            html += '<tr><th>User</th><th>Angka</th><th>Pasangan</th><th>Waktu</th></tr>';
+            
+            betDetails.forEach(bet => {
+                // Tentukan warna berdasarkan angka
+                let color;
+                if (bet.angka === 0) color = '#FF6B6B';
+                else if (bet.angka === 1) color = '#4ECDC4';
+                else if (bet.angka === 2) color = '#FFD166';
+                else if (bet.angka === 3) color = '#06D6A0';
+                else if (bet.angka === 4) color = '#118AB2';
+                else if (bet.angka === 5) color = '#EF476F';
+                else if (bet.angka === 6) color = '#7209B7';
+                else if (bet.angka === 7) color = '#F8961E';
+                else if (bet.angka === 8) color = '#43AA8B';
+                else if (bet.angka === 9) color = '#277DA1';
+                else color = '#666';
+                
+                html += `
+                    <tr>
+                        <td>${bet.user}</td>
+                        <td style="color:${color}; font-weight:bold; font-size: 16px;">
+                            ${bet.angka}
+                        </td>
+                        <td>${formatRupiah(bet.pasangan)}</td>
+                        <td>${bet.waktu}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        function formatRupiah(amount) {
+            if (!amount || amount === 0) return 'Rp 0';
+            return 'Rp ' + amount.toLocaleString('id-ID');
+        }
+
+        // Load result history untuk Besar/Kecil
+        database.ref('tebak-angka/hasil_round').orderByChild('timestamp').limitToLast(10).on('value', (snapshot) => {
+            const container = document.getElementById('result-history-bk');
+            if (snapshot.exists()) {
+                const resultData = snapshot.val();
+                let roundHistory = [];
+                
+                for (const key in resultData) {
+                    const item = resultData[key];
+                    // Hanya tampilkan yang game_type 'besar_kecil' atau tanpa game_type
+                    if (!item.game_type || item.game_type === 'besar_kecil') {
+                        roundHistory.push(item);
+                    }
+                }
+                
+                // Sort by timestamp newest first
+                roundHistory.sort((a, b) => b.timestamp - a.timestamp);
+                
+                let html = '';
+                roundHistory.forEach(item => {
+                    const time = new Date(item.timestamp).toLocaleTimeString();
+                    const angkaHasil = item.angka_hasil !== undefined ? ` (Angka: ${item.angka_hasil})` : '';
+                    
+                    html += `
+                        <div class="round-history-item">
+                            ${time} - Hasil: <strong>${item.hasil}${angkaHasil}</strong>
+                            (Mode: ${item.mode || 'random'})
+                        </div>
+                    `;
+                });
+                
+                if (html === '') {
+                    html = '<div class="no-data">Belum ada hasil round</div>';
+                }
+                
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="no-data">Belum ada hasil round</div>';
+            }
+        });
+
+        // Load result history untuk Tebak Angka
+        database.ref('tebak-angka/hasil_round_angka').orderByChild('timestamp').limitToLast(10).on('value', (snapshot) => {
+            const container = document.getElementById('result-history-angka');
+            if (snapshot.exists()) {
+                const resultData = snapshot.val();
+                let roundHistory = [];
+                
+                for (const key in resultData) {
+                    const item = resultData[key];
+                    // Hanya tampilkan yang game_type 'tebak_angka'
+                    if (item.game_type === 'tebak_angka') {
+                        roundHistory.push(item);
+                    }
+                }
+                
+                // Sort by timestamp newest first
+                roundHistory.sort((a, b) => b.timestamp - a.timestamp);
+                
+                let html = '';
+                roundHistory.forEach(item => {
+                    const time = new Date(item.timestamp).toLocaleTimeString();
+                    const kategori = item.kategori ? ` (${item.kategori})` : '';
+                    
+                    html += `
+                        <div class="round-history-item">
+                            ${time} - Hasil: <strong>Angka ${item.hasil}${kategori}</strong>
+                            (Mode: ${item.mode || 'random'})
+                        </div>
+                    `;
+                });
+                
+                if (html === '') {
+                    html = '<div class="no-data">Belum ada hasil round</div>';
+                }
+                
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="no-data">Belum ada hasil round</div>';
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load settings untuk tab aktif pertama (Besar/Kecil)
+            loadBkSettings();
+            updateModeButtonsBk();
+            updateHasilButtonsBk();
+            
+            // Inisialisasi bet monitoring untuk angka
+            resetBetMonitoringAngka();
+        });
+
     </script>
 </body>
 </html>
