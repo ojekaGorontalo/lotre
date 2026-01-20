@@ -17,7 +17,7 @@
         body {
             background: linear-gradient(135deg, #d70000 0%, #8b0000 100%);
             min-height: 100vh;
-            padding: 15px;
+            padding: 0;
             padding-bottom: 120px;
         }
 
@@ -40,8 +40,9 @@
         }
         
         .container {
-            max-width: 500px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
             background: white;
             border-radius: 15px;
             padding: 20px;
@@ -76,41 +77,73 @@
             margin-top: 3px;
         }
 
+        /* TIMER CONTAINER BARU - LEBIH SEDERHANA & MOBILE-FRIENDLY */
         .timer-container {
             background: linear-gradient(45deg, #d70000, #8b0000);
             color: white;
-            border-radius: 12px;
-            padding: 12px;
-            text-align: center;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 3px 8px rgba(139, 0, 0, 0.35);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
         }
 
-        #timer {
-            font-size: 42px;
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
-            margin: 5px 0;
+        .timer-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 4px;
         }
 
         .timer-label {
-            font-size: 12px;
+            font-size: 11px;
             opacity: 0.9;
-        }
-
-        .round-id-container {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px;
-            border-radius: 8px;
-            margin-top: 8px;
-            word-break: break-all;
-            font-family: 'Courier New', monospace;
-        }
-
-        #round-id {
-            font-size: 14px;
-            font-weight: bold;
             letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        #timer {
+            font-size: 36px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            line-height: 1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .timer-footer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .round-id-label {
+            font-size: 9px;
+            opacity: 0.8;
+            margin-bottom: 2px;
+            white-space: nowrap;
+        }
+
+        .round-id-compact {
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            word-break: break-all;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .saldo {
@@ -727,23 +760,56 @@
             padding: 5px;
         }
 
-        @media (max-width: 600px) {
-            .popup-content {
-                max-width: 95%;
-                width: 95%;
-                padding: 20px;
-            }
-            
-            .popup-title {
-                font-size: 18px;
-            }
-            
-            .popup-details {
-                font-size: 13px;
-            }
+        /* Tombol Unlock Audio */
+        #unlock-audio {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2001;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            transition: all 0.3s;
         }
 
+        #unlock-audio:hover {
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        /* Responsive adjustments untuk timer baru */
         @media (max-width: 480px) {
+            .timer-container {
+                padding: 6px 10px;
+                min-height: 70px;
+            }
+            
+            #timer {
+                font-size: 32px;
+            }
+            
+            .timer-label {
+                font-size: 10px;
+            }
+            
+            .timer-footer {
+                padding: 3px 6px;
+            }
+            
+            .round-id-compact {
+                font-size: 9px;
+            }
+            
+            .round-id-label {
+                font-size: 8px;
+            }
+            
             .container {
                 padding: 15px;
             }
@@ -790,10 +856,6 @@
                 font-size: 16px;
             }
             
-            #round-id {
-                font-size: 12px;
-            }
-            
             .hasil-round-header {
                 padding: 10px;
             }
@@ -826,9 +888,38 @@
                 font-size: 12px;
                 min-width: 70px;
             }
+            
+            .popup-content {
+                max-width: 95%;
+                width: 95%;
+                padding: 20px;
+            }
+            
+            .popup-title {
+                font-size: 18px;
+            }
+            
+            .popup-details {
+                font-size: 13px;
+            }
+            
+            #unlock-audio {
+                padding: 8px 16px;
+                font-size: 14px;
+                top: 5px;
+            }
         }
 
         @media (max-width: 350px) {
+            #timer {
+                font-size: 28px;
+            }
+            
+            .timer-container {
+                padding: 5px 8px;
+                min-height: 65px;
+            }
+            
             .status-grid {
                 grid-template-columns: 1fr;
             }
@@ -855,6 +946,11 @@
     </style>
 </head>
 <body>
+    <!-- Tombol Unlock Audio - WAJIB untuk interaksi user -->
+    <button id="unlock-audio" style="display: none;">
+        🔓 UNLOCK AUDIO
+    </button>
+
     <!-- Loading Screen -->
     <div id="loading-screen">
         <div style="text-align:center;">
@@ -863,8 +959,9 @@
         </div>
     </div>
 
+    <!-- Element Audio dengan URL yang diminta -->
     <audio id="countdownAudio" preload="auto">
-        <source src="https://drive.google.com/uc?export=download&id=16BfcfJ5EFNsk1y0_xZFQn9gUt8xFgWf-" type="audio/mpeg">
+        <source src="https://raw.githubusercontent.com/ojekaGorontalo/lotre/main/countdown.mp3" type="audio/mpeg">
     </audio>
 
     <div class="last5-warning" id="last5-warning">⏰ 5 DETIK TERAKHIR!</div>
@@ -906,21 +1003,24 @@
     </div>
 
     <div class="container">
-        <div class="audio-controls">
+        <div class="audio-controls" style="display: none;">
             <button class="audio-btn" onclick="toggleAudio()">🔊</button>
         </div>
 
         <div class="header">
             <h1>🎯 TEBAK BESAR KECIL</h1>
-            <div class="subtitle">BESAR (5-9) | KECIL (0-4)</div>
+            <div class="subtitle">Big or Small</div>
         </div>
 
+        <!-- TIMER CONTAINER BARU YANG LEBIH SIMPLE -->
         <div class="timer-container">
-            <div class="timer-label">WAKTU TERSISA:</div>
-            <div id="timer">15</div>
-            <div class="timer-label">Round ID:</div>
-            <div class="round-id-container">
-                <span id="round-id">-</span>
+            <div class="timer-header">
+                <div class="timer-label">TIME</div>
+                <div id="timer">15</div>
+            </div>
+            <div class="timer-footer">
+                <div class="round-id-label">ROUND ID:</div>
+                <div id="round-id" class="round-id-compact">-</div>
             </div>
         </div>
 
@@ -1003,6 +1103,7 @@
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
+        // Variabel untuk sistem audio yang baru
         let state = {
             userId: null,
             roundId: null,
@@ -1012,7 +1113,9 @@
             timerInterval: null,
             saldo: 50000,
             bisaMemilih: true,
-            audioEnabled: true,
+            audioEnabled: true, // User bisa matikan/nyalakan audio
+            audioUnlocked: false, // Wajib: flag untuk unlock audio (false sampai user klik tombol)
+            countdownPlayed: false, // Wajib: flag untuk audio sudah diputar di round ini
             waktuTunggu: 15,
             taruhanRef: null,
             roundRef: null,
@@ -1022,14 +1125,13 @@
             hasilRoundListener: null,
             allHasilRoundData: [],
             displayHasilRoundData: [],
-            currentPage: 1, // Halaman saat ini (dimulai dari 1)
-            itemsPerPage: 10, // Item per halaman
-            totalPages: 1, // Total halaman
+            currentPage: 1,
+            itemsPerPage: 10,
+            totalPages: 1,
             gameMode: 'BESAR_KECIL',
             bottomSheetOpen: false,
             pasanganOptions: [1000, 2000, 5000, 10000, 20000, 50000],
-            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-            countdownPlayed: false
+            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
         };
 
         const countdownAudio = document.getElementById('countdownAudio');
@@ -1037,15 +1139,158 @@
         const bottomSheetOverlay = document.getElementById('bottom-sheet-overlay');
         const customInput = document.getElementById('custom-input');
 
-        let audioInitialized = false;
-        let audioUnlockAttempted = false;
+        // ============================================
+        // FUNGSI UNLOCK AUDIO - WAJIB USER INTERACTION
+        // ============================================
+        function unlockAudio() {
+            try {
+                console.log("🔓 Mencoba unlock audio...");
+                
+                // Pastikan audio dimuat
+                countdownAudio.load();
+                
+                // Coba play dengan volume 0 untuk unlock (Chrome Android requirement)
+                countdownAudio.volume = 0;
+                const playPromise = countdownAudio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log("✅ Audio berhasil di-unlock");
+                        
+                        // Hentikan audio, reset ke awal, set volume normal
+                        countdownAudio.pause();
+                        countdownAudio.currentTime = 0;
+                        countdownAudio.volume = 1;
+                        
+                        // Set flag audioUnlocked ke true
+                        state.audioUnlocked = true;
+                        
+                        // Sembunyikan tombol unlock
+                        document.getElementById('unlock-audio').style.display = 'none';
+                        
+                        // Tampilkan tombol audio controls (mute/unmute)
+                        document.querySelector('.audio-controls').style.display = 'block';
+                        
+                        // Aktifkan audio secara default
+                        state.audioEnabled = true;
+                        document.querySelector('.audio-btn').textContent = '🔊';
+                        
+                        // Simpan status di localStorage
+                        localStorage.setItem('audioUnlocked_bk', 'true');
+                        
+                    }).catch(e => {
+                        console.log("❌ Gagal unlock audio:", e.name);
+                        alert("Gagal unlock audio. Silakan coba lagi atau periksa izin browser.");
+                    });
+                }
+            } catch (error) {
+                console.error("Error unlock audio:", error);
+                alert("Terjadi error saat unlock audio.");
+            }
+        }
+
+        // ============================================
+        // FUNGSI PLAY COUNTDOWN AUDIO 5 DETIK TERAKHIR
+        // ============================================
+        function playCountdownAudio() {
+            // CEK KONDISI WAJIB: audioUnlocked harus true
+            if (!state.audioUnlocked) {
+                console.log("🔒 Audio belum di-unlock");
+                return;
+            }
+            
+            // CEK KONDISI WAJIB: audioEnabled (user bisa matikan)
+            if (!state.audioEnabled) {
+                console.log("🔇 Audio dimatikan oleh user");
+                return;
+            }
+            
+            // CEK KONDISI WAJIB: countdownPlayed false (hanya 1x per round)
+            if (state.countdownPlayed) {
+                console.log("🎵 Audio sudah diputar untuk round ini");
+                return;
+            }
+            
+            // CEK KONDISI WAJIB: timer dalam range 5-1 detik
+            if (state.timer > 5 || state.timer <= 0) {
+                return;
+            }
+            
+            try {
+                console.log("🎵 Memutar audio countdown (timer:", state.timer, ")");
+                
+                // Reset audio ke awal
+                countdownAudio.currentTime = 0;
+                countdownAudio.volume = 0.7;
+                
+                // Coba play audio
+                const playPromise = countdownAudio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log("✅ Audio countdown berhasil diputar");
+                        state.countdownPlayed = true; // Set flag sudah diputar
+                    }).catch(error => {
+                        console.log("❌ Gagal memutar audio:", error.name);
+                        
+                        // Jika gagal karena NotAllowedError, reset status unlock
+                        if (error.name === 'NotAllowedError') {
+                            state.audioUnlocked = false;
+                            document.getElementById('unlock-audio').style.display = 'block';
+                            document.querySelector('.audio-controls').style.display = 'none';
+                            localStorage.removeItem('audioUnlocked_bk');
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error("Error play audio:", error);
+            }
+        }
+
+        // ============================================
+        // FUNGSI TOGGLE AUDIO (MUTE/UNMUTE)
+        // ============================================
+        function toggleAudio() {
+            // Cek apakah audio sudah di-unlock
+            if (!state.audioUnlocked) {
+                alert("Silakan unlock audio terlebih dahulu dengan tombol 'UNLOCK AUDIO'");
+                return;
+            }
+            
+            // Toggle status audioEnabled
+            state.audioEnabled = !state.audioEnabled;
+            const audioBtn = document.querySelector('.audio-btn');
+            
+            if (state.audioEnabled) {
+                audioBtn.textContent = '🔊';
+                console.log("🔊 Audio diaktifkan");
+            } else {
+                audioBtn.textContent = '🔇';
+                console.log("🔇 Audio dimatikan");
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', async function() {
+            // Cek status unlock audio dari localStorage
+            const savedAudioUnlocked = localStorage.getItem('audioUnlocked_bk');
+            if (savedAudioUnlocked === 'true') {
+                state.audioUnlocked = true;
+                document.getElementById('unlock-audio').style.display = 'none';
+                document.querySelector('.audio-controls').style.display = 'block';
+            } else {
+                // Tampilkan tombol unlock audio
+                document.getElementById('unlock-audio').style.display = 'block';
+                document.querySelector('.audio-controls').style.display = 'none';
+            }
+            
+            // Setup event listener untuk tombol unlock
+            document.getElementById('unlock-audio').addEventListener('click', unlockAudio);
+            
+            // Lanjutkan inisialisasi aplikasi
             await initAplikasi();
             setupEventListeners();
             loadHasilRound();
             loadPasanganSettings();
-            countdownAudio.load();
         });
 
         function setupEventListeners() {
@@ -1250,14 +1495,12 @@
                 .on('value', (snapshot) => {
                     console.log("📊 Load data hasil round:", snapshot.numChildren(), "item ditemukan");
                     
-                    // Reset data
                     state.allHasilRoundData = [];
                     state.displayHasilRoundData = [];
                     state.currentPage = 1;
                     
                     if (snapshot.exists()) {
                         const data = snapshot.val();
-                        // Konversi ke array dan urutkan berdasarkan timestamp (terbaru pertama)
                         const items = Object.entries(data)
                             .map(([roundId, item]) => ({ roundId, ...item }))
                             .sort((a, b) => b.timestamp - a.timestamp);
@@ -1274,15 +1517,12 @@
         }
 
         function updatePagination() {
-            // Hitung total halaman
             state.totalPages = Math.max(1, Math.ceil(state.allHasilRoundData.length / state.itemsPerPage));
             
-            // Batasi currentPage agar tidak melebihi totalPages
             if (state.currentPage > state.totalPages) {
                 state.currentPage = state.totalPages;
             }
             
-            // Hitung data yang akan ditampilkan
             const startIndex = (state.currentPage - 1) * state.itemsPerPage;
             const endIndex = startIndex + state.itemsPerPage;
             
@@ -1324,10 +1564,8 @@
                 const timestamp = item.timestamp ? formatDateTime(item.timestamp) : '-';
                 const hasilAngka = item.hasil_angka !== undefined ? ` (Angka: ${item.hasil_angka})` : '';
                 
-                // Hitung nomor urut global
                 const globalIndex = ((state.currentPage - 1) * state.itemsPerPage) + index + 1;
                 
-                // Warna background bergantian untuk readability
                 const bgClass = index % 2 === 0 ? 'background: rgba(0, 0, 0, 0.02);' : '';
                 
                 html += `
@@ -1341,7 +1579,6 @@
                             <div class="arrow">></div>
                         </div>
                         <div class="hasil-round-detail" id="detail-${roundId}">
-                            <!-- Detail akan diload saat di-expand -->
                         </div>
                     </div>
                 `;
@@ -1367,14 +1604,11 @@
             
             paginationContainer.style.display = 'flex';
             
-            // Update tombol
             prevBtn.disabled = state.currentPage <= 1;
             nextBtn.disabled = state.currentPage >= state.totalPages;
             
-            // Update info halaman
             pageInfo.textContent = `${state.currentPage}/${state.totalPages}`;
             
-            // Update summary
             if (summaryElement) {
                 const startItem = ((state.currentPage - 1) * state.itemsPerPage) + 1;
                 const endItem = Math.min(startItem + state.itemsPerPage - 1, state.allHasilRoundData.length);
@@ -1511,13 +1745,20 @@
         }
 
         function resetStateUntukRoundBaru() {
+            // Reset pilihan dan pasangan
             state.pasanganDipilih = null;
             state.pilihanDipilih = null;
             state.bisaMemilih = true;
             state.processingResult = false;
             state.last5Seconds = false;
-            state.countdownPlayed = false;
             
+            // ============================================
+            // RESET FLAG COUNTDOWN PLAYED - PENTING!
+            // ============================================
+            state.countdownPlayed = false;
+            console.log("🔄 countdownPlayed direset untuk round baru");
+            
+            // Update UI
             document.getElementById('status-pasangan').textContent = '-';
             document.getElementById('status-tebakan').textContent = '-';
             document.getElementById('btn-besar').classList.remove('active');
@@ -1525,6 +1766,7 @@
             document.getElementById('btn-besar').disabled = false;
             document.getElementById('btn-kecil').disabled = false;
             
+            // Tutup bottom sheet
             closeBottomSheet();
             resetBottomSheet();
             
@@ -1739,7 +1981,13 @@
         function startTimer() {
             clearInterval(state.timerInterval);
             state.last5Seconds = false;
+            
+            // ============================================
+            // RESET FLAG COUNTDOWN PLAYED SETIAP ROUND BARU
+            // ============================================
             state.countdownPlayed = false;
+            console.log("⏱️ Timer dimulai, countdownPlayed:", state.countdownPlayed);
+            
             document.getElementById('timer').textContent = state.timer;
             document.getElementById('timer').classList.remove('shake');
             document.getElementById('timer').style.color = '';
@@ -1749,59 +1997,42 @@
                 state.timer--;
                 document.getElementById('timer').textContent = state.timer;
                 
+                // ============================================
+                // LOGIC AUDIO COUNTDOWN 5 DETIK TERAKHIR
+                // ============================================
                 if (state.timer <= 5 && state.timer > 0) {
                     if (!state.last5Seconds) {
                         state.last5Seconds = true;
                         showLast5SecondsWarning();
                         
-                        if (!state.countdownPlayed && audioInitialized && state.audioEnabled) {
-                            playCountdownAudio();
-                            state.countdownPlayed = true;
-                        } else {
-                            document.getElementById('timer').style.color = '#ff0000';
-                            document.getElementById('timer').style.textShadow = '0 0 10px #ff0000';
-                        }
+                        // Mainkan audio countdown
+                        playCountdownAudio();
                         
-                        if (state.bisaMemilih) {
-                            disableAllButtons();
-                            closeBottomSheet();
-                        }
+                        // Update UI untuk 5 detik terakhir
+                        document.getElementById('timer').style.color = '#ff0000';
+                        document.getElementById('timer').style.textShadow = '0 0 10px #ff0000';
+                    }
+                    
+                    // Nonaktifkan pilihan saat 5 detik terakhir
+                    if (state.bisaMemilih) {
+                        disableAllButtons();
+                        closeBottomSheet();
                     }
                     
                     document.getElementById('timer').classList.add('pulse');
                 }
                 
+                // Efek shake saat 3 detik terakhir
                 if (state.timer <= 3) {
                     document.getElementById('timer').classList.add('shake');
                 }
                 
+                // Timer habis
                 if (state.timer <= 0) {
                     clearInterval(state.timerInterval);
                     await waktuHabis();
                 }
             }, 1000);
-        }
-
-        function playCountdownAudio() {
-            if (!state.audioEnabled || !audioInitialized) {
-                console.log("Audio disabled or not initialized");
-                return;
-            }
-            
-            try {
-                countdownAudio.currentTime = 0;
-                countdownAudio.volume = 0.5;
-                
-                const playPromise = countdownAudio.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.catch(e => {
-                        console.log("Audio play failed:", e.name);
-                    });
-                }
-            } catch (error) {
-                console.log("Play audio error:", error);
-            }
         }
 
         function showLast5SecondsWarning() {
@@ -1893,7 +2124,6 @@
             const detailElement = document.getElementById(`detail-${roundId}`);
             const isExpanded = detailElement.classList.contains('expanded');
             
-            // Collapse semua detail lain
             document.querySelectorAll('.hasil-round-detail').forEach(el => {
                 el.classList.remove('expanded');
                 el.innerHTML = '';
@@ -1905,11 +2135,9 @@
             if (!isExpanded) {
                 headerElement.classList.add('expanded');
                 
-                // Tampilkan loading
                 detailElement.innerHTML = '<div style="padding:20px; text-align:center;">Loading...</div>';
                 detailElement.classList.add('expanded');
                 
-                // Load data detail
                 try {
                     const snapshot = await database.ref('tebak-angka/hasil_round/' + roundId).once('value');
                     if (!snapshot.exists()) {
@@ -1960,47 +2188,6 @@
             }
             
             updateAllInButton();
-        }
-
-        function toggleAudio() {
-            state.audioEnabled = !state.audioEnabled;
-            const audioBtn = document.querySelector('.audio-btn');
-            audioBtn.textContent = state.audioEnabled ? '🔊' : '🔇';
-            
-            if (state.audioEnabled && !audioInitialized) {
-                unlockAudio();
-            }
-        }
-
-        function unlockAudio() {
-            if (audioUnlockAttempted) return;
-            
-            audioUnlockAttempted = true;
-            console.log("Attempting to unlock audio...");
-            
-            countdownAudio.volume = 0;
-            
-            const playPromise = countdownAudio.play();
-            
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    console.log(`Audio initialized successfully`);
-                    countdownAudio.pause();
-                    countdownAudio.currentTime = 0;
-                    countdownAudio.volume = 0.5;
-                    audioInitialized = true;
-                }).catch(e => {
-                    console.log(`Audio initialization failed:`, e);
-                    audioInitialized = true;
-                });
-            }
-            
-            setTimeout(() => {
-                if (!audioInitialized) {
-                    audioInitialized = true;
-                    console.log("Audio unlocked via fallback");
-                }
-            }, 1000);
         }
 
         function closePopup() {
