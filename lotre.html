@@ -17,8 +17,8 @@
         body {
             background: linear-gradient(135deg, #d70000 0%, #8b0000 100%);
             min-height: 100vh;
-            padding: 0;
-            padding-bottom: 120px;
+            padding: 20px;
+            padding-bottom: 30px;
         }
 
         #loading-screen {
@@ -42,7 +42,7 @@
         .container {
             width: 100%;
             max-width: 100%;
-            margin: 0;
+            margin: 0 auto;
             background: white;
             border-radius: 15px;
             padding: 20px;
@@ -447,98 +447,113 @@
             cursor: not-allowed;
         }
 
-        .hasil-round-container {
-            border: 1px solid #ddd;
+        /* HASIL ROUND - TANPA CARD TERPISAH */
+        .hasil-round-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f0f0f0;
             border-radius: 8px;
-            padding: 8px;
-            background: #f9f9f9;
-            margin-top: 15px;
-            max-height: 400px;
-            overflow-y: auto;
+            font-weight: bold;
+            font-size: 14px;
         }
 
-        .hasil-round-container::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .hasil-round-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-        
-        .hasil-round-container::-webkit-scrollbar-thumb {
-            background: #d70000;
-            border-radius: 4px;
+        .hasil-round-items {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 5px;
         }
 
         .hasil-round-item {
-            margin-bottom: 8px;
-            border-radius: 6px;
-            overflow: hidden;
-            transition: all 0.3s;
-        }
-
-        .hasil-round-item.besar {
-            background: rgba(255, 0, 0, 0.1);
-            border: 1px solid rgba(215, 0, 0, 0.2);
-        }
-
-        .hasil-round-item.kecil {
-            background: rgba(0, 102, 204, 0.1);
-            border: 1px solid rgba(0, 102, 204, 0.2);
-        }
-
-        .hasil-round-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
             cursor: pointer;
             transition: all 0.3s;
+            align-items: center;
+            min-height: 45px;
         }
 
-        .hasil-round-header:hover {
-            background: rgba(0, 0, 0, 0.05);
+        .hasil-round-item:hover {
+            background: #f9f9f9;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .hasil-round-header .arrow {
-            transition: transform 0.3s;
-            font-size: 18px;
-            color: #666;
+        .hasil-round-item.berjalan {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
         }
 
-        .hasil-round-header.expanded .arrow {
-            transform: rotate(90deg);
+        .hasil-round-item.selesai-besar {
+            background: rgba(255, 0, 0, 0.05);
+            border-left: 4px solid #d70000;
         }
 
-        .hasil-round-detail {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
+        .hasil-round-item.selesai-kecil {
+            background: rgba(0, 102, 204, 0.05);
+            border-left: 4px solid #0066cc;
+        }
+
+        .hasil-round-item.menang {
+            background: rgba(40, 167, 69, 0.1);
+            border-left: 4px solid #28a745;
+        }
+
+        .hasil-round-item.kalah {
+            background: rgba(220, 53, 69, 0.1);
+            border-left: 4px solid #dc3545;
+        }
+
+        .hasil-round-item.kosong {
+            background: #f9f9f9;
+            border: 1px dashed #ddd;
+            color: #999;
+            cursor: default;
+        }
+
+        .hasil-round-item.kosong:hover {
+            background: #f9f9f9;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Container untuk detail */
+        .detail-container {
+            display: none;
             background: white;
-        }
-
-        .hasil-round-detail.expanded {
-            max-height: 500px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 5px;
+            margin-bottom: 8px;
             padding: 15px;
-            border-top: 1px solid #eee;
+            animation: slideDown 0.3s ease-out;
+            grid-column: 1 / span 2;
         }
 
-        .detail-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .detail-table td {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .detail-label {
-            font-weight: bold;
-            color: #666;
-            width: 40%;
+        .detail-container.expanded {
+            display: block;
         }
 
         .popup-overlay {
@@ -656,110 +671,6 @@
             box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
         }
 
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 2px solid #ffcc00;
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            z-index: 1000;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: #666;
-            flex: 1;
-            padding: 8px 0;
-            transition: all 0.3s;
-        }
-
-        .nav-item.active {
-            color: #d70000;
-            transform: translateY(-5px);
-        }
-
-        .nav-item.active .nav-icon {
-            background: linear-gradient(45deg, #d70000, #ff4444);
-            box-shadow: 0 4px 10px rgba(215, 0, 0, 0.3);
-        }
-
-        .nav-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            background: #f0f0f0;
-            margin-bottom: 4px;
-            transition: all 0.3s;
-        }
-
-        .nav-label {
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 15px;
-            gap: 10px;
-        }
-
-        .pagination-btn {
-            background: linear-gradient(45deg, #d70000, #ff4444);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            width: 40px;
-            height: 40px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-
-        .pagination-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(215, 0, 0, 0.3);
-        }
-
-        .pagination-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background: #cccccc;
-        }
-
-        .pagination-info {
-            font-size: 14px;
-            font-weight: bold;
-            color: #d70000;
-            min-width: 80px;
-            text-align: center;
-        }
-
-        .pagination-summary {
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-            padding: 5px;
-        }
-
         /* Tombol Unlock Audio */
         #unlock-audio {
             position: fixed;
@@ -783,8 +694,24 @@
             box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
         }
 
-        /* Responsive adjustments untuk timer baru */
+        .arrow {
+            display: inline-block;
+            transition: transform 0.3s;
+            font-size: 18px;
+            margin-left: 5px;
+        }
+
+        .arrow.expanded {
+            transform: rotate(90deg);
+        }
+
+        /* Responsive adjustments */
         @media (max-width: 480px) {
+            body {
+                padding: 10px;
+                padding-bottom: 20px;
+            }
+            
             .timer-container {
                 padding: 6px 10px;
                 min-height: 70px;
@@ -857,36 +784,19 @@
             }
             
             .hasil-round-header {
-                padding: 10px;
-            }
-            
-            .hasil-round-detail.expanded {
-                padding: 10px;
-            }
-            
-            .nav-icon {
-                width: 35px;
-                height: 35px;
-                font-size: 18px;
-            }
-            
-            .nav-label {
-                font-size: 10px;
-            }
-            
-            body {
-                padding-bottom: 110px !important;
-            }
-            
-            .pagination-btn {
-                width: 35px;
-                height: 35px;
-                font-size: 16px;
-            }
-            
-            .pagination-info {
+                padding: 8px;
                 font-size: 12px;
-                min-width: 70px;
+                margin-top: 20px;
+            }
+            
+            .hasil-round-items {
+                max-height: 350px;
+            }
+            
+            .hasil-round-item {
+                padding: 10px;
+                font-size: 13px;
+                min-height: 44px;
             }
             
             .popup-content {
@@ -933,14 +843,8 @@
                 min-height: 40px;
             }
             
-            .detail-table {
-                font-size: 10px;
-            }
-            
-            .pagination-btn {
-                width: 30px;
-                height: 30px;
-                font-size: 14px;
+            .hasil-round-items {
+                max-height: 320px;
             }
         }
     </style>
@@ -1051,41 +955,15 @@
             </div>
         </div>
 
-        <div class="hasil-round-container" id="hasil-round-list">
-            <div class="hasil-round-item">🔄 Memuat data round...</div>
+        <!-- HASIL ROUND - TANPA CARD TERPISAH -->
+        <div class="hasil-round-header">
+            <div>PERIODE</div>
+            <div>HASIL</div>
         </div>
         
-        <div class="pagination-container" id="pagination-container" style="display: none;">
-            <button class="pagination-btn" id="prev-page-btn" onclick="prevPage()" disabled>
-                <
-            </button>
-            <div class="pagination-info" id="page-info">1/1</div>
-            <button class="pagination-btn" id="next-page-btn" onclick="nextPage()" disabled>
-                >
-            </button>
+        <div class="hasil-round-items" id="hasil-round-items">
+            <!-- Data akan dimuat di sini dengan JavaScript -->
         </div>
-        
-        <div class="pagination-summary" id="pagination-summary"></div>
-    </div>
-
-    <!-- Bottom Navigation -->
-    <div class="bottom-nav">
-        <a href="lotre.html" class="nav-item active">
-            <div class="nav-icon">🎯</div>
-            <div class="nav-label">Besar/Kecil</div>
-        </a>
-        <a href="tebak-angka.html" class="nav-item">
-            <div class="nav-icon">🔢</div>
-            <div class="nav-label">Tebak Angka</div>
-        </a>
-        <a href="riwayat.html" class="nav-item">
-            <div class="nav-icon">📋</div>
-            <div class="nav-label">Riwayat</div>
-        </a>
-        <a href="akun.html" class="nav-item">
-            <div class="nav-icon">👤</div>
-            <div class="nav-label">Akun</div>
-        </a>
     </div>
 
     <script>
@@ -1113,9 +991,9 @@
             timerInterval: null,
             saldo: 50000,
             bisaMemilih: true,
-            audioEnabled: true, // User bisa matikan/nyalakan audio
-            audioUnlocked: false, // Wajib: flag untuk unlock audio (false sampai user klik tombol)
-            countdownPlayed: false, // Wajib: flag untuk audio sudah diputar di round ini
+            audioEnabled: true,
+            audioUnlocked: false,
+            countdownPlayed: false,
             waktuTunggu: 15,
             taruhanRef: null,
             roundRef: null,
@@ -1123,15 +1001,12 @@
             processingResult: false,
             last5Seconds: false,
             hasilRoundListener: null,
-            allHasilRoundData: [],
-            displayHasilRoundData: [],
-            currentPage: 1,
-            itemsPerPage: 10,
-            totalPages: 1,
+            hasilRoundData: [],
             gameMode: 'BESAR_KECIL',
             bottomSheetOpen: false,
             pasanganOptions: [1000, 2000, 5000, 10000, 20000, 50000],
-            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+            expandedDetailId: null
         };
 
         const countdownAudio = document.getElementById('countdownAudio');
@@ -1485,134 +1360,140 @@
             }
         }
 
+        // ============================================
+        // LOAD HASIL ROUND DARI TEBAK-ANGKA/TARUHAN
+        // ============================================
         function loadHasilRound() {
             if (state.hasilRoundListener) {
-                database.ref('tebak-angka/hasil_round').off('value', state.hasilRoundListener);
+                database.ref('tebak-angka/taruhan').off('value', state.hasilRoundListener);
             }
             
-            state.hasilRoundListener = database.ref('tebak-angka/hasil_round')
-                .orderByChild('timestamp')
+            state.hasilRoundListener = database.ref('tebak-angka/taruhan')
+                .orderByChild('created_at')
+                .limitToLast(10)
                 .on('value', (snapshot) => {
-                    console.log("📊 Load data hasil round:", snapshot.numChildren(), "item ditemukan");
+                    console.log("📊 Load data round dari taruhan:", snapshot.numChildren(), "item ditemukan");
                     
-                    state.allHasilRoundData = [];
-                    state.displayHasilRoundData = [];
-                    state.currentPage = 1;
+                    state.hasilRoundData = [];
                     
                     if (snapshot.exists()) {
                         const data = snapshot.val();
                         const items = Object.entries(data)
                             .map(([roundId, item]) => ({ roundId, ...item }))
-                            .sort((a, b) => b.timestamp - a.timestamp);
+                            .sort((a, b) => b.created_at - a.created_at);
                         
-                        state.allHasilRoundData = items;
-                        updatePagination();
+                        state.hasilRoundData = items;
+                        updateHasilRoundUI();
                     } else {
-                        updateHasilRoundUI([]);
-                        updatePaginationUI();
+                        state.hasilRoundData = [];
+                        updateHasilRoundUI();
                     }
                 }, (error) => {
                     console.error("Error loading hasil round:", error);
                 });
         }
 
-        function updatePagination() {
-            state.totalPages = Math.max(1, Math.ceil(state.allHasilRoundData.length / state.itemsPerPage));
+        // ============================================
+        // UPDATE UI HASIL ROUND (2 KOLOM: PERIODE & HASIL)
+        // ============================================
+        function updateHasilRoundUI() {
+            const container = document.getElementById('hasil-round-items');
             
-            if (state.currentPage > state.totalPages) {
-                state.currentPage = state.totalPages;
-            }
+            // Kosongkan container
+            container.innerHTML = '';
             
-            const startIndex = (state.currentPage - 1) * state.itemsPerPage;
-            const endIndex = startIndex + state.itemsPerPage;
-            
-            state.displayHasilRoundData = state.allHasilRoundData.slice(startIndex, endIndex);
-            
-            updateHasilRoundUI(state.displayHasilRoundData);
-            updatePaginationUI();
-        }
-
-        function prevPage() {
-            if (state.currentPage > 1) {
-                state.currentPage--;
-                updatePagination();
-            }
-        }
-
-        function nextPage() {
-            if (state.currentPage < state.totalPages) {
-                state.currentPage++;
-                updatePagination();
-            }
-        }
-
-        function updateHasilRoundUI(displayData) {
-            const container = document.getElementById('hasil-round-list');
-            
-            if (!displayData || displayData.length === 0) {
-                container.innerHTML = '<div class="hasil-round-item">🔄 Tidak ada data round...</div>';
-                return;
-            }
-            
-            console.log(`📈 Menampilkan ${displayData.length} round (Halaman ${state.currentPage}/${state.totalPages})`);
-            
-            let html = '';
-            
-            displayData.forEach((item, index) => {
-                const roundId = item.roundId;
-                const emoji = item.hasil === 'BESAR' ? '🟥' : '🟦';
-                const timestamp = item.timestamp ? formatDateTime(item.timestamp) : '-';
-                const hasilAngka = item.hasil_angka !== undefined ? ` (Angka: ${item.hasil_angka})` : '';
+            // Tampilkan 10 baris (data atau placeholder)
+            for (let i = 0; i < 10; i++) {
+                const item = state.hasilRoundData[i];
                 
-                const globalIndex = ((state.currentPage - 1) * state.itemsPerPage) + index + 1;
-                
-                const bgClass = index % 2 === 0 ? 'background: rgba(0, 0, 0, 0.02);' : '';
-                
-                html += `
-                    <div class="hasil-round-item ${item.hasil === 'BESAR' ? 'besar' : 'kecil'}" style="${bgClass}">
-                        <div class="hasil-round-header" onclick="toggleRoundDetail('${roundId}', this)">
-                            <div style="flex:1;">
-                                <div><strong>#${globalIndex}</strong> | <strong>Periode:</strong> ${roundId}</div>
-                                <div><strong>Hasil:</strong> ${item.hasil} ${emoji}${hasilAngka}</div>
-                                <div style="font-size:10px; color:#666; margin-top:3px;">${timestamp}</div>
+                if (item) {
+                    const roundId = item.roundId;
+                    const roundData = item;
+                    
+                    // Tentukan teks hasil
+                    let hasilText = '';
+                    let emoji = '';
+                    let cssClass = '';
+                    
+                    if (roundData.status === 'berjalan') {
+                        hasilText = 'BERJALAN';
+                        emoji = '🔄';
+                        cssClass = 'berjalan';
+                    } else if (roundData.status === 'selesai' && roundData.hasil) {
+                        hasilText = roundData.hasil;
+                        emoji = roundData.hasil === 'BESAR' ? '🟥' : '🟦';
+                        cssClass = roundData.hasil === 'BESAR' ? 'selesai-besar' : 'selesai-kecil';
+                        
+                        // Cek apakah user ikut taruhan
+                        if (roundData.taruhan_users && state.userId && roundData.taruhan_users[state.userId]) {
+                            const taruhan = roundData.taruhan_users[state.userId];
+                            if (taruhan.status === 'menang') {
+                                cssClass = 'menang';
+                                hasilText += ' - MENANG 🎉';
+                            } else if (taruhan.status === 'kalah') {
+                                cssClass = 'kalah';
+                                hasilText += ' - KALAH 💔';
+                            } else if (taruhan.status === 'menunggu') {
+                                hasilText += ' - MENUNGGU ⏳';
+                            }
+                        }
+                    } else {
+                        hasilText = 'TIDAK ADA DATA';
+                        emoji = '❓';
+                    }
+                    
+                    // Buat elemen item
+                    const itemElement = document.createElement('div');
+                    itemElement.className = `hasil-round-item ${cssClass}`;
+                    itemElement.setAttribute('data-round-id', roundId);
+                    itemElement.setAttribute('data-index', i);
+                    itemElement.onclick = function() { toggleRoundDetail(this, roundId, roundData); };
+                    
+                    itemElement.innerHTML = `
+                        <div>
+                            <div style="font-size: 11px; color: #666; margin-bottom: 2px;">#${i+1}</div>
+                            <div style="font-weight: bold; font-size: 14px;">${roundData.round_id || roundId}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: bold; font-size: 14px;">
+                                ${emoji} ${hasilText}
                             </div>
-                            <div class="arrow">></div>
+                            <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                                Klik untuk detail <span class="arrow">›</span>
+                            </div>
                         </div>
-                        <div class="hasil-round-detail" id="detail-${roundId}">
+                    `;
+                    
+                    // Buat container untuk detail
+                    const detailElement = document.createElement('div');
+                    detailElement.className = 'detail-container';
+                    detailElement.id = `detail-${roundId}`;
+                    
+                    // Tambahkan ke container
+                    container.appendChild(itemElement);
+                    container.appendChild(detailElement);
+                } else {
+                    // Baris kosong/placeholder jika tidak ada data
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'hasil-round-item kosong';
+                    
+                    itemElement.innerHTML = `
+                        <div>
+                            <div style="font-size: 11px; color: #999; margin-bottom: 2px;">#${i+1}</div>
+                            <div style="font-weight: bold; font-size: 14px; color: #ccc;">---</div>
                         </div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-        }
-
-        function updatePaginationUI() {
-            const paginationContainer = document.getElementById('pagination-container');
-            const prevBtn = document.getElementById('prev-page-btn');
-            const nextBtn = document.getElementById('next-page-btn');
-            const pageInfo = document.getElementById('page-info');
-            const summaryElement = document.getElementById('pagination-summary');
-            
-            if (state.allHasilRoundData.length === 0) {
-                paginationContainer.style.display = 'none';
-                if (summaryElement) {
-                    summaryElement.textContent = '📊 Tidak ada data round';
+                        <div style="text-align: right;">
+                            <div style="font-weight: bold; font-size: 14px; color: #ccc;">
+                                ---
+                            </div>
+                            <div style="font-size: 11px; color: #ccc; margin-top: 2px;">
+                                -
+                            </div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(itemElement);
                 }
-                return;
-            }
-            
-            paginationContainer.style.display = 'flex';
-            
-            prevBtn.disabled = state.currentPage <= 1;
-            nextBtn.disabled = state.currentPage >= state.totalPages;
-            
-            pageInfo.textContent = `${state.currentPage}/${state.totalPages}`;
-            
-            if (summaryElement) {
-                const startItem = ((state.currentPage - 1) * state.itemsPerPage) + 1;
-                const endItem = Math.min(startItem + state.itemsPerPage - 1, state.allHasilRoundData.length);
-                summaryElement.textContent = `📊 Menampilkan ${startItem}-${endItem} dari ${state.allHasilRoundData.length} round`;
             }
         }
 
@@ -1752,9 +1633,7 @@
             state.processingResult = false;
             state.last5Seconds = false;
             
-            // ============================================
             // RESET FLAG COUNTDOWN PLAYED - PENTING!
-            // ============================================
             state.countdownPlayed = false;
             console.log("🔄 countdownPlayed direset untuk round baru");
             
@@ -1982,9 +1861,7 @@
             clearInterval(state.timerInterval);
             state.last5Seconds = false;
             
-            // ============================================
             // RESET FLAG COUNTDOWN PLAYED SETIAP ROUND BARU
-            // ============================================
             state.countdownPlayed = false;
             console.log("⏱️ Timer dimulai, countdownPlayed:", state.countdownPlayed);
             
@@ -1997,9 +1874,7 @@
                 state.timer--;
                 document.getElementById('timer').textContent = state.timer;
                 
-                // ============================================
                 // LOGIC AUDIO COUNTDOWN 5 DETIK TERAKHIR
-                // ============================================
                 if (state.timer <= 5 && state.timer > 0) {
                     if (!state.last5Seconds) {
                         state.last5Seconds = true;
@@ -2120,61 +1995,119 @@
             });
         }
 
-        async function toggleRoundDetail(roundId, headerElement) {
+        // ============================================
+        // TOGGLE ROUND DETAIL (KLIK UNTUK DETAIL)
+        // ============================================
+        function toggleRoundDetail(element, roundId, roundData) {
             const detailElement = document.getElementById(`detail-${roundId}`);
-            const isExpanded = detailElement.classList.contains('expanded');
+            const arrow = element.querySelector('.arrow');
             
-            document.querySelectorAll('.hasil-round-detail').forEach(el => {
+            // Jika detail yang sama diklik lagi, tutup
+            if (state.expandedDetailId === roundId) {
+                detailElement.style.display = 'none';
+                detailElement.classList.remove('expanded');
+                if (arrow) arrow.classList.remove('expanded');
+                state.expandedDetailId = null;
+                return;
+            }
+            
+            // Tutup semua detail yang lain
+            document.querySelectorAll('.detail-container').forEach(el => {
+                el.style.display = 'none';
                 el.classList.remove('expanded');
-                el.innerHTML = '';
             });
-            document.querySelectorAll('.hasil-round-header').forEach(el => {
+            document.querySelectorAll('.arrow').forEach(el => {
                 el.classList.remove('expanded');
             });
             
-            if (!isExpanded) {
-                headerElement.classList.add('expanded');
-                
-                detailElement.innerHTML = '<div style="padding:20px; text-align:center;">Loading...</div>';
-                detailElement.classList.add('expanded');
-                
-                try {
-                    const snapshot = await database.ref('tebak-angka/hasil_round/' + roundId).once('value');
-                    if (!snapshot.exists()) {
-                        detailElement.innerHTML = '<div style="padding:20px; text-align:center;">Data tidak ditemukan</div>';
-                        return;
-                    }
-                    
-                    const roundData = snapshot.val();
-                    let detailHTML = `
-                        <table class="detail-table">
-                    `;
-                    
-                    const fields = {
-                        'Periode': roundData.round_id || roundId,
-                        'Hasil': roundData.hasil || '-',
-                        'Hasil Angka': roundData.hasil_angka || '-',
-                        'Timestamp': roundData.timestamp ? formatDateTime(roundData.timestamp) : '-',
-                        'Raw Timestamp': roundData.timestamp || '-'
-                    };
-                    
-                    Object.entries(fields).forEach(([label, value]) => {
-                        detailHTML += `
-                            <tr>
-                                <td class="detail-label">${label}</td>
-                                <td>${value}</td>
-                            </tr>
-                        `;
-                    });
-                    
-                    detailHTML += '</table>';
-                    detailElement.innerHTML = detailHTML;
-                    
-                } catch (error) {
-                    console.error('Error loading detail:', error);
-                    detailElement.innerHTML = '<div style="padding:20px; text-align:center; color:red;">Error loading detail</div>';
+            // Tampilkan detail yang dipilih
+            detailElement.style.display = 'block';
+            detailElement.classList.add('expanded');
+            if (arrow) arrow.classList.add('expanded');
+            state.expandedDetailId = roundId;
+            
+            // Isi detail
+            let detailHTML = `
+                <h4 style="margin-bottom: 15px; color: #d70000; border-bottom: 1px solid #eee; padding-bottom: 5px;">DETAIL ROUND</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            `;
+            
+            // Data dasar round
+            const fields = {
+                'Periode': roundData.round_id || roundId,
+                'Status': roundData.status || '-',
+                'Waktu Tunggu': roundData.waktu_tunggu ? `${roundData.waktu_tunggu} detik` : '-',
+                'Waktu Mulai': roundData.start_time ? formatDateTime(roundData.start_time) : '-',
+                'Waktu Selesai': roundData.end_time ? formatDateTime(roundData.end_time) : '-',
+            };
+            
+            // Tambahkan hasil jika sudah selesai
+            if (roundData.status === 'selesai') {
+                fields['Hasil'] = roundData.hasil || '-';
+                if (roundData.waktu_hasil) {
+                    fields['Waktu Hasil'] = formatDateTime(roundData.waktu_hasil);
                 }
             }
+            
+            Object.entries(fields).forEach(([label, value]) => {
+                detailHTML += `
+                    <div style="padding: 8px; border-bottom: 1px dashed #eee;">
+                        <div style="font-size: 12px; color: #666;">${label}</div>
+                        <div style="font-weight: bold; font-size: 14px;">${value}</div>
+                    </div>
+                `;
+            });
+            
+            detailHTML += '</div>';
+            
+            // Data taruhan user jika ada
+            if (state.userId && roundData.taruhan_users && roundData.taruhan_users[state.userId]) {
+                const taruhan = roundData.taruhan_users[state.userId];
+                detailHTML += `
+                    <h4 style="margin-top: 20px; margin-bottom: 15px; color: #0066cc; border-bottom: 1px solid #eee; padding-bottom: 5px;">TARUHAN ANDA</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                `;
+                
+                const taruhanFields = {
+                    'Pilihan': taruhan.pilihan || '-',
+                    'Pasangan': taruhan.pasangan ? `Rp ${taruhan.pasangan.toLocaleString()}` : '-',
+                    'Status': taruhan.status || '-',
+                    'Waktu Taruhan': taruhan.waktu_taruhan ? formatDateTime(taruhan.waktu_taruhan) : '-',
+                };
+                
+                // Tambahkan data hasil jika ada
+                if (taruhan.hasil) {
+                    taruhanFields['Hasil'] = taruhan.hasil;
+                }
+                if (taruhan.kemenangan) {
+                    taruhanFields['Kemenangan'] = `Rp ${taruhan.kemenangan.toLocaleString()}`;
+                }
+                if (taruhan.saldo_netto) {
+                    taruhanFields['Saldo Netto'] = `Rp ${taruhan.saldo_netto.toLocaleString()}`;
+                }
+                if (taruhan.saldo_sebelum) {
+                    taruhanFields['Saldo Sebelum'] = `Rp ${taruhan.saldo_sebelum.toLocaleString()}`;
+                }
+                if (taruhan.saldo_setelah) {
+                    taruhanFields['Saldo Setelah'] = `Rp ${taruhan.saldo_setelah.toLocaleString()}`;
+                }
+                if (taruhan.waktu_hasil) {
+                    taruhanFields['Waktu Hasil'] = formatDateTime(taruhan.waktu_hasil);
+                }
+                
+                Object.entries(taruhanFields).forEach(([label, value]) => {
+                    detailHTML += `
+                        <div style="padding: 8px; border-bottom: 1px dashed #eee;">
+                            <div style="font-size: 12px; color: #666;">${label}</div>
+                            <div style="font-weight: bold; font-size: 14px;">${value}</div>
+                        </div>
+                    `;
+                });
+                
+                detailHTML += '</div>';
+            }
+            
+            detailElement.innerHTML = detailHTML;
         }
 
         function updateSaldo() {
