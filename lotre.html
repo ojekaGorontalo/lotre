@@ -7,6 +7,22 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <style>
+    .hasil-periode {
+    font-size: 11px;
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.hasil-status {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.hasil-detail {
+    font-size: 10px;
+    color: #777;
+    margin-top: 2px;
+}
         * {
             margin: 0;
             padding: 0;
@@ -447,10 +463,10 @@
             cursor: not-allowed;
         }
 
-        /* HASIL ROUND - TANPA CARD TERPISAH */
+        /* HASIL ROUND - 3 KOLOM */
         .hasil-round-header {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
             margin-top: 25px;
             margin-bottom: 10px;
@@ -459,6 +475,7 @@
             border-radius: 8px;
             font-weight: bold;
             font-size: 14px;
+            text-align: center;
         }
 
         .hasil-round-items {
@@ -472,7 +489,7 @@
 
         .hasil-round-item {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
             padding: 12px 15px;
             border: 1px solid #ddd;
@@ -482,6 +499,7 @@
             transition: all 0.3s;
             align-items: center;
             min-height: 45px;
+            text-align: center;
         }
 
         .hasil-round-item:hover {
@@ -538,7 +556,7 @@
             margin-bottom: 8px;
             padding: 15px;
             animation: slideDown 0.3s ease-out;
-            grid-column: 1 / span 2;
+            grid-column: 1 / span 3;
         }
 
         @keyframes slideDown {
@@ -955,9 +973,10 @@
             </div>
         </div>
 
-        <!-- HASIL ROUND - TANPA CARD TERPISAH -->
+        <!-- HASIL ROUND - 3 KOLOM -->
         <div class="hasil-round-header">
             <div>PERIODE</div>
+            <div>ANGKA</div>
             <div>HASIL</div>
         </div>
         
@@ -1006,7 +1025,8 @@
             bottomSheetOpen: false,
             pasanganOptions: [1000, 2000, 5000, 10000, 20000, 50000],
             isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-            expandedDetailId: null
+            expandedDetailId: null,
+            userTaruhanListener: null
         };
 
         const countdownAudio = document.getElementById('countdownAudio');
@@ -1371,7 +1391,7 @@
             state.hasilRoundListener = database.ref('tebak-angka/taruhan')
                 .orderByChild('created_at')
                 .limitToLast(10)
-                .on('value', (snapshot) => {
+                .on('value', async (snapshot) => {
                     console.log("📊 Load data round dari taruhan:", snapshot.numChildren(), "item ditemukan");
                     
                     state.hasilRoundData = [];
@@ -1381,6 +1401,12 @@
                         const items = Object.entries(data)
                             .map(([roundId, item]) => ({ roundId, ...item }))
                             .sort((a, b) => b.created_at - a.created_at);
+                        
+                        // Ambil data angka_hasil untuk setiap round
+                        for (let item of items) {
+                            const angkaSnapshot = await database.ref(`tebak-angka/taruhan/${item.roundId}/angka_hasil`).once('value');
+                            item.angka_hasil = angkaSnapshot.exists() ? angkaSnapshot.val() : null;
+                        }
                         
                         state.hasilRoundData = items;
                         updateHasilRoundUI();
@@ -1394,106 +1420,155 @@
         }
 
         // ============================================
-        // UPDATE UI HASIL ROUND (2 KOLOM: PERIODE & HASIL)
-        // ============================================
-        function updateHasilRoundUI() {
-            const container = document.getElementById('hasil-round-items');
+// UPDATE UI HASIL ROUND (3 KOLOM: PERIODE, ANGKA, HASIL)
+// ============================================
+function updateHasilRoundUI() {
+    const container = document.getElementById('hasil-round-items');
+    
+    // Kosongkan container
+    container.innerHTML = '';
+    
+    // Tampilkan 10 baris (data atau placeholder)
+    for (let i = 0; i < 10; i++) {
+        const item = state.hasilRoundData[i];
+        
+        if (item) {
+            const roundId = item.roundId;
+            const roundData = item;
             
-            // Kosongkan container
-            container.innerHTML = '';
+            // Tentukan teks hasil
+            let hasilText = '';
+            let emoji = '';
+            let cssClass = '';
             
-            // Tampilkan 10 baris (data atau placeholder)
-            for (let i = 0; i < 10; i++) {
-                const item = state.hasilRoundData[i];
-                
-                if (item) {
-                    const roundId = item.roundId;
-                    const roundData = item;
-                    
-                    // Tentukan teks hasil
-                    let hasilText = '';
-                    let emoji = '';
-                    let cssClass = '';
-                    
-                    if (roundData.status === 'berjalan') {
-                        hasilText = 'BERJALAN';
-                        emoji = '🔄';
-                        cssClass = 'berjalan';
-                    } else if (roundData.status === 'selesai' && roundData.hasil) {
-                        hasilText = roundData.hasil;
-                        emoji = roundData.hasil === 'BESAR' ? '🟥' : '🟦';
-                        cssClass = roundData.hasil === 'BESAR' ? 'selesai-besar' : 'selesai-kecil';
-                        
-                        // Cek apakah user ikut taruhan
-                        if (roundData.taruhan_users && state.userId && roundData.taruhan_users[state.userId]) {
-                            const taruhan = roundData.taruhan_users[state.userId];
-                            if (taruhan.status === 'menang') {
-                                cssClass = 'menang';
-                                hasilText += ' - MENANG 🎉';
-                            } else if (taruhan.status === 'kalah') {
-                                cssClass = 'kalah';
-                                hasilText += ' - KALAH 💔';
-                            } else if (taruhan.status === 'menunggu') {
-                                hasilText += ' - MENUNGGU ⏳';
-                            }
-                        }
-                    } else {
-                        hasilText = 'TIDAK ADA DATA';
-                        emoji = '❓';
-                    }
-                    
-                    // Buat elemen item
-                    const itemElement = document.createElement('div');
-                    itemElement.className = `hasil-round-item ${cssClass}`;
-                    itemElement.setAttribute('data-round-id', roundId);
-                    itemElement.setAttribute('data-index', i);
-                    itemElement.onclick = function() { toggleRoundDetail(this, roundId, roundData); };
-                    
-                    itemElement.innerHTML = `
-                        <div>
-                            <div style="font-size: 11px; color: #666; margin-bottom: 2px;">#${i+1}</div>
-                            <div style="font-weight: bold; font-size: 14px;">${roundData.round_id || roundId}</div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-weight: bold; font-size: 14px;">
-                                ${emoji} ${hasilText}
-                            </div>
-                            <div style="font-size: 11px; color: #666; margin-top: 2px;">
-                                Klik untuk detail <span class="arrow">›</span>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Buat container untuk detail
-                    const detailElement = document.createElement('div');
-                    detailElement.className = 'detail-container';
-                    detailElement.id = `detail-${roundId}`;
-                    
-                    // Tambahkan ke container
-                    container.appendChild(itemElement);
-                    container.appendChild(detailElement);
-                } else {
-                    // Baris kosong/placeholder jika tidak ada data
-                    const itemElement = document.createElement('div');
-                    itemElement.className = 'hasil-round-item kosong';
-                    
-                    itemElement.innerHTML = `
+            // Ambil angka hasil
+            const angkaHasil = roundData.angka_hasil !== undefined && roundData.angka_hasil !== null ? 
+                roundData.angka_hasil : '-';
+            
+            if (roundData.status === 'berjalan') {
+                hasilText = 'BERJALAN';
+                emoji = '🔄';
+                cssClass = 'berjalan';
+            } else if (roundData.status === 'selesai' && roundData.hasil) {
+                hasilText = roundData.hasil;
+                emoji = roundData.hasil === 'BESAR' ? '🟥' : '🟦';
+                cssClass = roundData.hasil === 'BESAR' ? 'selesai-besar' : 'selesai-kecil';
+            } else {
+                hasilText = 'TIDAK ADA DATA';
+                emoji = '❓';
+            }
+            
+            // Buat elemen item
+            const itemElement = document.createElement('div');
+            itemElement.className = `hasil-round-item ${cssClass}`;
+            itemElement.setAttribute('data-round-id', roundId);
+            itemElement.setAttribute('data-index', i);
+            itemElement.onclick = function() { toggleRoundDetail(this, roundId, roundData); };
+            
+            itemElement.innerHTML = `
+    <div>
+        <div class="hasil-periode">
+            ${roundData.round_id || roundId}
+        </div>
+    </div>
+    <div style="text-align: center;">
+        <div class="hasil-status">
+            ${angkaHasil}
+        </div>
+    </div>
+    <div style="text-align: right; display: flex; justify-content: space-between; align-items: center;">
+        <div class="hasil-status">
+            ${emoji} ${hasilText}
+        </div>
+        <div class="arrow">›</div>
+    </div>
+`;
+            
+            // Buat container untuk detail
+            const detailElement = document.createElement('div');
+            detailElement.className = 'detail-container';
+            detailElement.id = `detail-${roundId}`;
+            
+            // Tambahkan ke container
+            container.appendChild(itemElement);
+            container.appendChild(detailElement);
+        } else {
+            // Baris kosong/placeholder jika tidak ada data
+            const itemElement = document.createElement('div');
+            itemElement.className = 'hasil-round-item kosong';
+            
+            itemElement.innerHTML = `
                         <div>
                             <div style="font-size: 11px; color: #999; margin-bottom: 2px;">#${i+1}</div>
+                            <div style="font-weight: bold; font-size: 14px; color: #ccc;">---</div>
+                        </div>
+                        <div style="text-align: center;">
                             <div style="font-weight: bold; font-size: 14px; color: #ccc;">---</div>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-weight: bold; font-size: 14px; color: #ccc;">
                                 ---
                             </div>
-                            <div style="font-size: 11px; color: #ccc; margin-top: 2px;">
-                                -
-                            </div>
                         </div>
                     `;
-                    
-                    container.appendChild(itemElement);
+            
+            container.appendChild(itemElement);
+        }
+    }
+}
+
+        // ============================================
+        // LOAD USER TARUHAN UNTUK ROUND SAAT INI
+        // ============================================
+        async function loadUserTaruhanForCurrentRound() {
+            if (!state.userId || !state.roundId) {
+                return;
+            }
+
+            try {
+                const taruhanRef = database.ref(`tebak-angka/taruhan/${state.roundId}/taruhan_users/${state.userId}`);
+                
+                // Hapus listener sebelumnya jika ada
+                if (state.userTaruhanListener) {
+                    taruhanRef.off('value', state.userTaruhanListener);
                 }
+                
+                // Tambah listener baru untuk memantau perubahan taruhan user
+                state.userTaruhanListener = taruhanRef.on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        const taruhanData = snapshot.val();
+                        state.pasanganDipilih = taruhanData.pasangan;
+                        state.pilihanDipilih = taruhanData.pilihan;
+                        
+                        // Update UI untuk status pasangan dan tebakan
+                        document.getElementById('status-pasangan').textContent = `Rp ${state.pasanganDipilih.toLocaleString()}`;
+                        document.getElementById('status-tebakan').textContent = state.pilihanDipilih;
+                        
+                        // Nonaktifkan tombol pilihan karena sudah memasang
+                        state.bisaMemilih = false;
+                        disableAllButtons();
+                        
+                        // Aktifkan tombol yang dipilih
+                        document.getElementById(`btn-${state.pilihanDipilih.toLowerCase()}`).classList.add('active');
+                        
+                        console.log('💰 Taruhan user diperbarui:', taruhanData);
+                    } else {
+                        // Jika tidak ada taruhan, reset status
+                        state.pasanganDipilih = null;
+                        state.pilihanDipilih = null;
+                        state.bisaMemilih = true;
+                        
+                        document.getElementById('status-pasangan').textContent = '-';
+                        document.getElementById('status-tebakan').textContent = '-';
+                        document.getElementById('btn-besar').classList.remove('active');
+                        document.getElementById('btn-kecil').classList.remove('active');
+                        document.getElementById('btn-besar').disabled = false;
+                        document.getElementById('btn-kecil').disabled = false;
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error memuat taruhan user:', error);
             }
         }
 
@@ -1562,6 +1637,10 @@
             state.roundId = roundId;
             state.roundRef = database.ref('tebak-angka/taruhan/' + roundId);
             resetStateUntukRoundBaru();
+            
+            // Load taruhan user untuk round ini
+            await loadUserTaruhanForCurrentRound();
+            
             document.getElementById('last5-warning').style.display = 'none';
             document.getElementById('round-id').textContent = roundId;
             
@@ -1588,6 +1667,7 @@
                     round_id: state.roundId,
                     status: 'berjalan',
                     hasil: null,
+                    angka_hasil: null,
                     start_time: now,
                     end_time: endTime,
                     waktu_tunggu: state.waktuTunggu,
@@ -1843,6 +1923,11 @@
                 disableAllButtons();
                 
                 console.log('💰 Taruhan berhasil disimpan. Saldo baru:', newBalance);
+                
+                // Update status pasangan dan tebakan di UI
+                document.getElementById('status-pasangan').textContent = `Rp ${pasangan.toLocaleString()}`;
+                document.getElementById('status-tebakan').textContent = state.pilihanDipilih;
+                
             } catch (error) {
                 console.error('Error menyimpan taruhan:', error);
                 alert('Gagal menyimpan taruhan, coba lagi!');
@@ -2036,6 +2121,7 @@
             const fields = {
                 'Periode': roundData.round_id || roundId,
                 'Status': roundData.status || '-',
+                'Angka Hasil': roundData.angka_hasil !== undefined && roundData.angka_hasil !== null ? roundData.angka_hasil : '-',
                 'Waktu Tunggu': roundData.waktu_tunggu ? `${roundData.waktu_tunggu} detik` : '-',
                 'Waktu Mulai': roundData.start_time ? formatDateTime(roundData.start_time) : '-',
                 'Waktu Selesai': roundData.end_time ? formatDateTime(roundData.end_time) : '-',
