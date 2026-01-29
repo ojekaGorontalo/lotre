@@ -1,239 +1,274 @@
 #!/usr/bin/env python3
 """
-HYBRID INVITE STRATEGY
-1. User account scrap data
-2. User account kirim invite link via PM
-3. User klik link (auto-join tanpa limit)
+SCRIPT AUTO-ADD DARI GRUP TELEGRAM
+Fitur: Ambil anggota dari grup sumber -> Tambah ke grup target
 """
 
 import asyncio
 import json
-import random
-from datetime import datetime, timedelta
+import os
+from datetime import datetime
 from telethon import TelegramClient, errors
+from telethon.tl.functions.channels import (
+    GetParticipantsRequest,
+    InviteToChannelRequest
+)
+from telethon.tl.types import (
+    ChannelParticipantsSearch,
+    InputPeerChannel,
+    InputPeerUser
+)
 
 # ========== KONFIGURASI ==========
-API_ID = '38020832'
-API_HASH = '32d3d237d7b0b74c1bfb1baa865f882c'
-SOURCE_GROUP = 'vvip55wealthmabar'
+API_ID = '31482798'
+API_HASH = '51e45c6e6b8788d2de69d1574293ee82'
+
+# GRUP SUMBER (ambil anggota dari sini)
+SOURCE_GROUP = 'vvip55wealthmabar'  # atau gunakan link: https://t.me/vvip55wealthmabar
+# GRUP TARGET (tambah anggota ke sini)
 TARGET_GROUP = '@wingo130s'
 
-MAX_SCRAPE = 100
-MESSAGES_PER_DAY = 40  # Kirim 40 pesan/hari
-DELAY_MINUTES = random.randint(3, 7)  # Random 3-7 menit
+# ========== PENGATURAN AMAN ==========
+MAX_SCRAPE = 200          # Max anggota di-scrape dari grup sumber
+MAX_ADD_PER_DAY = 15      # Max tambah per hari
+DELAY_MINUTES = 8         # Delay antar undangan
 
-async def main():
-    print("="*60)
-    print("🚀 HYBRID INVITE STRATEGY")
-    print("="*60)
-    
-    # Step 1: Login dengan User Account
-    print("\n🔐 LOGIN DENGAN USER ACCOUNT...")
-    user_client = TelegramClient('hybrid_user', API_ID, API_HASH)
-    await user_client.start()
-    
-    me = await user_client.get_me()
-    print(f"✅ Login sebagai: {me.first_name}")
-    print(f"📱 Phone: {me.phone}")
-    
-    # Step 2: Dapatkan Invite Link dari Grup Target
-    print("\n🔗 MENDAPATKAN INVITE LINK...")
-    try:
-        target = await user_client.get_entity(TARGET_GROUP)
-        print(f"🎯 Grup target: {getattr(target, 'title', TARGET_GROUP)}")
-        
-        # Coba buat invite link (harus admin)
-        from telethon.tl.functions.messages import ExportChatInviteRequest
-        invite = await user_client(ExportChatInviteRequest(
-            target,
-            title="Invite from Script",
-            expire_date=int((datetime.now() + timedelta(days=7)).timestamp()),  # 7 hari
-            usage_limit=0,  # Unlimited
-            request_needed=False  # No admin approval needed
-        ))
-        invite_link = invite.link
-        print(f"✅ Invite Link: {invite_link}")
-        
-    except Exception as e:
-        print(f"❌ Gagal buat invite link: {e}")
-        print("⚠️  Anda harus ADMIN di grup target!")
-        print("💡 Minta invite link ke admin grup target")
-        invite_link = input("Masukkan invite link manual: ").strip()
-    
-    # Step 3: Scrape Anggota dari Grup Sumber
-    print("\n🔍 MENGAMBIL ANGGOTA DARI GRUP SUMBER...")
-    source = await user_client.get_entity(SOURCE_GROUP)
-    print(f"📥 Grup sumber: {getattr(source, 'title', SOURCE_GROUP)}")
-    
-    users = []
-    async for user in user_client.iter_participants(source, limit=MAX_SCRAPE):
-        if not user.bot and user.id != me.id:  # Skip bot dan diri sendiri
-            users.append({
-                'id': user.id,
-                'name': f"{user.first_name or ''} {user.last_name or ''}".strip(),
-                'username': user.username or 'NO_USERNAME',
-                'has_username': bool(user.username)
-            })
-    
-    print(f"👥 Ditemukan {len(users)} anggota")
-    
-    # Step 4: Template Pesan
-    message_templates = [
-        f"""Halo! 👋
-
-Anda diundang untuk bergabung dengan grup **WinGo Predictor** 🎯
-
-🔗 Join di sini: {invite_link}
-
-Grup ini berisi prediksi akurat dan informasi eksklusif.
-
-Salam,
-Admin""",
-
-        f"""Assalamu'alaikum / Hello! 😊
-
-Undangan bergabung dengan grup premium:
-
-✨ **WinGo 130 Predictor** ✨
-
-Link: {invite_link}
-
-*Link berlaku 7 hari*
-
-Best regards,""",
-
-        f"""Halo Member! 🚀
-
-Kami melihat Anda aktif di grup prediksi.
-
-Mari bergabung dengan komunitas kami:
-🔗 {invite_link}
-
-Fitur:
-✅ Prediksi harian
-✅ Analisis mendalam
-✅ Support 24/7
-
-Join sekarang! 💫""",
-    ]
-    
-    # Step 5: Konfirmasi
-    to_message = users[:MESSAGES_PER_DAY]
-    print(f"\n📤 AKAN KIRIM KE {len(to_message)} USER")
-    print(f"   • Dengan username: {len([u for u in to_message if u['has_username']])}")
-    print(f"   • Tanpa username: {len([u for u in to_message if not u['has_username']])}")
-    print(f"   • Delay: {DELAY_MINUTES} menit antar pesan")
-    print(f"   • Estimasi waktu: {len(to_message) * DELAY_MINUTES} menit")
-    
-    confirm = input("\n🚀 LANJUTKAN? (y/n): ").strip().lower()
-    if confirm != 'y':
-        print("❌ Dibatalkan")
-        await user_client.disconnect()
-        return
-    
-    # Step 6: Kirim Pesan
+def print_header():
     print("\n" + "="*60)
-    print("📨 MULAI MENGIRIM PESAN...")
+    print("ðŸš€ TELEGRAM MEMBER MIGRATION TOOL")
+    print(f"   Sumber: {SOURCE_GROUP}")
+    print(f"   Target: {TARGET_GROUP}")
     print("="*60)
+
+async def scrape_source_group(client):
+    """Ambil anggota dari grup sumber"""
+    print(f"\nðŸ” MENGAMBIL ANGGOTA DARI GRUP: {SOURCE_GROUP}")
     
-    success = 0
-    failed = 0
-    blocked = 0
+    try:
+        # Dapatkan entity grup sumber
+        source_entity = await client.get_entity(SOURCE_GROUP)
+        print(f"âœ… Grup ditemukan: {getattr(source_entity, 'title', 'Unknown')}")
+        
+        # Inisialisasi variabel
+        all_participants = []
+        offset = 0
+        limit = 100
+        
+        print("ðŸ“¥ Sedang mengambil daftar anggota...")
+        
+        # Loop untuk ambil semua peserta (dengan limit MAX_SCRAPE)
+        while len(all_participants) < MAX_SCRAPE:
+            participants = await client(GetParticipantsRequest(
+                channel=source_entity,
+                filter=ChannelParticipantsSearch(''),  # Ambil semua
+                offset=offset,
+                limit=limit,
+                hash=0
+            ))
+            
+            if not participants.users:
+                break
+            
+            # Proses setiap user
+            for user in participants.users:
+                if len(all_participants) >= MAX_SCRAPE:
+                    break
+                    
+                # Hanya ambil user yang bukan bot dan punya username
+                if not user.bot and user.username:
+                    member_data = {
+                        'id': user.id,
+                        'access_hash': user.access_hash,
+                        'username': f"@{user.username}",
+                        'first_name': user.first_name or "",
+                        'last_name': user.last_name or "",
+                        'full_name': f"{user.first_name or ''} {user.last_name or ''}".strip(),
+                        'phone': user.phone or "",
+                        'bot': user.bot,
+                        'scam': user.scam
+                    }
+                    all_participants.append(member_data)
+            
+            offset += len(participants.users)
+            print(f"   Diambil: {len(all_participants)}/{MAX_SCRAPE} anggota")
+            
+            if len(participants.users) < limit:
+                break
+        
+        print(f"\nðŸ“Š HASIL SCRAPING:")
+        print(f"   â€¢ Total user di grup: {len(all_participants)}")
+        print(f"   â€¢ Dengan username valid: {len(all_participants)}")
+        
+        if len(all_participants) == 0:
+            print("âŒ Tidak ada anggota dengan username di grup sumber")
+            return None
+        
+        return all_participants
+        
+    except errors.ChannelPrivateError:
+        print("âŒ Tidak bisa akses grup (grup private atau tidak ada izin)")
+        return None
+    except Exception as e:
+        print(f"âŒ Error saat mengambil anggota: {e}")
+        return None
+
+async def add_to_target_group(client, members_to_add, target_channel):
+    """Tambahkan anggota ke grup target"""
+    print(f"\nðŸŽ¯ MENAMBAH KE GRUP TARGET: {TARGET_GROUP}")
+    print(f"   â€¢ Akan diproses: {len(members_to_add)} anggota")
+    print(f"   â€¢ Estimasi waktu: {len(members_to_add) * DELAY_MINUTES} menit")
     
-    for i, user in enumerate(to_message):
-        print(f"\n[{i+1}/{len(to_message)}] {user['name']}")
-        print(f"   ID: {user['id']} | Username: {user['username']}")
+    success_count = 0
+    failed_count = 0
+    
+    # Konfirmasi sebelum mulai
+    confirm = input("\nðŸš€ LANJUTKAN PROSES UNDANGAN? (y/n): ").strip().lower()
+    if confirm != 'y':
+        print("âŒ Dibatalkan")
+        return success_count, failed_count
+    
+    print("\n" + "="*50)
+    print("ðŸš€ PROSES UNDANGAN DIMULAI")
+    print("="*50)
+    
+    for i, member in enumerate(members_to_add):
+        name = member.get('full_name') or member.get('first_name') or 'No Name'
+        username = member['username']
+        
+        print(f"\n[{i+1}/{len(members_to_add)}] {name}")
+        print(f"   ðŸ‘¤ Username: {username}")
+        print(f"   ðŸ†” User ID: {member['id']}")
         
         try:
-            # Pilih pesan random
-            message = random.choice(message_templates)
-            
-            # Kirim pesan
-            await user_client.send_message(
-                user['id'],
-                message,
-                link_preview=False,
-                silent=True
+            # Buat InputPeerUser dari data yang sudah ada
+            input_user = InputPeerUser(
+                user_id=member['id'],
+                access_hash=member['access_hash']
             )
             
-            print(f"   ✅ Pesan terkirim")
-            success += 1
+            # Kirim undangan
+            print(f"   ðŸ“¨ Mengundang ke grup target...")
+            await client(InviteToChannelRequest(
+                channel=target_channel,
+                users=[input_user]
+            ))
+            
+            print(f"   âœ… BERHASIL diundang!")
+            success_count += 1
             
             # Log sukses
-            with open('sent_success.log', 'a', encoding='utf-8') as f:
-                f.write(f"{datetime.now().isoformat()}|{user['id']}|{user['name']}|{user['username']}\n")
-            
-        except errors.UserIsBlockedError:
-            print(f"   ❌ User memblokir Anda")
-            blocked += 1
-            
-        except errors.PeerIdInvalidError:
-            print(f"   ❌ User ID tidak valid")
-            failed += 1
-            
-        except errors.InputUserDeactivatedError:
-            print(f"   ❌ Akun user tidak aktif")
-            failed += 1
+            with open('migration_log.txt', 'a', encoding='utf-8') as f:
+                f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | {name} | {username}\n")
+                
+        except errors.UserPrivacyRestrictedError:
+            print(f"   ðŸ”’ Gagal: User privacy restricted")
+            failed_count += 1
             
         except errors.FloodWaitError as e:
-            print(f"   ⏳ FLOOD WAIT: {e.seconds} detik")
-            failed += 1
+            wait = e.seconds
+            print(f"   â³ FloodWait: tunggu {wait//60} menit")
+            failed_count += 1
             
-            if e.seconds > 0:
-                minutes = e.seconds // 60
-                seconds = e.seconds % 60
-                print(f"   💤 Tunggu {minutes}m {seconds}s...")
-                await asyncio.sleep(e.seconds)
+            # Tunggu sesuai permintaan Telegram
+            for minute in range(wait//60, 0, -1):
+                if minute % 5 == 0 or minute <= 3:
+                    print(f"      {minute} menit tersisa")
+                await asyncio.sleep(60)
                 
         except Exception as e:
             error_msg = str(e)
-            print(f"   ❌ Error: {error_msg[:60]}")
-            failed += 1
+            print(f"   âŒ Gagal: {error_msg[:60]}")
+            failed_count += 1
         
-        # Delay random 3-7 menit
-        if i < len(to_message) - 1:
-            delay = random.randint(180, 420)  # 3-7 menit dalam detik
-            minutes = delay // 60
-            print(f"   ⏰ Delay {minutes} menit...")
-            await asyncio.sleep(delay)
+        # Delay antar undangan (kecuali yang terakhir)
+        if i < len(members_to_add) - 1:
+            print(f"\n   â° Delay {DELAY_MINUTES} menit...")
+            for minute in range(DELAY_MINUTES, 0, -1):
+                if minute % 2 == 0:
+                    print(f"      {minute} menit tersisa")
+                await asyncio.sleep(60)
     
-    # Step 7: Hasil
-    print("\n" + "="*60)
-    print("📊 HASIL AKHIR")
-    print("="*60)
-    print(f"   ✅ Berhasil: {success} pesan")
-    print(f"   ❌ Gagal: {failed} pesan")
-    print(f"   🚫 Diblokir: {blocked} user")
-    print(f"   🎯 Target: {len(to_message)} user")
+    return success_count, failed_count
+
+async def main():
+    print_header()
     
-    if success > 0:
-        print(f"\n🎉 {success} user berhasil dikirimi invite link!")
-        print(f"🔗 Link: {invite_link}")
-        print(f"📁 Log: sent_success.log")
+    # Inisialisasi client
+    client = TelegramClient('migration_session', int(API_ID), API_HASH)
+    
+    try:
+        # Login
+        print("\nðŸ”— Menghubungkan ke Telegram...")
+        await client.start()
+        me = await client.get_me()
+        print(f"âœ… Login berhasil: {me.first_name} (@{me.username})")
         
-        print(f"\n💡 STATISTIK JOIN:")
-        print(f"   • Biasanya 10-30% dari yang dikirimi akan join")
-        print(f"   • Estimasi join: {int(success * 0.2)}-{int(success * 0.4)} user")
-    
-    print(f"\n⚠️  CATATAN:")
-    print(f"   1. User perlu KLIK LINK untuk join")
-    print(f"   2. Link berlaku 7 hari")
-    print(f"   3. Tidak ada limit join via link")
-    print(f"   4. Tunggu 24 jam untuk batch berikutnya")
-    
-    # Simpan data untuk batch berikutnya
-    remaining = users[MESSAGES_PER_DAY:]
-    if remaining:
-        with open('remaining_users.json', 'w') as f:
-            json.dump(remaining, f, indent=2)
-        print(f"\n💾 Sisa {len(remaining)} user disimpan: remaining_users.json")
-    
-    await user_client.disconnect()
+        # STEP 1: Ambil anggota dari grup sumber
+        source_members = await scrape_source_group(client)
+        if not source_members:
+            return
+        
+        # Tampilkan preview
+        print("\nðŸ‘¥ PREVIEW ANGGOTA YANG AKAN DITAMBAHKAN:")
+        for i, member in enumerate(source_members[:5]):
+            name = member.get('full_name') or member.get('first_name') or 'No Name'
+            username = member['username']
+            print(f"   {i+1}. {name[:20]:20} - {username}")
+        
+        if len(source_members) > 5:
+            print(f"   ... dan {len(source_members) - 5} lainnya")
+        
+        # Limit jumlah yang akan ditambahkan hari ini
+        add_today = source_members[:MAX_ADD_PER_DAY]
+        print(f"\nðŸ“Œ Akan ditambahkan hari ini: {len(add_today)} anggota (max {MAX_ADD_PER_DAY}/hari)")
+        
+        # STEP 2: Dapatkan grup target
+        print(f"\nðŸ” Mencari grup target {TARGET_GROUP}...")
+        try:
+            target_channel = await client.get_input_entity(TARGET_GROUP)
+            target_entity = await client.get_entity(TARGET_GROUP)
+            print(f"âœ… Grup target ditemukan: {getattr(target_entity, 'title', TARGET_GROUP)}")
+        except Exception as e:
+            print(f"âŒ Gagal mendapatkan grup target: {e}")
+            return
+        
+        # STEP 3: Tambahkan ke grup target
+        success, failed = await add_to_target_group(client, add_today, target_channel)
+        
+        # Hasil akhir
+        print("\n" + "="*60)
+        print("ðŸ“Š HASIL AKHIR MIGRASI")
+        print("="*60)
+        print(f"   âœ… Berhasil diundang: {success} anggota")
+        print(f"   âŒ Gagal: {failed} anggota")
+        print(f"   ðŸŽ¯ Target hari ini: {len(add_today)} anggota")
+        
+        if success > 0:
+            print(f"\nðŸŽ‰ {success} anggota berhasil dimigrasikan!")
+            print(f"ðŸ“ Log disimpan: migration_log.txt")
+            
+            # Simpan data hasil scraping untuk batch berikutnya
+            remaining = source_members[MAX_ADD_PER_DAY:]
+            if remaining:
+                with open('remaining_members.json', 'w', encoding='utf-8') as f:
+                    json.dump({'members': remaining}, f, indent=2, ensure_ascii=False)
+                print(f"ðŸ’¾ Sisa anggota disimpan: remaining_members.json")
+                print(f"â³ Batch berikutnya: {len(remaining)} anggota")
+                print("ðŸ’¤ Rekomendasi: Tunggu 24 jam sebelum melanjutkan")
+        
+    except Exception as e:
+        print(f"\nâŒ Error sistem: {e}")
+        import traceback
+        traceback.print_exc()
+        
+    finally:
+        await client.disconnect()
+        print("\n" + "="*60)
+        print("ðŸ‘‹ SESI SELESAI")
+        print("="*60)
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n\n❌ Dihentikan oleh user")
-    except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print("\n\nâŒ Script dihentikan oleh user")
