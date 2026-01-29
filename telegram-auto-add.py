@@ -2,6 +2,10 @@
 """
 SCRIPT BOT AUTO-INVITE BY USER ID + HTML REPORT
 Ambil anggota dari grup sumber -> Bot kirim invite ke grup target
+
+⚠️ ⚠️ ⚠️ PERINGATAN KEAMANAN ⚠️ ⚠️ ⚠️
+Script ini mengandung DATA SENSITIF yang akan terekspos di GitHub!
+JANGAN gunakan untuk production atau data penting!
 """
 
 import asyncio
@@ -9,11 +13,45 @@ import json
 import os
 import time
 import csv
+import sys
 from datetime import datetime
 from telethon import TelegramClient, errors
-from telethon.tl.functions.channels import InviteToChannelRequest, GetParticipantsRequest
-from telethon.tl.types import InputPeerUser, ChannelParticipantsSearch
+from telethon.tl.functions.channels import InviteToChannelRequest
+from telethon.tl.functions.messages import ExportChatInviteRequest
 from jinja2 import Template
+
+# ========== PERINGATAN KEAMANAN ==========
+def show_security_warning():
+    """Tampilkan peringatan keamanan sebelum eksekusi"""
+    print("\n" + "="*80)
+    print("🚨 🚨 🚨  PERINGATAN KEAMANAN TINGGI  🚨 🚨 🚨")
+    print("="*80)
+    print("\n⚠️  SCRIPT INI MENGANDUNG DATA SENSITIF YANG AKAN DI-UPLOAD KE GITHUB!")
+    print("\nData yang terekspos:")
+    print("   • API ID & Hash Telegram")
+    print("   • Bot Token (bisa dikontrol siapa saja)")
+    print("   • Informasi grup target & sumber")
+    print("\nRISIKO:")
+    print("   • Siapa pun bisa mengontrol bot Anda")
+    print("   • Akun Telegram bisa disalahgunakan")
+    print("   • Data user bisa dicuri")
+    print("\nREKOMENDASI:")
+    print("   • Hapus data sensitif sebelum push ke GitHub")
+    print("   • Gunakan environment variables (.env)")
+    print("   • Buat akun Telegram khusus untuk testing")
+    print("="*80)
+    
+    confirm = input("\n🔒 LANJUTKAN DENGAN RISIKO SENDIRI? (ya/TIDAK): ").strip().lower()
+    if confirm != 'ya':
+        print("\n❌ Dibatalkan atas alasan keamanan")
+        print("💡 Edit file untuk hapus data sensitif sebelum upload ke GitHub")
+        sys.exit(1)
+    
+    print("\n✅ Peringatan diterima. Script dilanjutkan...")
+    print("="*80)
+
+# Panggil warning
+show_security_warning()
 
 # ========== KONFIGURASI ==========
 API_ID = '38020832'
@@ -34,8 +72,7 @@ INITIAL_DELAY = 120       # Delay awal sebelum mulai (detik)
 USE_EXISTING_DATA = True  # Gunakan data yang sudah ada
 
 # Template HTML untuk report
-HTML_TEMPLATE = """
-<!DOCTYPE html>
+HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -350,8 +387,7 @@ HTML_TEMPLATE = """
         </div>
     </div>
 </body>
-</html>
-"""
+</html>"""
 
 def print_header():
     print("\n" + "="*70)
@@ -461,7 +497,6 @@ async def bot_send_invites(users_to_invite):
         # Coba buat invite link (jika bot admin)
         invite_link = None
         try:
-            from telethon.tl.functions.messages import ExportChatInviteRequest
             invite = await bot(ExportChatInviteRequest(target_entity))
             invite_link = invite.link
             print(f"🔗 Invite link: {invite_link}")
