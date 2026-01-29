@@ -22,7 +22,7 @@ TARGET_GROUP = '@wingo130s'
 
 # ========== PENGATURAN AMAN ==========
 MAX_PER_DAY = 15          # Maksimal 15 anggota per hari (AMAN)
-DELAY_MINUTES = 8         # Delay 8 menit antar anggota
+DELAY_MINUTES = 1         # Delay 1 menit antar anggota
 DATA_FILE = 'anggota_telegram.json'
 
 def show_banner():
