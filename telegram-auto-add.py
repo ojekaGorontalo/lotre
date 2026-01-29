@@ -31,7 +31,7 @@ TARGET_GROUP = '@wingo130s'
 # ========== PENGATURAN AMAN ==========
 MAX_SCRAPE = 200          # Max anggota di-scrape dari grup sumber
 MAX_ADD_PER_DAY = 15      # Max tambah per hari
-DELAY_MINUTES = 8         # Delay antar undangan
+DELAY_MINUTES = 1         # Delay antar undangan
 
 def print_header():
     print("\n" + "="*60)
