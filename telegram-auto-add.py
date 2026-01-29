@@ -16,8 +16,8 @@ from telethon.tl.types import InputPeerUser, InputPeerChannel, InputUser
 from telethon.tl.functions.users import GetUsersRequest
 
 # ========== KONFIGURASI ==========
-API_ID = '31482798'
-API_HASH = '51e45c6e6b8788d2de69d1574293ee82'
+API_ID = '38020832'
+API_HASH = '32d3d237d7b0b74c1bfb1baa865f882c'
 
 # GRUP SUMBER (ambil anggota dari sini)
 SOURCE_GROUP = 'vvip55wealthmabar'  # atau gunakan link: https://t.me/vvip55wealthmabar
