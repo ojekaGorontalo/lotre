@@ -554,7 +554,7 @@
         
         <div class="stats-grid">
             <div class="stat-card">
-                <h3><span>🎯</span> Total Taruhan</h3>
+                <h3><span>🎲</span> Total Taruhan</h3>
                 <div class="value" id="totalBets">0</div>
                 <div class="subtext">Sejak bot mulai berjalan</div>
             </div>
@@ -602,6 +602,7 @@
                 <input type="date" id="dateFilter" class="filter-input">
                 <input type="text" id="searchFilter" class="filter-input" placeholder="Cari...">
                 <button class="btn" onclick="refreshData()"><span>🔄</span> Refresh Data</button>
+                <button class="btn" onclick="toggleSound()"><span>🔊</span> <span id="soundStatus">Suara: ON</span></button>
             </div>
             <div>
                 <span id="connectionStatus" class="status-connected"><span>✅</span> Terhubung ke Database</span>
@@ -609,15 +610,15 @@
         </div>
         
         <div class="tabs">
-            <button class="tab active" onclick="openTab(event, 'results')"><span class="tab-icon">📊</span> Hasil Taruhan</button>
+            <button class="tab active" onclick="openTab(event, 'results')"><span class="tab-icon">📋</span> Hasil Taruhan</button>
             <button class="tab" onclick="openTab(event, 'resets')"><span class="tab-icon">🔄</span> Data Reset</button>
-            <button class="tab" onclick="openTab(event, 'reports')"><span class="tab-icon">📋</span> Laporan Harian</button>
+            <button class="tab" onclick="openTab(event, 'reports')"><span class="tab-icon">📊</span> Laporan Harian</button>
             <button class="tab" onclick="openTab(event, 'safety')"><span class="tab-icon">⚠️</span> Safety Events</button>
             <button class="tab" onclick="openTab(event, 'balance')"><span class="tab-icon">💰</span> Perubahan Saldo</button>
         </div>
         
         <div id="results" class="tab-content active">
-            <h2><span>📊</span> Data Hasil Taruhan</h2>
+            <h2><span>🎯</span> Data Hasil Taruhan</h2>
             <div class="table-container">
                 <table id="resultsTable">
                     <thead>
@@ -674,7 +675,7 @@
         </div>
         
         <div id="reports" class="tab-content">
-            <h2><span>📋</span> Laporan Harian</h2>
+            <h2><span>📊</span> Laporan Harian</h2>
             <div class="table-container">
                 <table id="reportsTable">
                     <thead>
@@ -757,6 +758,11 @@
         </div>
     </div>
 
+    <!-- Elemen Audio untuk notifikasi -->
+    <audio id="notificationSound" preload="auto">
+        <source src="https://raw.githubusercontent.com/ojekaGorontalo/lotre/main/sound%2030%20detik.mp3" type="audio/mpeg">
+    </audio>
+
     <script>
         // Firebase Configuration
         const firebaseConfig = {
@@ -779,6 +785,9 @@
         let allReports = [];
         let allSafetyEvents = [];
         let allBalanceChanges = [];
+        let lastResultTimestamp = 0;
+        let soundEnabled = true;
+        let previousResultsCount = 0;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -792,6 +801,9 @@
         function loadAllData() {
             console.log('Memuat data dari Firebase...');
             
+            // Store current results count before loading
+            previousResultsCount = allResults.length;
+            
             // Load results
             database.ref('results').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
                 allResults = [];
@@ -800,6 +812,25 @@
                     data.id = childSnapshot.key;
                     allResults.unshift(data); // Newest first
                 });
+                
+                // Check for new data and play sound if enabled
+                if (soundEnabled && allResults.length > 0 && allResults.length > previousResultsCount) {
+                    // Get the newest result
+                    const latestResult = allResults[0];
+                    const latestTimestamp = latestResult.timestamp;
+                    
+                    // Only play sound if we have a previous timestamp and new data arrived
+                    if (lastResultTimestamp > 0 && latestTimestamp > lastResultTimestamp) {
+                        playNotificationSound();
+                    }
+                    
+                    // Update lastResultTimestamp
+                    lastResultTimestamp = latestTimestamp;
+                } else if (allResults.length > 0 && lastResultTimestamp === 0) {
+                    // First load, set the timestamp but don't play sound
+                    lastResultTimestamp = allResults[0].timestamp;
+                }
+                
                 displayResults();
                 updateStats();
             }, (error) => {
@@ -868,6 +899,107 @@
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
             document.getElementById('connectionStatus').innerHTML = '<span>✅</span> Terhubung ke Database';
             document.getElementById('connectionStatus').className = 'status-connected';
+        }
+
+        // Play notification sound
+        function playNotificationSound() {
+            const audio = document.getElementById('notificationSound');
+            if (audio) {
+                audio.currentTime = 0; // Reset audio to start
+                audio.play().catch(e => {
+                    console.log("Gagal memutar suara: ", e);
+                    // If autoplay is blocked, show notification
+                    showNotification("Data baru tersedia!");
+                });
+                
+                // Also show visual notification
+                flashHeader();
+            }
+        }
+
+        // Toggle sound on/off
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const soundStatus = document.getElementById('soundStatus');
+            soundStatus.textContent = soundEnabled ? 'Suara: ON' : 'Suara: OFF';
+            
+            // Change button color
+            const button = soundStatus.closest('.btn');
+            if (soundEnabled) {
+                button.style.background = '#dc2626';
+            } else {
+                button.style.background = '#666';
+            }
+            
+            // Show notification
+            showNotification(`Suara notifikasi ${soundEnabled ? 'diaktifkan' : 'dimatikan'}`);
+        }
+
+        // Show temporary notification
+        function showNotification(message) {
+            // Create notification element if it doesn't exist
+            let notification = document.getElementById('tempNotification');
+            if (!notification) {
+                notification = document.createElement('div');
+                notification.id = 'tempNotification';
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #dc2626;
+                    color: white;
+                    padding: 15px 25px;
+                    border-radius: 10px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                `;
+                document.body.appendChild(notification);
+            }
+            
+            notification.innerHTML = `<span>🔔</span> ${message}`;
+            notification.style.opacity = '1';
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Flash header to indicate new data
+        function flashHeader() {
+            const header = document.querySelector('.header');
+            const originalBg = header.style.background;
+            
+            // Flash animation
+            header.style.animation = 'none';
+            setTimeout(() => {
+                header.style.animation = 'flash 0.5s ease';
+            }, 10);
+            
+            // Create flash animation
+            if (!document.querySelector('#flashAnimation')) {
+                const style = document.createElement('style');
+                style.id = 'flashAnimation';
+                style.textContent = `
+                    @keyframes flash {
+                        0% { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); }
+                        50% { background: linear-gradient(135deg, #22c55e 0%, #15803d 100%); }
+                        100% { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
         }
 
         // Fungsi untuk render colour dots
@@ -1194,7 +1326,7 @@
         // Refresh data
         function refreshData() {
             console.log('Manual refresh...');
-            document.getElementById('connectionStatus').innerHTML = '<span>🔄</span> Memuat ulang...';
+            document.getElementById('connectionStatus').innerHTML = '<span>⏳</span> Memuat ulang...';
             document.getElementById('connectionStatus').className = 'status-disconnected';
             
             // Show loading states
@@ -1238,6 +1370,11 @@
             if (e.ctrlKey && e.key === 'r') {
                 e.preventDefault();
                 refreshData();
+            }
+            // Add keyboard shortcut for toggling sound (Ctrl+S)
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                toggleSound();
             }
         });
 
