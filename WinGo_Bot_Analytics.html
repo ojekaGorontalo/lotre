@@ -391,6 +391,44 @@
             gap: 15px;
         }
         
+        /* Style untuk colour dots */
+        .colour-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        
+        .colour-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .colour-red {
+            background-color: #ff4444;
+        }
+        
+        .colour-green {
+            background-color: #44ff44;
+        }
+        
+        .colour-violet {
+            background-color: #aa44ff;
+        }
+        
+        .colour-blue {
+            background-color: #4444ff;
+        }
+        
+        .colour-yellow {
+            background-color: #ffff44;
+        }
+        
+        .colour-orange {
+            background-color: #ffaa44;
+        }
+        
         @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: 1fr;
@@ -445,6 +483,10 @@
             .last-update {
                 text-align: center;
             }
+            
+            .colour-dots {
+                justify-content: center;
+            }
         }
         
         @media (max-width: 480px) {
@@ -475,6 +517,11 @@
             .summary-value {
                 font-size: 1.8rem;
             }
+            
+            .colour-dot {
+                width: 12px;
+                height: 12px;
+            }
         }
         
         /* Scrollbar styling */
@@ -501,13 +548,13 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1><span class="bot-icon">🤖</span> WinGo Bot Analytics Dashboard</h1>
+            <h1><span class="bot-icon">📊</span> WinGo Bot Analytics Dashboard</h1>
             <p>Real-time monitoring dan analisis data trading bot WinGo</p>
         </div>
         
         <div class="stats-grid">
             <div class="stat-card">
-                <h3><span>📊</span> Total Taruhan</h3>
+                <h3><span>🎯</span> Total Taruhan</h3>
                 <div class="value" id="totalBets">0</div>
                 <div class="subtext">Sejak bot mulai berjalan</div>
             </div>
@@ -562,15 +609,15 @@
         </div>
         
         <div class="tabs">
-            <button class="tab active" onclick="openTab(event, 'results')"><span class="tab-icon">🎯</span> Hasil Taruhan</button>
+            <button class="tab active" onclick="openTab(event, 'results')"><span class="tab-icon">📊</span> Hasil Taruhan</button>
             <button class="tab" onclick="openTab(event, 'resets')"><span class="tab-icon">🔄</span> Data Reset</button>
             <button class="tab" onclick="openTab(event, 'reports')"><span class="tab-icon">📋</span> Laporan Harian</button>
-            <button class="tab" onclick="openTab(event, 'safety')"><span class="tab-icon">🛡️</span> Safety Events</button>
+            <button class="tab" onclick="openTab(event, 'safety')"><span class="tab-icon">⚠️</span> Safety Events</button>
             <button class="tab" onclick="openTab(event, 'balance')"><span class="tab-icon">💰</span> Perubahan Saldo</button>
         </div>
         
         <div id="results" class="tab-content active">
-            <h2><span>🎯</span> Data Hasil Taruhan</h2>
+            <h2><span>📊</span> Data Hasil Taruhan</h2>
             <div class="table-container">
                 <table id="resultsTable">
                     <thead>
@@ -578,6 +625,7 @@
                             <th>Waktu</th>
                             <th>Periode</th>
                             <th>Angka</th>
+                            <th>Colour</th>
                             <th>Hasil</th>
                             <th>Prediksi</th>
                             <th>Status</th>
@@ -654,7 +702,7 @@
         </div>
         
         <div id="safety" class="tab-content">
-            <h2><span>🛡️</span> Safety Events</h2>
+            <h2><span>⚠️</span> Safety Events</h2>
             <div class="table-container">
                 <table id="safetyTable">
                     <thead>
@@ -822,6 +870,27 @@
             document.getElementById('connectionStatus').className = 'status-connected';
         }
 
+        // Fungsi untuk render colour dots
+        function renderColourDots(colourStr) {
+            if (!colourStr) return '-';
+            
+            const colours = colourStr.split(',').map(c => c.trim().toLowerCase());
+            let html = '<div class="colour-dots">';
+            
+            colours.forEach(colour => {
+                let colourClass = 'colour-' + colour;
+                // Pastikan hanya warna yang valid
+                const validColours = ['red', 'green', 'violet', 'blue', 'yellow', 'orange'];
+                if (!validColours.includes(colour)) {
+                    colourClass = 'colour-blue'; // Default jika warna tidak dikenal
+                }
+                html += `<div class="colour-dot ${colourClass}" title="${colour}"></div>`;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+
         // Display results in table
         function displayResults() {
             const tbody = document.getElementById('resultsBody');
@@ -852,7 +921,7 @@
                 // Apply filters
                 if (dateFilter && resultDate !== dateFilter) return;
                 if (searchTerm) {
-                    const searchText = `${result.result || ''} ${result.prediction || ''} ${result.issue || ''}`.toLowerCase();
+                    const searchText = `${result.result || ''} ${result.prediction || ''} ${result.issue || ''} ${result.colour || ''}`.toLowerCase();
                     if (!searchText.includes(searchTerm)) return;
                 }
                 
@@ -862,11 +931,15 @@
                 
                 const profitLoss = result.profitLoss || 0;
                 
+                // Render colour dots
+                const colourDots = renderColourDots(result.colour);
+                
                 html += `
                 <tr>
                     <td>${resultTime}</td>
                     <td>${result.issue || '-'}</td>
                     <td><strong>${result.number || '-'}</strong></td>
+                    <td>${colourDots}</td>
                     <td>${result.result || '-'}</td>
                     <td>${result.prediction || '-'}</td>
                     <td><span class="${statusClass}">${statusText}</span></td>
@@ -1121,7 +1194,7 @@
         // Refresh data
         function refreshData() {
             console.log('Manual refresh...');
-            document.getElementById('connectionStatus').innerHTML = '<span>⏳</span> Memuat ulang...';
+            document.getElementById('connectionStatus').innerHTML = '<span>🔄</span> Memuat ulang...';
             document.getElementById('connectionStatus').className = 'status-disconnected';
             
             // Show loading states
@@ -1143,7 +1216,7 @@
 
         // Show connection error
         function showConnectionError() {
-            document.getElementById('connectionStatus').innerHTML = '<span>⚠️</span> Gagal menghubungi database';
+            document.getElementById('connectionStatus').innerHTML = '<span>❌</span> Gagal menghubungi database';
             document.getElementById('connectionStatus').className = 'status-disconnected';
         }
 
