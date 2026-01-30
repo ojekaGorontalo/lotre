@@ -938,7 +938,7 @@
                 <tr>
                     <td>${resultTime}</td>
                     <td>${result.issue || '-'}</td>
-                    <td><strong>${result.number || '-'}</strong></td>
+                    <td><strong>${result.number !== undefined && result.number !== null ? result.number : '-'}</strong></td>
                     <td>${colourDots}</td>
                     <td>${result.result || '-'}</td>
                     <td>${result.prediction || '-'}</td>
