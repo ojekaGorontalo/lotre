@@ -760,7 +760,7 @@
 
     <!-- Elemen Audio untuk notifikasi -->
     <audio id="notificationSound" preload="auto">
-        <source src="https://raw.githubusercontent.com/ojekaGorontalo/lotre/main/sound30s.mp3" type="audio/mpeg">
+        <source src="https://raw.githubusercontent.com/ojekaGorontalo/lotre/main/sound%2030%20detik.mp3" type="audio/mpeg">
     </audio>
 
     <script>
@@ -1125,7 +1125,7 @@
             empty.style.display = 'none';
         }
 
-        // Display reports in table
+        // Display reports in table - PERBAIKAN DISINI
         function displayReports() {
             const tbody = document.getElementById('reportsBody');
             const loading = document.getElementById('loadingReports');
@@ -1141,22 +1141,30 @@
             let html = '';
             
             allReports.forEach(report => {
-                const reportDate = new Date(report.date || report.timestamp).toLocaleDateString('id-ID');
-                const winRate = report.winRate || (report.totalWins && report.totalBets ? 
-                    Math.round((report.totalWins / report.totalBets) * 100) : 0);
+                // Pastikan format tanggal benar
+                const reportDate = report.date ? 
+                    new Date(report.date).toLocaleDateString('id-ID') : 
+                    new Date(report.timestamp).toLocaleDateString('id-ID');
                 
+                // Hitung statistik dari data yang ada - PERBAIKAN DISINI
+                const totalBets = report.totalBets || 0;
+                const totalWins = report.totalWins || 0;
+                const totalLosses = report.totalLosses || 0;
+                const winRate = totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0;
                 const profitLoss = report.profitLoss || 0;
+                const virtualBalance = report.virtualBalance || 0;
+                const currentBetLevel = report.currentBetLevel || 1;
                 
                 html += `
                 <tr>
                     <td>${reportDate}</td>
-                    <td>${report.totalBets || 0}</td>
-                    <td>${report.totalWins || 0}</td>
-                    <td>${report.totalLosses || 0}</td>
+                    <td>${totalBets}</td>
+                    <td>${totalWins}</td>
+                    <td>${totalLosses}</td>
                     <td>${winRate}%</td>
                     <td>Rp ${formatNumber(profitLoss)}</td>
-                    <td>Rp ${formatNumber(report.virtualBalance || 0)}</td>
-                    <td>${report.currentBetLevel || 1}</td>
+                    <td>Rp ${formatNumber(virtualBalance)}</td>
+                    <td>${currentBetLevel}</td>
                 </tr>
                 `;
             });
@@ -1241,7 +1249,7 @@
             empty.style.display = 'none';
         }
 
-        // Update statistics
+        // Update statistics - PERBAIKAN DISINI
         function updateStats() {
             if (allResults.length === 0) {
                 // Set default values
@@ -1271,11 +1279,13 @@
             // Total resets
             document.getElementById('totalResets').textContent = allResets.length;
             
-            // Calculate total profit/loss from all results
+            // PERBAIKAN DISINI: Calculate total profit/loss from the LATEST result (kumulatif)
             let totalProfit = 0;
-            allResults.forEach(result => {
-                totalProfit += (result.profitLoss || 0);
-            });
+            if (allResults.length > 0) {
+                // Ambil profitLoss dari hasil terbaru (sudah kumulatif)
+                const latestResult = allResults[0];
+                totalProfit = latestResult.profitLoss || 0;
+            }
             
             document.getElementById('totalProfit').textContent = 'Rp ' + formatNumber(totalProfit);
             
