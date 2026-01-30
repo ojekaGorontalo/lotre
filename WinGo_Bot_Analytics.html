@@ -302,7 +302,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>ðŸ¤– WinGo Bot Analytics Dashboard</h1>
+            <h1>🤖– WinGo Bot Analytics Dashboard</h1>
             <p>Real-time monitoring dan analisis data trading bot WinGo</p>
         </div>
         
@@ -355,7 +355,7 @@
             <div class="filters">
                 <input type="date" id="dateFilter" class="filter-input">
                 <input type="text" id="searchFilter" class="filter-input" placeholder="Cari...">
-                <button class="btn" onclick="refreshData()">ðŸ”„ Refresh</button>
+                <button class="btn" onclick="refreshData()">🤖”„ Refresh</button>
             </div>
             <div>
                 <span id="connectionStatus" class="result-win">â— Terhubung</span>
@@ -363,11 +363,11 @@
         </div>
         
         <div class="tabs">
-            <button class="tab active" onclick="openTab(event, 'results')">ðŸ“Š Hasil Taruhan</button>
-            <button class="tab" onclick="openTab(event, 'resets')">ðŸ”„ Data Reset</button>
-            <button class="tab" onclick="openTab(event, 'reports')">ðŸ“… Laporan Harian</button>
+            <button class="tab active" onclick="openTab(event, 'results')">🤖“Š Hasil Taruhan</button>
+            <button class="tab" onclick="openTab(event, 'resets')">🤖”„ Data Reset</button>
+            <button class="tab" onclick="openTab(event, 'reports')">🤖“… Laporan Harian</button>
             <button class="tab" onclick="openTab(event, 'safety')">âš ï¸ Safety Events</button>
-            <button class="tab" onclick="openTab(event, 'balance')">ðŸ’° Perubahan Saldo</button>
+            <button class="tab" onclick="openTab(event, 'balance')">🤖’° Perubahan Saldo</button>
         </div>
         
         <div id="results" class="tab-content active">
@@ -546,7 +546,7 @@
             console.log('Memuat data dari Firebase...');
             
             // Load results
-            database.ref('results').orderByChild('timestamp').limitToLast(100).on('value', (snapshot) => {
+            database.ref('results').orderByChild('timestamp').limitToLast(1500).on('value', (snapshot) => {
                 allResults = [];
                 snapshot.forEach((childSnapshot) => {
                     const data = childSnapshot.val();
