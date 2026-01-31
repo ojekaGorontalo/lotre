@@ -1,84 +1,31 @@
-/* ========= AUTO-BET INTEGRATION v3 - WINGO OPTIMIZED (EXACT SELECTORS) ========= */
+/* ========= AUTO-BET WINGO v5 - OPTIMIZED ========= */
 (function() {
-    console.log("🤖 AUTO-BET INTEGRATION v3 - WinGo Exact Selectors");
+    console.log("🤖 AUTO-BET WINGO v5 - Optimized");
     
     let isAutoBetActive = false;
     let autoBetInterval = null;
-    let lastAutoBetPrediction = null;
-    let lastAutoBetAmount = 0;
+    let lastProcessedAmount = 0;
     
-    // EXACT SELECTORS BERDASARKAN INFO ANDA
-    const WINGO_SELECTORS = {
-        // Tombol BESAR - EXACT berdasarkan informasi Anda
-        BET_BIG: [
-            '.Betting__C-foot-b',            // ✅ EXACT CLASS dari screenshot
-            '.bet-big',                       // ✅ Alternatif 1
-            '.big-btn',                       // ✅ Alternatif 2
-            'button[data-type="big"]',        // ✅ Alternatif 3
-            '[class*="besar"]',               // ✅ Class mengandung "besar"
-            '[class*="big"]'                  // ✅ Class mengandung "big"
-        ],
-        
-        // Tombol KECIL - EXACT berdasarkan informasi Anda  
-        BET_SMALL: [
-            '.Betting__C-foot-s',             // ✅ EXACT CLASS dari screenshot
-            '.bet-small',                     // ✅ Alternatif 1
-            '.small-btn',                     // ✅ Alternatif 2
-            'button[data-type="small"]',      // ✅ Alternatif 3
-            '[class*="kecil"]',               // ✅ Class mengandung "kecil"
-            '[class*="small"]'                // ✅ Class mengandung "small"
-        ],
-        
-        // Area betting
-        BET_AREA: [
-            '.Betting__C-foot',              // ✅ Area utama
-            '.betting-area',
-            '.bet-controls',
-            'div[class*="betting"]'
-        ],
-        
-        // Input jumlah
-        AMOUNT_INPUT: [
-            'input[type="number"]',
-            '.amount-input',
-            '.bet-amount',
-            '.input-amount',
-            'input.bet-value'
-        ],
-        
-        // Tombol konfirmasi (TANPA :contains)
-        CONFIRM_BUTTONS: [
-            '.confirm-btn',
-            '.submit-btn',
-            '.bet-confirm',
-            '.btn-confirm',
-            '.ok-button'
-        ]
-    };
-    
-    // ========= FUNGSI UTAMA =========
+    // Fungsi untuk memulai auto-bet
     window.startAutoBet = function() {
         if (isAutoBetActive) {
             console.log("⚠️ Auto-bet sudah aktif");
             return;
         }
         
-        if (!window.wingoBetData) {
-            console.log("❌ Bot belum diinisialisasi");
-            return;
-        }
-        
         isAutoBetActive = true;
-        console.log("✅ Auto-bet diaktifkan dengan selector EXACT WinGo");
+        console.log("✅ Auto-bet diaktifkan");
         
-        // Cek lebih cepat untuk responsif
         autoBetInterval = setInterval(() => {
-            performAutoBet();
-        }, 1000);
+            if (isAutoBetActive) {
+                checkAndPlaceBet();
+            }
+        }, 3000);
         
-        setTimeout(performAutoBet, 500);
+        setTimeout(checkAndPlaceBet, 1000);
     };
     
+    // Fungsi untuk menghentikan auto-bet
     window.stopAutoBet = function() {
         if (!isAutoBetActive) {
             console.log("⚠️ Auto-bet sudah tidak aktif");
@@ -92,520 +39,381 @@
         }
         
         console.log("⏹️ Auto-bet dihentikan");
-        removeHighlights();
     };
     
-    async function performAutoBet() {
+    // Fungsi utama
+    function checkAndPlaceBet() {
         if (!isAutoBetActive) return;
         
-        // Validasi bot
-        if (!window.wingoBetData || !window.wingoBetData.prediction) {
+        console.log(`\n🔄 Auto-bet check at ${new Date().toLocaleTimeString()}`);
+        
+        // 1. Dapatkan prediksi dari bot
+        const betInfo = getBotPrediction();
+        if (!betInfo) {
+            console.log("⏳ Menunggu prediksi dari bot...");
             return;
         }
         
-        // Bot sedang placing bet
-        if (window.wingoBetData.status?.isBetPlaced) {
+        // 2. Cegah duplikasi processing untuk amount yang sama
+        if (betInfo.amount === lastProcessedAmount) {
+            console.log("⏳ Amount sama, tunggu prediksi baru...");
             return;
         }
         
-        const currentPrediction = window.wingoBetData.prediction;
-        const currentAmount = window.wingoBetData.amount;
-        
-        if (!currentPrediction || !currentAmount) {
+        // 3. Klik tombol betting
+        if (!clickBetButton(betInfo.prediction)) {
+            console.log("⏳ Tombol betting belum tersedia...");
             return;
         }
         
-        // Cek apakah prediksi berubah
-        const isNewBet = currentPrediction !== lastAutoBetPrediction || 
-                        currentAmount !== lastAutoBetAmount;
+        lastProcessedAmount = betInfo.amount;
         
-        if (!isNewBet) {
-            return;
-        }
-        
-        console.log(`\n🎯 PREDIKSI BARU: ${currentPrediction} (Rp ${currentAmount.toLocaleString()})`);
-        
-        // Cek saldo
-        if (!checkBalance()) {
-            window.stopAutoBet();
-            return;
-        }
-        
-        // 1. Atur jumlah bet
-        if (!await setBetAmount(currentAmount)) {
-            console.log("💰 Menggunakan amount default (skip set amount)");
-        }
-        
-        // 2. Tunggu sebentar
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // 3. Cari dan klik tombol dengan selector EXACT
-        const targetButton = findExactBetButton(currentPrediction);
-        
-        if (targetButton && !targetButton.disabled) {
-            console.log(`✅ Klik ${currentPrediction} - Selector: "${getButtonSelector(targetButton)}"`);
-            
-            // Simpan untuk next check
-            lastAutoBetPrediction = currentPrediction;
-            lastAutoBetAmount = currentAmount;
-            
-            // Klik
-            const clicked = simulateEnhancedClick(targetButton);
-            
-            if (clicked) {
-                // Highlight konfirmasi
-                setTimeout(() => {
-                    highlightConfirmButtonsEnhanced();
-                    showEnhancedNotification(currentPrediction, currentAmount, targetButton);
-                }, 600);
-            }
-        } else {
-            console.log(`❌ Tombol ${currentPrediction} tidak ditemukan`);
-            console.log("🔍 Mencoba fallback...");
-            
-            // Fallback: cari dengan teks
-            const fallbackButton = findButtonByText(currentPrediction);
-            if (fallbackButton) {
-                console.log(`🔄 Fallback: Tombol ditemukan via teks`);
-                simulateEnhancedClick(fallbackButton);
-            }
-        }
+        // 4. Tunggu bottom sheet muncul dan proses
+        setTimeout(() => {
+            processBottomSheet(betInfo.amount);
+        }, 1500);
     }
     
-    // ========= FUNGSI HELPER EXACT =========
-    function findExactBetButton(prediction) {
-        const selectors = prediction === 'BESAR' ? WINGO_SELECTORS.BET_BIG : WINGO_SELECTORS.BET_SMALL;
-        
-        console.log(`🔍 Mencari tombol ${prediction} dengan selectors:`);
-        
-        for (const selector of selectors) {
-            try {
-                const button = document.querySelector(selector);
-                if (button && isElementVisible(button)) {
-                    console.log(`   ✅ Ditemukan: ${selector}`);
-                    return button;
-                }
-            } catch (e) {
-                console.log(`   ❌ Error: ${selector} - ${e.message}`);
-            }
+    // Dapatkan prediksi dari bot
+    function getBotPrediction() {
+        if (!window.wingoBetData) {
+            console.log("❌ wingoBetData tidak tersedia");
+            return null;
         }
         
-        return null;
-    }
-    
-    function findButtonByText(prediction) {
-        const searchText = prediction === 'BESAR' ? 'BESAR' : 'KECIL';
-        const allButtons = document.querySelectorAll('button, [role="button"], .btn, div[onclick]');
-        
-        for (const button of allButtons) {
-            const text = (button.textContent || button.innerText || '').toUpperCase();
-            if (text.includes(searchText)) {
-                console.log(`🔍 Ditemukan via teks: "${text}"`);
-                return button;
-            }
+        const betInfo = window.wingoBetData.getBetInfo();
+        if (!betInfo.prediction || !betInfo.amount) {
+            console.log("❌ Belum ada prediksi/amount");
+            return null;
         }
         
-        return null;
+        console.log(`📊 Prediksi: ${betInfo.prediction}, Amount: Rp ${betInfo.amount.toLocaleString()}`);
+        return betInfo;
     }
     
-    function getButtonSelector(element) {
-        if (element.className) {
-            return '.' + element.className.split(' ')[0];
-        }
-        if (element.id) {
-            return '#' + element.id;
-        }
-        return element.tagName;
-    }
-    
-    function isElementVisible(element) {
-        return !!(element.offsetWidth || element.offsetHeight || element.getClientRects().length);
-    }
-    
-    async function setBetAmount(amount) {
-        // Coba semua selector amount
-        for (const selector of WINGO_SELECTORS.AMOUNT_INPUT) {
-            const input = document.querySelector(selector);
-            if (input) {
-                input.value = amount;
-                
-                // Trigger events
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-                input.dispatchEvent(new Event('change', { bubbles: true }));
-                input.dispatchEvent(new Event('blur', { bubbles: true }));
-                
-                console.log(`💰 Amount set: Rp ${amount.toLocaleString()}`);
-                return true;
-            }
-        }
+    // Klik tombol betting (BESAR/KECIL)
+    function clickBetButton(prediction) {
+        const buttonClass = prediction === "BESAR" ? ".Betting__C-foot-b" : ".Betting__C-foot-s";
+        const button = document.querySelector(buttonClass);
         
-        return false;
-    }
-    
-    function checkBalance() {
-        if (!window.wingoBetData) return false;
-        
-        const balance = window.wingoBetData.balance || 0;
-        const betAmount = window.wingoBetData.amount || 0;
-        
-        if (balance < betAmount) {
-            console.log(`❌ Saldo tidak cukup: ${balance.toLocaleString()} < ${betAmount.toLocaleString()}`);
+        if (!button) {
+            console.log(`❌ Tombol ${prediction} tidak ditemukan (${buttonClass})`);
             return false;
         }
         
-        console.log(`✅ Saldo cukup: ${balance.toLocaleString()} > ${betAmount.toLocaleString()}`);
+        // Cek jika tombol disabled
+        if (button.disabled || button.classList.contains('disabled')) {
+            console.log(`⏳ Tombol ${prediction} disabled`);
+            return false;
+        }
+        
+        console.log(`✅ Tombol ${prediction} ditemukan, mengklik...`);
+        
+        // Simpan style asli
+        const originalStyle = button.style.cssText;
+        
+        // Highlight tombol
+        button.style.cssText = `
+            ${originalStyle}
+            border: 3px solid #00FF00 !important;
+            box-shadow: 0 0 20px #00FF00 !important;
+            background-color: rgba(0, 255, 0, 0.3) !important;
+        `;
+        
+        // Klik tombol
+        button.click();
+        
+        // Restore style setelah 1 detik
+        setTimeout(() => {
+            button.style.cssText = originalStyle;
+        }, 1000);
+        
         return true;
     }
     
-    function simulateEnhancedClick(element) {
-        if (!element) return false;
+    // Proses bottom sheet
+    function processBottomSheet(amount) {
+        // Tunggu bottom sheet muncul
+        const maxWaitTime = 3000;
+        const startTime = Date.now();
         
-        try {
-            console.log("🖱️ Simulating enhanced click...");
+        const waitForBottomSheet = () => {
+            const bottomSheet = document.querySelector('.van-popup.van-popup--bottom');
             
-            // Method 1: Native click
-            element.click();
-            
-            // Method 2: Mouse events
-            const mouseDown = new MouseEvent('mousedown', {
-                view: window,
-                bubbles: true,
-                cancelable: true
-            });
-            element.dispatchEvent(mouseDown);
-            
-            const mouseUp = new MouseEvent('mouseup', {
-                view: window,
-                bubbles: true,
-                cancelable: true
-            });
-            element.dispatchEvent(mouseUp);
-            
-            const clickEvent = new MouseEvent('click', {
-                view: window,
-                bubbles: true,
-                cancelable: true
-            });
-            element.dispatchEvent(clickEvent);
-            
-            // Method 3: Focus jika input
-            if (element.tagName === 'INPUT') {
-                element.focus();
+            if (bottomSheet && bottomSheet.style.display !== 'none') {
+                console.log("✅ Bottom sheet ditemukan");
+                configureBettingAmount(bottomSheet, amount);
+                return;
             }
             
-            console.log("✅ Click simulation successful");
-            return true;
+            if (Date.now() - startTime < maxWaitTime) {
+                setTimeout(waitForBottomSheet, 100);
+            } else {
+                console.log("❌ Bottom sheet tidak muncul setelah 3 detik");
+            }
+        };
+        
+        waitForBottomSheet();
+    }
+    
+    // Konfigurasi jumlah taruhan
+    function configureBettingAmount(bottomSheet, amount) {
+        console.log(`💰 Mengatur jumlah taruhan: Rp ${amount.toLocaleString()}`);
+        
+        // Strategi 1: Coba gunakan input jika tersedia
+        const input = bottomSheet.querySelector('input[type="tel"]');
+        if (input) {
+            console.log("✅ Input ditemukan, menggunakan metode input");
             
-        } catch (error) {
-            console.error("❌ Click error:", error);
-            return false;
+            // Base amount biasanya 1000, hitung multiplier
+            const baseAmount = 1000;
+            const multiplier = amount / baseAmount;
+            
+            if (Number.isInteger(multiplier) && multiplier >= 1 && multiplier <= 100) {
+                console.log(`🔢 Mengisi input dengan: ${multiplier}`);
+                input.value = multiplier;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            } else {
+                console.log(`⚠️ Multiplier ${multiplier} tidak valid, fallback ke metode nominal`);
+                selectNominalAmount(bottomSheet, amount);
+            }
+        } else {
+            console.log("❌ Input tidak ditemukan, menggunakan metode nominal");
+            selectNominalAmount(bottomSheet, amount);
+        }
+        
+        // Pastikan checkbox setuju aktif
+        setTimeout(() => {
+            checkAgreeCheckbox(bottomSheet);
+        }, 500);
+        
+        // Klik tombol konfirmasi
+        setTimeout(() => {
+            clickConfirmButton(bottomSheet);
+        }, 1000);
+    }
+    
+    // Pilih nominal amount dari opsi yang tersedia
+    function selectNominalAmount(bottomSheet, amount) {
+        const multipliers = bottomSheet.querySelectorAll('[class*="line-item"]');
+        let found = false;
+        
+        // Cari nominal yang tepat
+        multipliers.forEach(mult => {
+            const text = mult.textContent.trim();
+            const numericValue = parseInt(text.replace(/[^\d]/g, ''));
+            
+            if (!isNaN(numericValue) && numericValue === amount) {
+                console.log(`✅ Nominal ditemukan: ${text}`);
+                
+                // Klik jika belum aktif
+                if (!mult.classList.contains('bgcolor')) {
+                    mult.click();
+                    console.log(`🖱️ Mengklik nominal ${text}`);
+                }
+                found = true;
+            }
+        });
+        
+        if (!found) {
+            console.log(`❌ Nominal ${amount} tidak ditemukan, menggunakan pendekatan terdekat`);
+            
+            // Fallback: coba gunakan kombinasi multiplier
+            useMultiplierFallback(bottomSheet, amount);
         }
     }
     
-    function highlightConfirmButtonsEnhanced() {
-        console.log("🔦 Highlighting confirm buttons...");
+    // Fallback menggunakan multiplier
+    function useMultiplierFallback(bottomSheet, amount) {
+        const baseAmount = 1000;
+        const targetMultiplier = amount / baseAmount;
         
-        let foundButtons = [];
+        console.log(`🎯 Mencari multiplier untuk: ${targetMultiplier}x`);
         
-        // 1. Cari dengan selector valid
-        WINGO_SELECTORS.CONFIRM_BUTTONS.forEach(selector => {
-            const buttons = document.querySelectorAll(selector);
-            buttons.forEach(btn => {
-                if (isElementVisible(btn)) {
-                    applyEnhancedHighlight(btn);
-                    foundButtons.push(btn);
+        // Cari multiplier yang tersedia
+        const availableMultipliers = [
+            { text: 'X1', value: 1 },
+            { text: 'X5', value: 5 },
+            { text: 'X10', value: 10 },
+            { text: 'X20', value: 20 },
+            { text: 'X50', value: 50 },
+            { text: 'X100', value: 100 }
+        ];
+        
+        // Cari yang paling mendekati
+        let bestMatch = null;
+        let minDifference = Infinity;
+        
+        availableMultipliers.forEach(mult => {
+            const total = baseAmount * mult.value;
+            const difference = Math.abs(total - amount);
+            
+            if (difference < minDifference && total >= amount) {
+                minDifference = difference;
+                bestMatch = mult;
+            }
+        });
+        
+        if (bestMatch) {
+            console.log(`📊 Menggunakan multiplier ${bestMatch.text} (Rp ${(baseAmount * bestMatch.value).toLocaleString()})`);
+            
+            // Cari dan klik element multiplier
+            const multipliers = bottomSheet.querySelectorAll('[class*="line-item"]');
+            multipliers.forEach(mult => {
+                if (mult.textContent.trim() === bestMatch.text) {
+                    if (!mult.classList.contains('bgcolor')) {
+                        mult.click();
+                        console.log(`🖱️ Mengklik multiplier ${bestMatch.text}`);
+                    }
                 }
             });
-        });
-        
-        // 2. Cari berdasarkan teks (VALID - tanpa :contains)
-        const confirmKeywords = ['konfirmasi', 'confirm', 'ok', 'submit', 'bet', 'place'];
-        const allClickables = document.querySelectorAll('button, .btn, [role="button"], div[onclick]');
-        
-        allClickables.forEach(element => {
-            const text = (element.textContent || element.innerText || '').toLowerCase();
-            const isConfirm = confirmKeywords.some(keyword => text.includes(keyword));
-            
-            if (isConfirm && isElementVisible(element)) {
-                applyEnhancedHighlight(element);
-                foundButtons.push(element);
-            }
-        });
-        
-        if (foundButtons.length > 0) {
-            console.log(`🎯 ${foundButtons.length} tombol konfirmasi disorot!`);
-            console.log("👉 KLIK TOMBOL YANG DISOROT HIJAU UNTUK KONFIRMASI BET!");
-            
-            // Buat notifikasi lebih mencolok
-            showAlertNotification(foundButtons.length);
         } else {
-            console.log("⚠️ Tidak ditemukan tombol konfirmasi");
+            console.log("❌ Tidak ada multiplier yang cocok");
         }
     }
     
-    function applyEnhancedHighlight(element) {
-        // Simpan style asli
-        if (!element.dataset.originalStyle) {
-            element.dataset.originalStyle = element.style.cssText;
+    // Aktifkan checkbox setuju
+    function checkAgreeCheckbox(bottomSheet) {
+        const agreeCheckbox = bottomSheet.querySelector('.Betting__Popup-agree');
+        if (!agreeCheckbox) {
+            console.log("❌ Checkbox setuju tidak ditemukan");
+            return;
         }
         
-        // Terapkan highlight
-        element.style.cssText = `
-            border: 5px solid #00FF00 !important;
-            box-shadow: 0 0 50px #00FF00, 0 0 30px #00FF00 inset !important;
-            background: linear-gradient(45deg, #002200, #00CC00) !important;
-            color: #FFFFFF !important;
+        if (!agreeCheckbox.classList.contains('active')) {
+            console.log("✅ Mengaktifkan checkbox setuju");
+            agreeCheckbox.click();
+            
+            // Highlight
+            agreeCheckbox.style.cssText = `
+                color: #00FF00 !important;
+                font-weight: bold !important;
+            `;
+        } else {
+            console.log("✅ Checkbox setuju sudah aktif");
+        }
+    }
+    
+    // Klik tombol konfirmasi
+    function clickConfirmButton(bottomSheet) {
+        const confirmButton = bottomSheet.querySelector('.Betting__Popup-foot-s');
+        if (!confirmButton) {
+            console.log("❌ Tombol konfirmasi tidak ditemukan");
+            return;
+        }
+        
+        // Verifikasi amount di tombol
+        const buttonText = confirmButton.textContent || '';
+        console.log(`✅ Tombol konfirmasi: ${buttonText.trim()}`);
+        
+        // Highlight kuat
+        confirmButton.style.cssText = `
+            border: 4px solid #FF0000 !important;
+            box-shadow: 0 0 40px #FF0000 !important;
+            background: linear-gradient(45deg, #FF0000, #FF5555) !important;
+            color: white !important;
             font-weight: bold !important;
             font-size: 18px !important;
-            animation: autoBetPulse 0.8s infinite !important;
-            position: relative !important;
-            z-index: 99999 !important;
             transform: scale(1.1) !important;
-            text-transform: uppercase !important;
+            transition: all 0.3s !important;
+            z-index: 999999 !important;
         `;
         
-        // Tambah tooltip
-        element.title = "KLIK UNTUK KONFIRMASI BET! - AUTO-BET SYSTEM";
-    }
-    
-    function showEnhancedNotification(prediction, amount, button) {
-        // Hapus notifikasi lama
-        const oldNotif = document.getElementById('wingo-auto-notif');
-        if (oldNotif) oldNotif.remove();
+        // Tambahkan animasi
+        confirmButton.style.animation = 'pulse 1s infinite';
         
-        // Buat notifikasi baru
-        const notif = document.createElement('div');
-        notif.id = 'wingo-auto-notif';
-        notif.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.95);
-            color: #00FF00;
-            padding: 20px;
-            border: 3px solid #00FF00;
-            border-radius: 15px;
-            z-index: 999999;
-            font-family: 'Courier New', monospace;
-            font-size: 16px;
-            box-shadow: 0 0 40px #00FF00;
-            max-width: 400px;
-            backdrop-filter: blur(10px);
-        `;
-        
-        const time = new Date().toLocaleTimeString();
-        notif.innerHTML = `
-            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                <div style="font-size: 24px; margin-right: 10px;">🤖</div>
-                <div style="font-weight: bold; font-size: 18px;">WINGO AUTO-BET v3</div>
-            </div>
-            <div style="margin-bottom: 5px;">🎯 <b>PREDIKSI:</b> <span style="color: #FFFF00; font-size: 20px;">${prediction}</span></div>
-            <div style="margin-bottom: 5px;">💰 <b>AMOUNT:</b> Rp ${amount.toLocaleString()}</div>
-            <div style="margin-bottom: 10px;">⏰ <b>TIME:</b> ${time}</div>
-            <div style="background: #003300; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 14px;">
-                <div>🔸 Tombol <b>${prediction}</b> sudah diklik</div>
-                <div>🔸 Cari tombol hijau berkedip untuk konfirmasi</div>
-                <div>🔸 Auto-bet akan lanjut ke prediksi berikutnya</div>
-            </div>
-            <div style="margin-top: 15px; font-size: 12px; color: #88FF88;">
-                Status: <span id="auto-bet-status" style="color: #00FF00;">ACTIVE</span>
-            </div>
-        `;
-        
-        document.body.appendChild(notif);
-        
-        // Auto-remove setelah 15 detik
-        setTimeout(() => {
-            if (notif && notif.parentNode) {
-                notif.style.opacity = '0';
-                notif.style.transition = 'opacity 1s';
-                setTimeout(() => notif.parentNode.removeChild(notif), 1000);
-            }
-        }, 15000);
-    }
-    
-    function showAlertNotification(buttonCount) {
-        // Alert sound (jika diizinkan browser)
-        try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = 800;
-            oscillator.type = 'sine';
-            gainNode.gain.value = 0.1;
-            
-            oscillator.start();
-            setTimeout(() => oscillator.stop(), 300);
-        } catch (e) {
-            // Silent fail jika audio tidak diizinkan
-        }
-        
-        // Visual alert
-        if (!document.getElementById('auto-bet-alert')) {
-            const alert = document.createElement('div');
-            alert.id = 'auto-bet-alert';
-            alert.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: #FF0000;
-                color: white;
-                padding: 15px 30px;
-                border-radius: 10px;
-                z-index: 999999;
-                font-weight: bold;
-                font-size: 18px;
-                animation: alertPulse 1s infinite;
-                text-align: center;
-                box-shadow: 0 0 30px #FF0000;
-            `;
-            alert.textContent = `⚠️ KLIK ${buttonCount} TOMBOL HIJAU UNTUK KONFIRMASI!`;
-            
-            // Style untuk animasi
+        // Buat animasi pulse jika belum ada
+        if (!document.querySelector('#pulse-animation')) {
             const style = document.createElement('style');
+            style.id = 'pulse-animation';
             style.textContent = `
-                @keyframes alertPulse {
-                    0% { opacity: 1; transform: translateX(-50%) scale(1); }
-                    50% { opacity: 0.8; transform: translateX(-50%) scale(1.05); }
-                    100% { opacity: 1; transform: translateX(-50%) scale(1); }
-                }
-                @keyframes autoBetPulse {
-                    0% { box-shadow: 0 0 20px #00FF00; }
-                    50% { box-shadow: 0 0 60px #00FF00; }
-                    100% { box-shadow: 0 0 20px #00FF00; }
+                @keyframes pulse {
+                    0% { transform: scale(1); box-shadow: 0 0 40px #FF0000; }
+                    50% { transform: scale(1.05); box-shadow: 0 0 60px #FF0000; }
+                    100% { transform: scale(1); box-shadow: 0 0 40px #FF0000; }
                 }
             `;
             document.head.appendChild(style);
+        }
+        
+        console.log("🎯 Mengklik tombol konfirmasi dalam 2 detik...");
+        
+        // Auto-click setelah 2 detik
+        setTimeout(() => {
+            confirmButton.click();
+            console.log("✅ Bet dikonfirmasi!");
             
-            document.body.appendChild(alert);
-            
-            // Hapus setelah 10 detik
+            // Reset lastProcessedAmount setelah konfirmasi
             setTimeout(() => {
-                if (alert.parentNode) {
-                    alert.parentNode.removeChild(alert);
-                }
-            }, 10000);
-        }
+                lastProcessedAmount = 0;
+            }, 2000);
+        }, 2000);
     }
     
-    function removeHighlights() {
-        // Reset semua tombol yang di-highlight
-        document.querySelectorAll('[data-original-style]').forEach(element => {
-            element.style.cssText = element.dataset.originalStyle;
-            delete element.dataset.originalStyle;
-        });
+    // Fungsi untuk manual trigger
+    window.triggerBet = function(prediction, amount) {
+        console.log(`🎮 Manual trigger: ${prediction} - Rp ${amount}`);
         
-        // Hapus notifikasi
-        ['wingo-auto-notif', 'auto-bet-alert'].forEach(id => {
-            const element = document.getElementById(id);
-            if (element && element.parentNode) {
-                element.parentNode.removeChild(element);
-            }
-        });
-    }
-    
-    // ========= DEBUG & TEST =========
-    window.testAutoBet = function(prediction = 'BESAR') {
-        console.log(`🧪 Testing auto-bet: ${prediction}`);
-        
-        const button = findExactBetButton(prediction);
-        if (button) {
-            console.log(`✅ Tombol ditemukan: ${getButtonSelector(button)}`);
-            simulateEnhancedClick(button);
-            setTimeout(() => highlightConfirmButtonsEnhanced(), 800);
-            console.log(`✅ Test ${prediction} berhasil`);
-        } else {
-            console.log(`❌ Tombol ${prediction} tidak ditemukan dengan selector`);
-            
-            // Coba cari dengan teks
-            const fallback = findButtonByText(prediction);
-            if (fallback) {
-                console.log(`🔄 Ditemukan via teks`);
-                simulateEnhancedClick(fallback);
+        if (!prediction || !amount) {
+            const betInfo = getBotPrediction();
+            if (betInfo) {
+                prediction = betInfo.prediction;
+                amount = betInfo.amount;
             } else {
-                console.log("🔍 Scan semua tombol di halaman:");
-                document.querySelectorAll('button').forEach((btn, i) => {
-                    const text = (btn.textContent || '').trim();
-                    if (text) {
-                        console.log(`${i+1}. "${text}" - Class: ${btn.className}`);
-                    }
-                });
+                prediction = 'BESAR';
+                amount = 1000;
             }
         }
+        
+        clickBetButton(prediction);
+        
+        setTimeout(() => {
+            const bottomSheet = document.querySelector('.van-popup.van-popup--bottom');
+            if (bottomSheet) {
+                configureBettingAmount(bottomSheet, amount);
+            }
+        }, 1500);
     };
     
-    window.scanBettingElements = function() {
-        console.log("🔍 SCANNING BETTING ELEMENTS:");
+    // Debug function
+    window.debugWingoBet = function() {
+        console.log("\n🔧 DEBUG WINGO BET v5:");
+        console.log("Status:", isAutoBetActive ? "🟢 AKTIF" : "🔴 NONAKTIF");
+        console.log("Last Processed Amount:", lastProcessedAmount);
         
-        console.log("\n🎯 TOMBOL BESAR:");
-        WINGO_SELECTORS.BET_BIG.forEach((selector, i) => {
-            const element = document.querySelector(selector);
-            console.log(`${i+1}. ${selector}: ${element ? '✅ DITEMUKAN' : '❌ TIDAK ADA'}`);
-        });
+        // Cek ketersediaan elemen
+        console.log("\n🔍 ELEMEN DI HALAMAN:");
+        console.log("Tombol BESAR:", document.querySelector('.Betting__C-foot-b') ? "✅" : "❌");
+        console.log("Tombol KECIL:", document.querySelector('.Betting__C-foot-s') ? "✅" : "❌");
+        console.log("Bottom Sheet:", document.querySelector('.van-popup.van-popup--bottom') ? "✅" : "❌");
         
-        console.log("\n🎯 TOMBOL KECIL:");
-        WINGO_SELECTORS.BET_SMALL.forEach((selector, i) => {
-            const element = document.querySelector(selector);
-            console.log(`${i+1}. ${selector}: ${element ? '✅ DITEMUKAN' : '❌ TIDAK ADA'}`);
-        });
-        
-        console.log("\n💰 INPUT AMOUNT:");
-        WINGO_SELECTORS.AMOUNT_INPUT.forEach((selector, i) => {
-            const element = document.querySelector(selector);
-            if (element) {
-                console.log(`${i+1}. ${selector}: ✅ VALUE = ${element.value}`);
-            } else {
-                console.log(`${i+1}. ${selector}: ❌ TIDAK ADA`);
-            }
-        });
-        
-        console.log("\n📋 SEMUA TOMBOL DENGAN TEKS:");
-        document.querySelectorAll('button, .btn').forEach((btn, i) => {
-            const text = (btn.textContent || '').trim();
-            if (text && text.length < 50) {
-                console.log(`${i+1}. "${text}" - Class: ${btn.className || 'none'}`);
-            }
-        });
-    };
-    
-    // ========= INTEGRASI DENGAN BOT =========
-    if (window.wingoBot) {
-        window.wingoBot.autoBet = {
-            start: window.startAutoBet,
-            stop: window.stopAutoBet,
-            test: window.testAutoBet,
-            scan: window.scanBettingElements,
-            find: findExactBetButton
-        };
-    }
-    
-    // ========= AUTO-INIT DETECTION =========
-    setTimeout(() => {
+        // Cek bot data
         if (window.wingoBetData) {
-            console.log("🤖 WINGO AUTO-BET v3 READY!");
-            console.log("🎯 Selectors configured for exact WinGo elements");
-            console.log("🚀 Gunakan: startAutoBet() untuk memulai");
-            
-            // Test satu tombol untuk verifikasi
-            setTimeout(() => {
-                const testButton = findExactBetButton('BESAR');
-                if (testButton) {
-                    console.log(`✅ Verifikasi: Tombol BESAR ditemukan (${getButtonSelector(testButton)})`);
-                }
-            }, 1000);
+            console.log("\n🤖 BOT DATA:");
+            console.log(window.wingoBetData.getBetInfo());
+        }
+    };
+    
+    // Auto-start detection
+    setTimeout(() => {
+        console.log("🌐 Website Wingo terdeteksi");
+        
+        // Jika sudah ada bot data, beri opsi auto-start
+        if (window.wingoBetData && window.wingoBetData.prediction) {
+            console.log("🤖 Bot data tersedia, ketik 'startAutoBet()' untuk mulai");
         }
     }, 3000);
     
-    console.log("✅ WinGo Auto-Bet v3 Loaded with EXACT Selectors!");
-    console.log("🛠️ Commands:");
-    console.log("   startAutoBet()       - Start auto-betting");
-    console.log("   stopAutoBet()        - Stop auto-betting");
-    console.log("   testAutoBet('BESAR') - Test click BESAR button");
-    console.log("   testAutoBet('KECIL') - Test click KECIL button");
-    console.log("   scanBettingElements()- Scan for betting elements");
+    console.log("✅ Auto-bet Wingo v5 loaded!");
+    console.log("\n🛠️ PERINTAH:");
+    console.log("   startAutoBet()      - Mulai auto-bet");
+    console.log("   stopAutoBet()       - Hentikan auto-bet");
+    console.log("   triggerBet()        - Manual trigger bet");
+    console.log("   debugWingoBet()     - Debug status");
+    console.log("\n⚡ Fitur:");
+    console.log("   • Deteksi bottom sheet otomatis");
+    console.log("   • Support input dan nominal amount");
+    console.log("   • Auto-click konfirmasi");
+    console.log("   • Highlight visual untuk debugging");
 })();
