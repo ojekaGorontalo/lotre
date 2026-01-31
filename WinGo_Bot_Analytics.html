@@ -1077,7 +1077,7 @@
             // Store current results count before loading
             previousResultsCount = allResults.length;
             
-            // Load results
+            // Load results - DATA LENGKAP DARI BOT
             database.ref('results').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
                 allResults = [];
                 snapshot.forEach((childSnapshot) => {
@@ -1105,7 +1105,7 @@
                 }
                 
                 displayResults();
-                updateStats();
+                updateStats(); // Ambil statistik langsung dari data terbaru
             }, (error) => {
                 console.error('Error loading results:', error);
                 showConnectionError();
@@ -1352,9 +1352,10 @@
                 return;
             }
             
-            // Render data halaman saat ini
+            // Render data halaman saat ini - GUNAKAN DATA LENGKAP DARI BOT
             let html = '';
             pageData.forEach(result => {
+                // Data langsung dari bot
                 const isWin = result.isWin;
                 const statusClass = isWin ? 'result-win' : 'result-lose';
                 const statusText = isWin ? 'MENANG' : 'KALAH';
@@ -1368,6 +1369,7 @@
                     second: '2-digit'
                 });
                 
+                // AMBIL DATA LANGSUNG DARI BOT - tidak perlu hitung ulang
                 html += `
                 <tr>
                     <td>${resultTime}</td>
@@ -1379,7 +1381,7 @@
                     <td><span class="${statusClass}">${statusText}</span></td>
                     <td>${result.betLevel || '-'}</td>
                     <td>Rp ${formatNumber(result.betAmount || 0)}</td>
-                    <td>Rp ${formatNumber(profitLoss)}</td>
+                    <td>${profitLoss >= 0 ? '+' : ''}Rp ${formatNumber(profitLoss)}</td>
                     <td>Rp ${formatNumber(result.virtualBalance || 0)}</td>
                 </tr>
                 `;
@@ -1444,16 +1446,16 @@
             let html = '';
             
             allReports.forEach(report => {
-                // Pastikan format tanggal benar
+                // Data langsung dari bot - sudah lengkap
                 const reportDate = report.date ? 
                     new Date(report.date).toLocaleDateString('id-ID') : 
                     new Date(report.timestamp).toLocaleDateString('id-ID');
                 
-                // Hitung statistik dari data yang ada
+                // AMBIL DATA LANGSUNG DARI BOT
                 const totalBets = report.totalBets || 0;
                 const totalWins = report.totalWins || 0;
                 const totalLosses = report.totalLosses || 0;
-                const winRate = totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0;
+                const winRate = report.winRate || (totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0);
                 const profitLoss = report.profitLoss || 0;
                 const virtualBalance = report.virtualBalance || 0;
                 const currentBetLevel = report.currentBetLevel || 1;
@@ -1465,7 +1467,7 @@
                     <td>${totalWins}</td>
                     <td>${totalLosses}</td>
                     <td>${winRate}%</td>
-                    <td>Rp ${formatNumber(profitLoss)}</td>
+                    <td>${profitLoss >= 0 ? '+' : ''}Rp ${formatNumber(profitLoss)}</td>
                     <td>Rp ${formatNumber(virtualBalance)}</td>
                     <td>${currentBetLevel}</td>
                 </tr>
@@ -1552,7 +1554,7 @@
             empty.style.display = 'none';
         }
 
-        // Update statistics
+        // Update statistics - AMBIL LANGSUNG DARI DATA TERBARU
         function updateStats() {
             if (allResults.length === 0) {
                 // Set default values
@@ -1567,38 +1569,29 @@
                 return;
             }
             
-            // Total bets
-            document.getElementById('totalBets').textContent = allResults.length;
+            // Ambil data terbaru dari bot
+            const latest = allResults[0];
             
-            // Calculate wins and losses
-            const wins = allResults.filter(r => r.isWin).length;
-            const losses = allResults.filter(r => !r.isWin).length;
-            const winRate = allResults.length > 0 ? Math.round((wins / allResults.length) * 100) : 0;
+            // Ambil statistik langsung dari data terbaru
+            const totalBets = latest.totalBets || 0;
+            const totalWins = latest.totalWins || 0;
+            const totalLosses = latest.totalLosses || 0;
+            const profitLoss = latest.profitLoss || 0;
+            const currentStreak = latest.currentStreak || 0;
             
-            document.getElementById('totalWins').textContent = wins;
-            document.getElementById('totalLosses').textContent = losses;
+            // Hitung win rate dari data bot
+            const winRate = totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0;
+            
+            // Update display
+            document.getElementById('totalBets').textContent = totalBets;
+            document.getElementById('totalWins').textContent = totalWins;
+            document.getElementById('totalLosses').textContent = totalLosses;
             document.getElementById('winRate').textContent = winRate + '%';
-            
-            // Total resets
             document.getElementById('totalResets').textContent = allResets.length;
+            document.getElementById('totalProfit').textContent = 'Rp ' + formatNumber(profitLoss);
+            document.getElementById('currentStreak').textContent = currentStreak;
             
-            // Calculate total profit/loss from the LATEST result (kumulatif)
-            let totalProfit = 0;
-            if (allResults.length > 0) {
-                // Ambil profitLoss dari hasil terbaru (sudah kumulatif)
-                const latestResult = allResults[0];
-                totalProfit = latestResult.profitLoss || 0;
-            }
-            
-            document.getElementById('totalProfit').textContent = 'Rp ' + formatNumber(totalProfit);
-            
-            // Current streak (from latest result)
-            const latestResult = allResults[0];
-            if (latestResult) {
-                document.getElementById('currentStreak').textContent = latestResult.currentStreak || 0;
-            }
-            
-            // Average bet amount
+            // Rata-rata taruhan dihitung dari data yang ada (bisa dihitung ulang)
             const totalBetAmount = allResults.reduce((sum, result) => sum + (result.betAmount || 0), 0);
             const avgBetAmount = allResults.length > 0 ? Math.round(totalBetAmount / allResults.length) : 0;
             document.getElementById('avgBetAmount').textContent = 'Rp ' + formatNumber(avgBetAmount);
