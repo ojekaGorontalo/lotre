@@ -7,7 +7,7 @@
   
   // Multi-group configuration
   const TELEGRAM_GROUPS = {
-    primary: "-4534430485", // Grup utama (selalu aktif)
+    primary: "-1003291560910", // Grup utama (selalu aktif)
     secondary: [
       "-1001570553211",  // Grup backup 1
     ]
@@ -2455,3 +2455,4 @@
   console.log("   wingoBot.forceSyncIssue('2026013010005253') - Paksa set issue");
   console.log("   wingoBot.testIssueFlow()  - Test alur issue");
 })();
+
