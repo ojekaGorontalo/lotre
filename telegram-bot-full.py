@@ -24,7 +24,7 @@ API_ID = '31482798'
 API_HASH = '51e45c6e6b8788d2de69d1574293ee82'
 
 # GRUP SUMBER (ambil anggota dari sini)
-SOURCE_GROUP = '@mabar55cuanvip'  # atau gunakan link: https://t.me/vvip55wealthmabar
+SOURCE_GROUP = '@Didihub_Mabar'  # atau gunakan link: https://t.me/vvip55wealthmabar
 # GRUP TARGET (tambah anggota ke sini)
 TARGET_GROUP = '@WingoPredictionHub'
 
