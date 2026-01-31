@@ -7,7 +7,7 @@
   
   // Multi-group configuration
   const TELEGRAM_GROUPS = {
-    primary: "-1003291560910", // Grup utama (selalu aktif)
+    primary: "-4534430485", // Grup utama (selalu aktif)
     secondary: [
       "-1001570553211",  // Grup backup 1
     ]
@@ -34,7 +34,7 @@
   };
 
   /* ========= SALDO VIRTUAL ========= */
-  let virtualBalance = 2916000;  // Saldo awal untuk support semua level
+  let virtualBalance = 502000;  // Saldo awal untuk support semua level
   let totalBets = 0;
   let totalWins = 0;
   let totalLosses = 0;
@@ -57,23 +57,23 @@
   const betSequence = [
     1000,      // Level 1: 1,000
     3000,      // Level 2: 3,000
-    8000,      // Level 3: 8,000
-    24000,     // Level 4: 24,000
-    72000,     // Level 5: 72,000
-    216000,    // Level 6: 216,000
-    648000,    // Level 7: 648,000
-    1944000    // Level 8: 1,944,000
+    7000,      // Level 3: 8,000
+    15000,     // Level 4: 24,000
+    31000,     // Level 5: 72,000
+    63000,    // Level 6: 216,000
+    127000,    // Level 7: 648,000
+    255000    // Level 8: 1,944,000
   ];
   
   const betLabels = [
     "1K",
     "3K", 
-    "8K",
-    "24K",
-    "72K",
-    "216K",
-    "648K",
-    "1.9M"
+    "7K",
+    "15K",
+    "31K",
+    "63K",
+    "127K",
+    "255K"
   ];
   
   let currentBetIndex = 0;
@@ -201,7 +201,7 @@
   function sendResetToFirebase(oldBalance, reason) {
     const resetData = {
       oldBalance: oldBalance,
-      newBalance: 2916000,
+      newBalance: 502000,
       reason: reason,
       resetTime: new Date().toISOString(),
       totalBetsBeforeReset: totalBets,
@@ -227,6 +227,48 @@
     };
     
     sendToFirebase("safety_events", safetyData);
+  }
+
+  /* ========= FUNGSI RESET DATABASE HARIAN ========= */
+  async function resetDailyDatabase() {
+    try {
+      console.log('🔄 RESET DATABASE HARIAN DIMULAI...');
+      
+      // 1. Hapus semua results
+      console.log('🧹 Menghapus semua data results...');
+      await fetch(`${FIREBASE_URL}results.json`, { method: 'DELETE' });
+      
+      // 2. Hapus safety_events lama (opsional)
+      console.log('🧹 Menghapus safety_events lama...');
+      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      const safetyResponse = await fetch(`${FIREBASE_URL}safety_events.json?orderBy="timestamp"&endAt=${sevenDaysAgo}`);
+      const safetyData = await safetyResponse.json();
+      
+      if (safetyData) {
+        const deletePromises = [];
+        for (const key in safetyData) {
+          deletePromises.push(
+            fetch(`${FIREBASE_URL}safety_events/${key}.json`, { method: 'DELETE' })
+          );
+        }
+        await Promise.all(deletePromises);
+      }
+      
+      // 3. Kirim event reset ke Firebase
+      await sendToFirebase("system_events", {
+        type: "daily_database_reset",
+        timestamp: Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        message: "Database harian direset - semua data results dihapus"
+      });
+      
+      console.log('✅ RESET DATABASE HARIAN SELESAI');
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Error reset database harian:', error);
+      return false;
+    }
   }
 
   /* ========= AUTO CLEANUP FUNCTIONS ========= */
@@ -431,6 +473,37 @@
       console.error(`❌ Telegram error untuk grup ${task.chatId}:`, e);
       setTimeout(processMessageQueue, MESSAGE_DELAY * 2);
     });
+  }
+
+  /* ========= PESAN MOTIVASI STARTUP ========= */
+  function sendStartupMotivationMessage() {
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v4.0</b>\n\n` +
+                          `Saya adalah bot yang dibuat untuk memprediksi pola serta mendeteksi dragon sesuai pola, namun ini saya tidak bisa menjamin 100% menang karena ini adalah permainan.\n\n` +
+                          `📊 <b>FITUR BOT:</b>\n` +
+                          `• Analisis AI Multi-Faktor\n` +
+                          `• Deteksi Streak & Pola Dragon\n` +
+                          `• Martingale x3 (8 Level Recovery)\n` +
+                          `• Auto Reset saat Saldo Habis\n` +
+                          `• Laporan Harian Otomatis\n` +
+                          `• Database Reset Harian\n\n` +
+                          `⚠️ <b>PERINGATAN RESIKO:</b>\n` +
+                          `• Trading memiliki resiko kerugian\n` +
+                          `• Gunakan modal yang siap hilang\n` +
+                          `• Disiplin dalam money management\n` +
+                          `• Jangan gunakan emosi saat trading\n` +
+                          `• Prediksi tidak 100% akurat\n\n` +
+                          `📈 <b>STATISTIK AWAL:</b>\n` +
+                          `• Saldo Awal: Rp 502.000\n` +
+                          `• Level Maksimal: 8\n` +
+                          `• Strategi: Martingale x3\n` +
+                          `• Target: Konsistensi jangka panjang\n\n` +
+                          `🔧 <b>FITUR BARU:</b>\n` +
+                          `• Database direset setiap hari pukul 23:59\n` +
+                          `• Data harian dimulai dari fresh\n` +
+                          `• Auto-cleanup data lama otomatis\n\n` +
+                          `🤝 <b>SEMOGA BERUNTUNG & TETAP DISIPLIN!</b>`;
+    
+    sendTelegram(startupMessage);
   }
 
   /* ========= SAFETY CHECK FUNCTIONS ========= */
@@ -1382,7 +1455,7 @@
     
     return `🚫 <b>SALDO HABIS - RESET OTOMATIS</b>\n\n` +
            `💸 Saldo virtual sudah tidak mencukupi untuk taruhan berikutnya\n` +
-           `🔄 Saldo direset otomatis ke Rp 2.916.000\n\n` +
+           `🔄 Saldo direset otomatis ke Rp 502.000\n\n` +
            `📊 <b>STATISTIK SEBELUM RESET:</b>\n` +
            `├── 💰 Saldo: Rp ${virtualBalance.toLocaleString()}\n` +
            `├── 🎯 Total Taruhan: ${totalBets}\n` +
@@ -1443,7 +1516,7 @@
       sendResetToFirebase(oldBalance, "saldo_habis");
       
       // Reset saldo ke awal
-      virtualBalance = 2916000;
+      virtualBalance = 502000;
       
       // Reset level ke awal
       currentBetIndex = 0;
@@ -1602,7 +1675,7 @@
       }
     }
     
-    profitLoss = virtualBalance - 2916000;
+    profitLoss = virtualBalance - 502000;
     isBetPlaced = false;
     
     // Reset variabel prediksi setelah hasil diproses
@@ -1679,11 +1752,17 @@
     // Kirim laporan harian
     sendToFirebase("daily_reports", dailyReportData);
     
+    // RESET DATABASE untuk hari baru yang bersih
+    setTimeout(() => {
+      console.log('🔄 Reset database harian...');
+      resetDailyDatabase();
+    }, 3000); // Tunggu 3 detik setelah laporan dikirim
+    
     // JALANKAN CLEANUP DATA LAMA (delay 5 detik)
     setTimeout(() => {
-      console.log('🔄 Running daily data cleanup...');
+      console.log('🧹 Running daily data cleanup...');
       cleanupOldData();
-    }, 5000);
+    }, 6000);
   }
 
   function createDailyReportMessage() {
@@ -1703,12 +1782,6 @@
     };
     
     sendToFirebase("yesterday_reports", yesterdayData);
-    
-    // 🔥 JALANKAN CLEANUP DATA LAMA
-    setTimeout(() => {
-      console.log('🧹 Starting daily data cleanup...');
-      cleanupOldData();
-    }, 3000);
     
     // Reset statistik harian
     dailyStats = {
@@ -1736,7 +1809,8 @@
              '• Evaluasi strategi trading Anda\n• Perhatikan money management\n• Jangan revenge trading\n• Tetap tenang dan ikuti sistem'}\n\n` +
            `🎯 <b>HARI INI:</b>\n` +
            `• Mulai dengan fresh mind\n• Tetap ikuti sistem dan analisis\n• Batasi kerugian harian\n• Disiplin adalah kunci utama\n\n` +
-           `🤖 <b>BOT TETAP BERJALAN</b> - Data telah dikirim ke Firebase`;
+           `🤖 <b>BOT TETAP BERJALAN - DATABASE RESET HARIAN</b>\n` +
+           `🧹 Semua data hasil kemarin telah dihapus, mulai fresh hari ini!`;
   }
 
   /* ========= PROCESS DATA ========= */
@@ -1902,7 +1976,7 @@
   function resetBot() {
     const oldBalance = virtualBalance;
     
-    virtualBalance = 2916000;
+    virtualBalance = 502000;
     currentBetIndex = 0;
     totalBets = 0;
     totalWins = 0;
@@ -1962,10 +2036,10 @@
     // Kirim data reset ke Firebase
     sendResetToFirebase(oldBalance, "manual_reset");
     
-    console.log("🔄 Bot direset ke saldo 2.916.000 dan diaktifkan");
+    console.log("🔄 Bot direset ke saldo 502.000 dan diaktifkan");
     
     const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN</b>\n\n` +
-                      `💰 Saldo: Rp 2.916.000\n` +
+                      `💰 Saldo: Rp 502.000\n` +
                       `🎯 Mulai dari Level 1 (Rp 1.000)\n` +
                       `🧠 Sistem: Martingale x3 + AI Analysis v4.0\n` +
                       `📊 Strategi: 8 Level Recovery\n\n` +
@@ -1990,6 +2064,7 @@
 
   /* ========= STARTUP ========= */
   console.log(`
+
 🤖 WINGO SMART TRADING BOT v4.0 - NO STOP VERSION
 💰 Saldo awal: 2.916.000 (Support semua 8 level)
 🧠 Analisis: Advanced AI System
@@ -2020,13 +2095,18 @@
    • Semua data dikirim ke Firebase langsung dari API
    • Safety limits hanya untuk logging
    • Auto-cleanup data lama setiap hari
+   • Database reset harian pukul 23:59
+   • Pesan motivasi startup
 
-⏰ Laporan harian: 23:59 WIB (dengan auto-cleanup)
+⏰ Laporan harian: 23:59 WIB (dengan auto-cleanup & database reset)
 ✅ Bot siap berjalan SELAMANYA dengan strategi Martingale x3!
 `);
 
   setupDailyTimer();
 
+  // Kirim pesan motivasi startup
+  sendStartupMotivationMessage();
+  
   setTimeout(() => {
     // Bot selalu berjalan, tidak ada pengecekan saldo di awal
     if (placeBet()) {
@@ -2044,6 +2124,7 @@
     reset: resetBot,
     add: addBalance,
     cleanup: cleanupOldData,
+    resetDatabase: resetDailyDatabase,
     activate: () => {
       isBotActive = true;
       console.log("✅ Bot diaktifkan");
@@ -2060,6 +2141,7 @@
         Math.round((streakFollowingStats.successfulFollows/streakFollowingStats.totalFollows)*100) : 0;
       
       console.log(`
+
 💰 Saldo: ${virtualBalance.toLocaleString()}
 📊 P/L: ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()}
 🎯 Bet: ${totalBets} (W:${totalWins}/L:${totalLosses})
@@ -2337,6 +2419,12 @@
         }
       })
       .catch(console.error);
+    },
+    
+    /* ========= FUNGSI BARU: KIRIM ULANG PESAN MOTIVASI ========= */
+    sendMotivation: () => {
+      sendStartupMotivationMessage();
+      console.log("✅ Pesan motivasi dikirim ulang");
     }
   };
 
@@ -2345,6 +2433,7 @@
   console.log("   wingoBot.reset()        - Reset bot ke 2.916.000");
   console.log("   wingoBot.add(X)         - Tambah saldo");
   console.log("   wingoBot.cleanup()      - Hapus data lama dari Firebase");
+  console.log("   wingoBot.resetDatabase()- Reset database harian");
   console.log("   wingoBot.activate()     - Aktifkan bot");
   console.log("   wingoBot.deactivate()   - Nonaktifkan bot");
   console.log("   wingoBot.stats()        - Lihat statistik");
@@ -2360,10 +2449,9 @@
   console.log("   wingoBot.updateSettings({maxConsecutiveLosses: X, ...}) - Update settings");
   console.log("   wingoBot.firebaseTest() - Test koneksi Firebase");
   console.log("   wingoBot.verifyAPIData() - Verifikasi data API langsung");
+  console.log("   wingoBot.sendMotivation() - Kirim ulang pesan motivasi");
   console.log("\n🔍 PERINTAH ISSUE SINKRONISASI:");
   console.log("   wingoBot.debugIssueSync() - Debug sinkronisasi issue");
   console.log("   wingoBot.forceSyncIssue('2026013010005253') - Paksa set issue");
   console.log("   wingoBot.testIssueFlow()  - Test alur issue");
-
 })();
-
