@@ -805,7 +805,7 @@
             previousResultsCount = allResults.length;
             
             // Load results
-            database.ref('results').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
+            database.ref('results').orderByChild('timestamp').limitToLast(200).on('value', (snapshot) => {
                 allResults = [];
                 snapshot.forEach((childSnapshot) => {
                     const data = childSnapshot.val();
