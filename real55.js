@@ -34,7 +34,7 @@
   };
 
   /* ========= SALDO VIRTUAL ========= */
-  let virtualBalance = 502000;  // Saldo awal untuk support semua level
+  let virtualBalance = 2916000;  // Saldo awal untuk support semua level
   let totalBets = 0;
   let totalWins = 0;
   let totalLosses = 0;
@@ -57,23 +57,23 @@
   const betSequence = [
     1000,      // Level 1: 1,000
     3000,      // Level 2: 3,000
-    7000,      // Level 3: 8,000
-    15000,     // Level 4: 24,000
-    31000,     // Level 5: 72,000
-    63000,    // Level 6: 216,000
-    127000,    // Level 7: 648,000
-    255000    // Level 8: 1,944,000
+    8000,      // Level 3: 8,000
+    24000,     // Level 4: 24,000
+    72000,     // Level 5: 72,000
+    216000,    // Level 6: 216,000
+    648000,    // Level 7: 648,000
+    1944000    // Level 8: 1,944,000
   ];
   
   const betLabels = [
     "1K",
     "3K", 
-    "7K",
-    "15K",
-    "31K",
-    "63K",
-    "127K",
-    "255K"
+    "8K",
+    "24K",
+    "72K",
+    "216K",
+    "648K",
+    "1.9M"
   ];
   
   let currentBetIndex = 0;
@@ -201,7 +201,7 @@
   function sendResetToFirebase(oldBalance, reason) {
     const resetData = {
       oldBalance: oldBalance,
-      newBalance: 502000,
+      newBalance: 2916000,
       reason: reason,
       resetTime: new Date().toISOString(),
       totalBetsBeforeReset: totalBets,
@@ -493,7 +493,7 @@
                           `• Jangan gunakan emosi saat trading\n` +
                           `• Prediksi tidak 100% akurat\n\n` +
                           `📈 <b>STATISTIK AWAL:</b>\n` +
-                          `• Saldo Awal: Rp 502.000\n` +
+                          `• Saldo Awal: Rp 2.916.000\n` +
                           `• Level Maksimal: 8\n` +
                           `• Strategi: Martingale x3\n` +
                           `• Target: Konsistensi jangka panjang\n\n` +
@@ -1455,7 +1455,7 @@
     
     return `🚫 <b>SALDO HABIS - RESET OTOMATIS</b>\n\n` +
            `💸 Saldo virtual sudah tidak mencukupi untuk taruhan berikutnya\n` +
-           `🔄 Saldo direset otomatis ke Rp 502.000\n\n` +
+           `🔄 Saldo direset otomatis ke Rp 2.916.000\n\n` +
            `📊 <b>STATISTIK SEBELUM RESET:</b>\n` +
            `├── 💰 Saldo: Rp ${virtualBalance.toLocaleString()}\n` +
            `├── 🎯 Total Taruhan: ${totalBets}\n` +
@@ -1516,7 +1516,7 @@
       sendResetToFirebase(oldBalance, "saldo_habis");
       
       // Reset saldo ke awal
-      virtualBalance = 502000;
+      virtualBalance = 2916000;
       
       // Reset level ke awal
       currentBetIndex = 0;
@@ -1675,7 +1675,7 @@
       }
     }
     
-    profitLoss = virtualBalance - 502000;
+    profitLoss = virtualBalance - 2916000;
     isBetPlaced = false;
     
     // Reset variabel prediksi setelah hasil diproses
@@ -1976,7 +1976,7 @@
   function resetBot() {
     const oldBalance = virtualBalance;
     
-    virtualBalance = 502000;
+    virtualBalance = 2916000;
     currentBetIndex = 0;
     totalBets = 0;
     totalWins = 0;
@@ -2036,10 +2036,10 @@
     // Kirim data reset ke Firebase
     sendResetToFirebase(oldBalance, "manual_reset");
     
-    console.log("🔄 Bot direset ke saldo 502.000 dan diaktifkan");
+    console.log("🔄 Bot direset ke saldo 2.916.000 dan diaktifkan");
     
     const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN</b>\n\n` +
-                      `💰 Saldo: Rp 502.000\n` +
+                      `💰 Saldo: Rp 2.916.000\n` +
                       `🎯 Mulai dari Level 1 (Rp 1.000)\n` +
                       `🧠 Sistem: Martingale x3 + AI Analysis v4.0\n` +
                       `📊 Strategi: 8 Level Recovery\n\n` +
