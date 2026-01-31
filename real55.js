@@ -2421,7 +2421,7 @@
       .catch(console.error);
     },
     
-    /* ========= FUNGSI BARU: KIRIM ULANG PESAN MOTIVASI ========= */
+        /* ========= FUNGSI BARU: KIRIM ULANG PESAN MOTIVASI ========= */
     sendMotivation: () => {
       sendStartupMotivationMessage();
       console.log("✅ Pesan motivasi dikirim ulang");
@@ -2431,7 +2431,7 @@
   console.log("\n🛠️ Perintah debug di console:");
   console.log("   wingoBot.check()        - Manual check data");
   console.log("   wingoBot.reset()        - Reset bot ke 2.916.000");
-  console.log("   wingoBot.add(X)         - Tambah saldo");
+  console.log("   wingoBot.add(X)         - Tambah salduo");
   console.log("   wingoBot.cleanup()      - Hapus data lama dari Firebase");
   console.log("   wingoBot.resetDatabase()- Reset database harian");
   console.log("   wingoBot.activate()     - Aktifkan bot");
@@ -2454,5 +2454,67 @@
   console.log("   wingoBot.debugIssueSync() - Debug sinkronisasi issue");
   console.log("   wingoBot.forceSyncIssue('2026013010005253') - Paksa set issue");
   console.log("   wingoBot.testIssueFlow()  - Test alur issue");
-})();
 
+  /* ========= AUTO-BET EXPOSE ========= */
+  // Expose variables untuk auto-bet
+  window.wingoBetData = {
+    // Data real-time - gunakan getter untuk nilai real-time
+    get prediction() { return currentPrediction; },
+    get amount() { return currentBetAmount; },
+    get level() { return currentBetIndex + 1; },
+    get balance() { return virtualBalance; },
+    
+    // Stats dengan getter
+    get stats() {
+      return {
+        totalBets: totalBets,
+        totalWins: totalWins,
+        totalLosses: totalLosses,
+        winRate: totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0,
+        profit: profitLoss,
+        streak: currentStreak,
+        losingStreak: losingStreak
+      };
+    },
+    
+    // Update function
+    update: function() {
+      // Getter sudah otomatis mengembalikan nilai terkini
+      return this;
+    },
+    
+    // Helper untuk auto-bet
+    getBetInfo: function() {
+      return {
+        prediction: this.prediction,
+        amount: this.amount,
+        level: this.level
+      };
+    },
+    
+    // Status bot
+    get status() {
+      return {
+        isActive: isBotActive,
+        isBetPlaced: isBetPlaced,
+        nextIssue: nextIssueNumber,
+        predictedIssue: predictedIssue
+      };
+    }
+  };
+
+  // Auto-update notifikasi setiap 30 detik (untuk debugging)
+  setInterval(() => {
+    if (window.wingoBetData) {
+      // Log hanya jika ada perubahan
+      if (window.wingoBetData.prediction !== currentPrediction) {
+        console.log("🔄 Auto-bet data updated:", window.wingoBetData.getBetInfo());
+      }
+    }
+  }, 30000);
+
+  console.log("✅ Auto-bet data exposed!");
+  console.log("📊 Access via: window.wingoBetData.getBetInfo()");
+  console.log("📊 Access via: window.wingoBetData.stats");
+  console.log("📊 Access via: window.wingoBetData.status");
+})();
