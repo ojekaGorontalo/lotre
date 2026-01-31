@@ -26,7 +26,7 @@ API_HASH = '51e45c6e6b8788d2de69d1574293ee82'
 # GRUP SUMBER (ambil anggota dari sini)
 SOURCE_GROUP = 'vvip55wealthmabar'  # atau gunakan link: https://t.me/vvip55wealthmabar
 # GRUP TARGET (tambah anggota ke sini)
-TARGET_GROUP = '@wingo130s'
+TARGET_GROUP = '@WingoPredictionHub'
 
 # ========== PENGATURAN AMAN ==========
 MAX_SCRAPE = 200          # Max anggota di-scrape dari grup sumber
