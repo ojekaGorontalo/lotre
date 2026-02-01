@@ -1,6 +1,6 @@
-/* ========= AUTO-BET WINGO v5.2 - INPUT FIX ========= */
+/* ========= AUTO-BET WINGO v5.3 - INPUT FIX FOR 1000 ========= */
 (function() {
-    console.log("🤖 AUTO-BET WINGO v5.2 - Input Fix");
+    console.log("🤖 AUTO-BET WINGO v5.3 - Input Fix for 1000");
     
     let isAutoBetActive = false;
     let autoBetInterval = null;
@@ -8,6 +8,26 @@
     let bettingWindowOpen = false;
     let lastBetTime = 0;
     
+    // ========== FUNGSI BARU: waitForElement ==========
+    function waitForElement(selector, callback, container = document, timeout = 5000) {
+        const startTime = Date.now();
+        const checkInterval = 100;
+        
+        const checkElement = () => {
+            const element = container.querySelector(selector);
+            if (element) {
+                callback(element);
+            } else if (Date.now() - startTime >= timeout) {
+                console.error(`Element ${selector} not found within ${timeout}ms`);
+                callback(null);
+            } else {
+                setTimeout(checkElement, checkInterval);
+            }
+        };
+        
+        checkElement();
+    }
+
     // Fungsi untuk memulai auto-bet
     window.startAutoBet = function() {
         if (isAutoBetActive) {
@@ -308,32 +328,20 @@
     
     // ========== FUNGSI BARU/PERBAIKAN ==========
     
-    // Konfigurasi jumlah taruhan - DIPERBAIKI
+    // Konfigurasi jumlah taruhan - DIPERBAIKI untuk 1000
     function configureBettingAmount(bottomSheet, amount) {
         console.log(`💰 Mengatur jumlah taruhan: Rp ${amount.toLocaleString()}`);
         
         // Tunggu sebentar untuk memastikan DOM siap
         setTimeout(() => {
-            // Cari input dengan berbagai cara
-            const inputSelectors = [
-                'input[type="tel"]',
-                'input[type="number"]',
-                'input[data-v-]',
-                '.van-field__control',
-                'input.van-field__control',
-                'input'
-            ];
-            
-            let input = null;
-            for (let selector of inputSelectors) {
-                input = bottomSheet.querySelector(selector);
-                if (input && input.type === 'tel' || input.type === 'number') {
-                    console.log(`✅ Input ditemukan dengan selector: ${selector}`);
-                    break;
+            // Gunakan waitForElement untuk mencari input
+            waitForElement('input[type="tel"]', (input) => {
+                if (!input) {
+                    console.log("❌ Input tidak ditemukan, gunakan metode nominal");
+                    selectNominalAmount(bottomSheet, amount);
+                    return;
                 }
-            }
-            
-            if (input) {
+                
                 console.log("🔄 Mengisi input amount...");
                 
                 // Clear input terlebih dahulu
@@ -366,10 +374,7 @@
                     console.log(`⚠️ Multiplier ${multiplier} di luar range, gunakan nominal`);
                     selectNominalAmount(bottomSheet, amount);
                 }
-            } else {
-                console.log("❌ Input tidak ditemukan, gunakan metode nominal");
-                selectNominalAmount(bottomSheet, amount);
-            }
+            }, bottomSheet, 3000);
         }, 300);
     }
     
@@ -405,6 +410,26 @@
         
         // Method 7: Simulasi keyboard input
         simulateTyping(input, value);
+        
+        // Method 8: Khusus untuk nilai 1 (taruhan 1000)
+        if (value === '1') {
+            console.log("🎯 Mengisi nilai 1 dengan metode khusus");
+            
+            // Metode tambahan untuk nilai 1
+            setTimeout(() => {
+                input.focus();
+                input.value = '1';
+                triggerInputEvent(input, '1');
+                triggerChangeEvent(input, '1');
+                
+                // Coba klik tombol plus jika ada (untuk memastikan)
+                const plusButton = input.closest('.van-popup')?.querySelector('[class*="plus"], button:contains("+")');
+                if (plusButton) {
+                    console.log("➕ Mengklik tombol plus untuk memastikan");
+                    plusButton.click();
+                }
+            }, 100);
+        }
     }
     
     // Trigger input event
@@ -479,6 +504,37 @@
     // Fallback manual input
     function manualInputFallback(bottomSheet, amount) {
         console.log("🔧 Mencoba fallback manual...");
+        
+        // Khusus untuk amount 1000
+        if (amount === 1000) {
+            console.log("🎯 Khusus untuk amount 1000");
+            const input = bottomSheet.querySelector('input[type="tel"]');
+            if (input) {
+                // Coba isi dengan metode yang lebih agresif
+                input.focus();
+                input.value = '1';
+                
+                // Trigger berbagai event
+                ['input', 'change', 'blur'].forEach(eventType => {
+                    const event = new Event(eventType, { bubbles: true });
+                    input.dispatchEvent(event);
+                });
+                
+                // Coba klik di luar input
+                setTimeout(() => {
+                    bottomSheet.click();
+                }, 100);
+                
+                setTimeout(() => {
+                    console.log(`📋 Input value setelah fallback: "${input.value}"`);
+                    if (input.value === '1') {
+                        console.log("✅ Berhasil mengisi 1 via fallback");
+                        proceedWithBetting(bottomSheet);
+                        return;
+                    }
+                }, 300);
+            }
+        }
         
         // Coba klik tombol plus/minus jika ada
         const plusButtons = bottomSheet.querySelectorAll('[class*="plus"], button:contains("+")');
@@ -823,7 +879,7 @@
     
     // Debug function
     window.debugWingoBet = function() {
-        console.log("\n🔧 DEBUG WINGO BET v5.2:");
+        console.log("\n🔧 DEBUG WINGO BET v5.3:");
         console.log("Status:", isAutoBetActive ? "🟢 AKTIF" : "🔴 NONAKTIF");
         console.log("Betting Window:", bettingWindowOpen ? "✅ TERBUKA" : "❌ TERTUTUP");
         console.log("Last Bet Time:", lastBetTime ? new Date(lastBetTime).toLocaleTimeString() : "Belum");
@@ -858,9 +914,9 @@
         }
     };
     
-    // Test input function
-    window.testInputFilling = function() {
-        console.log("🧪 Testing input filling...");
+    // Test input function - khusus untuk testing amount 1000
+    window.testInput1000 = function() {
+        console.log("🧪 Testing input 1000 (multiplier 1)...");
         
         // Coba klik tombol BESAR manual
         const btn = document.querySelector('.Betting__C-foot-b');
@@ -878,12 +934,23 @@
                         console.log("✅ Input ditemukan, type:", input.type);
                         console.log("Current value:", input.value);
                         
-                        // Coba isi
-                        input.value = '5';
-                        triggerInputEvent(input, '5');
+                        // Coba isi dengan metode khusus untuk 1
+                        input.focus();
+                        input.value = '1';
                         
-                        console.log("Set value to 5");
+                        // Trigger berbagai event
+                        ['input', 'change', 'blur'].forEach(eventType => {
+                            const event = new Event(eventType, { bubbles: true });
+                            input.dispatchEvent(event);
+                        });
+                        
+                        console.log("Set value to 1");
                         console.log("New value:", input.value);
+                        
+                        // Coba klik di luar
+                        setTimeout(() => {
+                            bottomSheet.click();
+                        }, 200);
                     } else {
                         console.log("❌ Input tidak ditemukan");
                     }
@@ -913,16 +980,16 @@
         }
     }, 3000);
     
-    console.log("✅ Auto-bet Wingo v5.2 loaded!");
+    console.log("✅ Auto-bet Wingo v5.3 loaded!");
     console.log("\n🛠️ PERINTAH:");
     console.log("   startAutoBet()        - Mulai auto-bet");
     console.log("   stopAutoBet()         - Hentikan auto-bet");
     console.log("   triggerBetWithTimer() - Manual trigger dengan cek timer");
     console.log("   debugWingoBet()       - Debug status detail");
-    console.log("   testInputFilling()    - Test input filling");
-    console.log("\n⚡ Fitur Baru v5.2:");
-    console.log("   • Multiple input filling methods");
-    console.log("   • Simulasi typing keyboard");
-    console.log("   • Fallback ke nominal/multiplier");
-    console.log("   • Better checkbox handling");
+    console.log("   testInput1000()       - Test input filling untuk 1000");
+    console.log("\n⚡ Perbaikan v5.3:");
+    console.log("   • Fix khusus untuk amount 1000 (multiplier 1)");
+    console.log("   • waitForElement untuk input yang lebih reliable");
+    console.log("   • Metode khusus untuk nilai '1'");
+    console.log("   • Fallback yang lebih agresif untuk amount 1000");
 })();
