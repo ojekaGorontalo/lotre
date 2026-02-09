@@ -1,6 +1,6 @@
 (function () {
   console.clear();
-  console.log("🤖 WinGo Smart Trading Bot - New System v6.0");
+  console.log("🤖 WinGo Smart Trading Bot - New System v6.0 (Updated Switching Order)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -92,7 +92,7 @@
 
   /* ========= VARIABEL ANALISIS BARU ========= */
   let predictionHistory = [];
-  let currentPredictionMode = 1; // 1=Jumlah, 2=Reverse, 3=Zigzag
+  let currentPredictionMode = 3; // PERUBAHAN: Mulai dari Mode 3 (ZIGZAG)
   let lastPredictionResult = null; // "WIN" atau "LOSE"
   let zigzagToggle = false;
 
@@ -254,17 +254,17 @@
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
   function sendStartupMotivationMessage() {
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.0 - SYSTEM BARU</b>\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.0 - SYSTEM BARU (ORDER UPDATE)</b>\n\n` +
                           `Sistem analisis baru menggunakan 4 angka terbaru dengan 3 rumus:\n\n` +
-                          `🧮 <b>3 RUMUS ANALISIS:</b>\n` +
-                          `1️⃣ JUMLAH 4 ANGKA → ambil digit terakhir\n` +
-                          `2️⃣ REVERSE → kebalikan dari rumus 1\n` +
-                          `3️⃣ ZIGZAG → bergantian antara 1 dan 2\n\n` +
-                          `🔄 <b>LOGIKA SWITCHING:</b>\n` +
+                          `🧮 <b>3 RUMUS ANALISIS (ORDER BARU):</b>\n` +
+                          `1️⃣ ZIGZAG → bergantian antara rumus jumlah dan reverse\n` +
+                          `2️⃣ REVERSE → kebalikan dari rumus jumlah\n` +
+                          `3️⃣ JUMLAH 4 ANGKA → ambil digit terakhir\n\n` +
+                          `🔄 <b>LOGIKA SWITCHING BARU:</b>\n` +
+                          `• Mulai dari Mode 3 (ZIGZAG)\n` +
                           `• Menang → tetap di rumus sama\n` +
                           `• Kalah → pindah ke rumus berikutnya\n` +
-                          `• Kalah lagi → pindah ke rumus ketiga\n` +
-                          `• Kalah lagi → kembali ke rumus pertama\n\n` +
+                          `• Urutan: Mode 3 → Mode 2 → Mode 1 → Mode 3 → ...\n\n` +
                           `💰 <b>SISTEM MARTINGALE 8 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
                           `2. Rp 3.000\n` +
@@ -397,7 +397,7 @@
     return predictionData ? predictionData.prediction : "KECIL"; // fallback
   }
 
-  /* ========= UPDATE MODE BERDASARKAN HASIL ========= */
+  /* ========= UPDATE MODE BERDASARKAN HASIL (ORDER BARU) ========= */
   function updatePredictionMode(isWin) {
     console.log(`🔄 UPDATE MODE: Hasil ${isWin ? 'MENANG' : 'KALAH'}, Mode sebelumnya: ${currentPredictionMode}`);
     
@@ -406,25 +406,20 @@
       lastPredictionResult = "WIN";
       console.log(`   ✅ MENANG: Tetap di Mode ${currentPredictionMode}`);
     } else {
-      // Jika kalah, ganti mode
+      // Jika kalah, ganti mode dengan ORDER BARU:
+      // Mode 3 (ZIGZAG) → 2 (REVERSE) → 1 (JUMLAH) → 3 (ZIGZAG) → ...
       lastPredictionResult = "LOSE";
       
-      // LOGIKA SWITCHING:
-      // Mode 1 → 2 → 3 → 1 → ...
-      if (currentPredictionMode === 1) {
-        currentPredictionMode = 2;
-        console.log(`   🔄 KALAH: Switch Mode 1 → 2 (REVERSE)`);
-      } else if (currentPredictionMode === 2) {
-        currentPredictionMode = 3;
-        console.log(`   🔄 KALAH: Switch Mode 2 → 3 (ZIGZAG)`);
-      } else if (currentPredictionMode === 3) {
-        currentPredictionMode = 1;
-        console.log(`   🔄 KALAH: Switch Mode 3 → 1 (JUMLAH)`);
-      }
-      
-      // Reset zigzag toggle saat masuk mode 3
       if (currentPredictionMode === 3) {
-        zigzagToggle = true; // Mulai dengan rumus jumlah
+        currentPredictionMode = 2;
+        console.log(`   🔄 KALAH: Switch Mode 3 → 2 (REVERSE)`);
+      } else if (currentPredictionMode === 2) {
+        currentPredictionMode = 1;
+        console.log(`   🔄 KALAH: Switch Mode 2 → 1 (JUMLAH)`);
+      } else if (currentPredictionMode === 1) {
+        currentPredictionMode = 3;
+        zigzagToggle = true; // Reset zigzag saat kembali ke mode 3
+        console.log(`   🔄 KALAH: Switch Mode 1 → 3 (ZIGZAG)`);
       }
     }
     
@@ -488,16 +483,16 @@
       case 3:
         return `💪 <b>TERUS SEMANGAT!</b>\n\n` +
                `📉 Meskipun sudah kalah ${losingStreak}x berturut-turut,\n` +
-               `📊 sistem switching kami akan mencari rumus yang tepat.\n\n` +
-               `🎯 <b>Tetap ikuti sistem switching rumus</b>\n` +
+               `📊 sistem switching (ORDER BARU) akan mencari rumus yang tepat.\n\n` +
+               `🎯 <b>Tetap ikuti sistem switching baru: ZIGZAG→REVERSE→JUMLAH</b>\n` +
                `💰 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})\n` +
                `💪 Kesabaran adalah kunci!`;
                
       case 5:
         return `🔥 <b>PERTAHANKAN!</b>\n\n` +
                `📊 Sudah ${losingStreak} kekalahan beruntun,\n` +
-               `📈 Tapi sistem switching rumus tetap bekerja.\n\n` +
-               `🎯 <b>Kami sudah mencoba semua 3 rumus</b>\n` +
+               `📈 Tapi sistem switching baru tetap bekerja.\n\n` +
+               `🎯 <b>Urutan switching baru: Mode ${currentPredictionMode}</b>\n` +
                `💡 Reversal biasanya terjadi setelah streak negatif panjang\n` +
                `💰 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`;
                
@@ -505,7 +500,7 @@
         return `🚀 <b>HAMPIR SAMPAI!</b>\n\n` +
                `📉 ${losingStreak} kekalahan beruntun - ini jarang terjadi!\n` +
                `📊 <b>Peluang reversal sangat tinggi sekarang</b>\n\n` +
-               `🎯 <b>Kami sangat menyarankan tetap mengikuti sistem</b>\n` +
+               `🎯 <b>Kami sangat menyarankan tetap mengikuti sistem baru</b>\n` +
                `💰 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})\n` +
                `💎 Kesempatan recovery besar di depan!`;
                
@@ -622,8 +617,8 @@
       predictedIssue = null;
       predictedAt = null;
       
-      // Reset mode prediksi
-      currentPredictionMode = 1;
+      // Reset mode prediksi (PERUBAHAN: Kembali ke Mode 3/ZIGZAG)
+      currentPredictionMode = 3;
       lastPredictionResult = null;
       zigzagToggle = false;
       predictionHistory = [];
@@ -632,7 +627,7 @@
       const outOfBalanceMessage = createOutOfBalanceMessage();
       sendTelegram(outOfBalanceMessage);
       
-      console.log(`🔄 Saldo direset ke 502.000, kembali ke Level 1, Mode 1`);
+      console.log(`🔄 Saldo direset ke 502.000, kembali ke Level 1, Mode 3 (ZIGZAG)`);
     }
     
     // Kurangi saldo untuk taruhan
@@ -1003,8 +998,8 @@
     predictedIssue = null;
     predictedAt = null;
     
-    // Reset mode prediksi
-    currentPredictionMode = 1;
+    // Reset mode prediksi (PERUBAHAN: Kembali ke Mode 3/ZIGZAG)
+    currentPredictionMode = 3;
     lastPredictionResult = null;
     zigzagToggle = false;
     predictionHistory = [];
@@ -1024,12 +1019,12 @@
     
     sendResetToFirebase(oldBalance, "manual_reset");
     
-    console.log("🔄 Bot direset ke saldo 502.000 dan diaktifkan");
+    console.log("🔄 Bot direset ke saldo 502.000 dan diaktifkan (Mulai dari Mode 3: ZIGZAG)");
     
-    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN</b>\n\n` +
+    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (ORDER BARU)</b>\n\n` +
                       `💰 Saldo: Rp 502.000\n` +
                       `🎯 Mulai dari Level 1 (Rp 1.000)\n` +
-                      `🧮 Mode: JUMLAH 4 ANGKA (Mode 1)\n` +
+                      `🧮 Mode: ZIGZAG (Mode 3) → REVERSE → JUMLAH → ZIGZAG\n` +
                       `📊 Strategi: 8 Level Recovery\n\n` +
                       `<i>Bot akan berjalan otomatis tanpa henti, reset otomatis jika saldo habis</i>`;
     sendTelegram(startupMsg);
@@ -1051,12 +1046,16 @@
 
   /* ========= STARTUP ========= */
   console.log(`
-🤖 WINGO SMART TRADING BOT v6.0 - NEW SYSTEM
+🤖 WINGO SMART TRADING BOT v6.0 - NEW SYSTEM (ORDER UPDATE)
 💰 Saldo awal: 502.000 (Support 8 level)
 🧮 Analisis: Sistem 4 Angka dengan 3 Rumus
 📊 Strategi: Martingale 8 Level Recovery
 📡 Firebase: Data dikirim ke wingo-bot-analytics
 🔒 ISSUE SINKRONISASI: AKTIF
+
+🔄 ORDER SWITCHING BARU:
+   Mulai dari: Mode 3 (ZIGZAG)
+   Urutan: Mode 3 → Mode 2 → Mode 1 → Mode 3 → ...
 
 📊 URUTAN TARUHAN BARU:
    1. Rp 1.000     (x1)
@@ -1068,16 +1067,17 @@
    7. Rp 127.000   (x127)
    8. Rp 255.000   (x255)
 
-🧮 3 RUMUS ANALISIS:
-   1. JUMLAH 4 ANGKA → ambil digit terakhir
-   2. REVERSE → kebalikan dari rumus 1
-   3. ZIGZAG → bergantian antara 1 dan 2
+🧮 3 RUMUS ANALISIS (ORDER BARU):
+   1. ZIGZAG → bergantian antara jumlah dan reverse
+   2. REVERSE → kebalikan dari rumus jumlah
+   3. JUMLAH 4 ANGKA → ambil digit terakhir
 
-🔄 LOGIKA SWITCHING:
+🔄 LOGIKA SWITCHING BARU:
+   • Mulai dari Mode 3 (ZIGZAG)
    • Menang → tetap di rumus sama
    • Kalah → pindah ke rumus berikutnya
    • Kalah lagi → pindah ke rumus ketiga
-   • Kalah lagi → kembali ke rumus pertama
+   • Kalah lagi → kembali ke rumus pertama (ZIGZAG)
 
 📨 Telegram Groups:
    • Primary Group: ${TELEGRAM_GROUPS.primary}
@@ -1088,11 +1088,11 @@
    • Sistem Analisis Baru (4 angka terbaru)
    • Saldo Awal: 502.000
    • Urutan Taruhan Baru: 8 Level
-   • 3 Rumus dengan auto-switching
+   • 3 Rumus dengan ORDER SWITCHING BARU
    • Bot TIDAK PERNAH BERHENTI otomatis
    • Reset otomatis saat saldo habis
 
-✅ Bot siap berjalan dengan sistem analisis baru!
+✅ Bot siap berjalan dengan ORDER SWITCHING BARU!
 `);
 
   setupDailyTimer();
@@ -1116,7 +1116,7 @@
     activate: () => {
       isBotActive = true;
       console.log("✅ Bot diaktifkan");
-      sendTelegram("✅ <b>BOT DIAKTIFKAN</b>\n\nSistem kembali beroperasi dengan saldo Rp " + virtualBalance.toLocaleString());
+      sendTelegram("✅ <b>BOT DIAKTIFKAN</b>\n\nSistem kembali beroperasi dengan saldo Rp " + virtualBalance.toLocaleString() + "\nMode: " + currentPredictionMode);
     },
     deactivate: () => {
       isBotActive = false;
@@ -1133,7 +1133,7 @@
 📈 Win Rate: ${winRate}%
 🔥 Streak: ${currentStreak}
 📊 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})
-🧮 Mode: ${currentPredictionMode}
+🧮 Mode: ${currentPredictionMode} (${currentPredictionMode === 1 ? 'JUMLAH' : currentPredictionMode === 2 ? 'REVERSE' : 'ZIGZAG'})
 📈 Data Historis: ${historicalData.length} periode
 ❌ Kalah Berturut: ${losingStreak}
 📅 Hari ini: ${dailyStats.bets} bet (${dailyStats.wins}W/${dailyStats.losses}L) P/L: ${dailyStats.profit >= 0 ? '+' : ''}${dailyStats.profit.toLocaleString()}
@@ -1159,11 +1159,12 @@
       };
       
       console.log(`
-🧮 MODE PREDIKSI SAAT INI:
+🧮 MODE PREDIKSI SAAT INI (ORDER BARU):
    Mode: ${currentPredictionMode} (${modeNames[currentPredictionMode]})
    Hasil Terakhir: ${lastPredictionResult || 'Belum ada'}
    Zigzag Toggle: ${zigzagToggle ? 'Rumus JUMLAH' : 'Rumus REVERSE'}
    History: ${predictionHistory.length} prediksi
+   Urutan Switching: Mode 3 → 2 → 1 → 3 → ...
    
 📊 4 ANGKA TERBARU: ${historicalData.length >= 4 ? 
       historicalData.slice(0,4).map(d => d.number).join(', ') : 'Data kurang'}
@@ -1194,8 +1195,8 @@
       }
     },
     testPrediction: () => {
-      console.log(`\n🧪 TEST PREDICTION SYSTEM:`);
-      console.log(`1. Mode Saat Ini: ${currentPredictionMode}`);
+      console.log(`\n🧪 TEST PREDICTION SYSTEM (ORDER BARU):`);
+      console.log(`1. Mode Saat Ini: ${currentPredictionMode} (${currentPredictionMode === 1 ? 'JUMLAH' : currentPredictionMode === 2 ? 'REVERSE' : 'ZIGZAG'})`);
       console.log(`2. 4 Angka Terbaru: ${historicalData.length >= 4 ? historicalData.slice(0,4).map(d => d.number).join(', ') : 'Data kurang'}`);
       console.log(`3. Final Prediction: ${getPrediction()}`);
     }
