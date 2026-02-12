@@ -70,7 +70,7 @@
 
   /* ========= SALDO VIRTUAL ========= */
 
-  let virtualBalance = 502000;  // SALDO AWAL BARU: 502.000
+  let virtualBalance = 2916000;  // SALDO AWAL BARU: 502.000
 
   let totalBets = 0;
 
@@ -111,24 +111,15 @@
   /* ========= STRATEGI MARTINGALE BARU ========= */
 
   const betSequence = [
-
-    1000,      // Level 1: 1,000
-
-    3000,      // Level 2: 3,000
-
-    7000,      // Level 3: 7,000
-
-    15000,     // Level 4: 15,000
-
-    31000,     // Level 5: 31,000
-
-    63000,     // Level 6: 63,000
-
-    127000,    // Level 7: 127,000
-
-    255000     // Level 8: 255,000 (BARU)
-
-  ];
+  1000,
+  3000,
+  8000,
+  24000,
+  72000,
+  216000,
+  648000,
+  11940000
+];
 
   
 
@@ -138,17 +129,17 @@
 
     "3K", 
 
-    "7K",
+    "8K",
 
-    "15K",
+    "24K",
 
-    "31K",
+    "72K",
 
-    "63K",
+    "216K",
 
-    "127K",
+    "648K",
 
-    "255K"
+    "1944K"
 
   ];
 
@@ -368,7 +359,7 @@
 
       oldBalance: oldBalance,
 
-      newBalance: 502000,
+      newBalance: 2916000,
 
       reason: reason,
 
@@ -1087,7 +1078,7 @@
 
       // Reset saldo ke awal (502.000)
 
-      virtualBalance = 502000;
+      virtualBalance = 2916000;
 
       
 
@@ -1429,7 +1420,7 @@
 
     
 
-    profitLoss = virtualBalance - 502000;
+    profitLoss = virtualBalance - 2916000;
 
     isBetPlaced = false;
 
@@ -1889,7 +1880,7 @@
 
     
 
-    virtualBalance = 502000;
+    virtualBalance = 2916000;
 
     currentBetIndex = 0;
 
