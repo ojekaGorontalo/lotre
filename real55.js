@@ -70,7 +70,7 @@
 
   /* ========= SALDO VIRTUAL ========= */
 
-  let virtualBalance = 2916000;  // SALDO AWAL BARU: 502.000
+  let virtualBalance = 2916000;  // SALDO AWAL BARU: 2.916.000
 
   let totalBets = 0;
 
@@ -541,19 +541,19 @@
 
                           `2. Rp 3.000\n` +
 
-                          `3. Rp 7.000\n` +
+                          `3. Rp 8.000\n` +
 
-                          `4. Rp 15.000\n` +
+                          `4. Rp 24.000\n` +
 
-                          `5. Rp 31.000\n` +
+                          `5. Rp 72.000\n` +
 
-                          `6. Rp 63.000\n` +
+                          `6. Rp 216.000\n` +
 
-                          `7. Rp 127.000\n` +
+                          `7. Rp 648.000\n` +
 
-                          `8. Rp 255.000\n\n` +
+                          `8. Rp 1.944.000\n\n` +
 
-                          `📊 Total saldo: 502.000 (cukup untuk semua level)\n` +
+                          `📊 Total saldo: 2.916.000 (cukup untuk semua level)\n` +
 
                           `🔄 Auto-reset saat saldo habis\n\n` +
 
