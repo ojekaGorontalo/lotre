@@ -20,6 +20,7 @@ bot.onText(/\/uid (.+)/, async (msg, match) => {
       bot.sendMessage(chatId, "❌ UID tidak ditemukan");
     }
   } catch (err) {
-    bot.sendMessage(chatId, "⚠️ Error Firebase");
-  }
+  console.log("🔥 Firebase Error:", err);
+  bot.sendMessage(chatId, "⚠️ Error Firebase\n" + err.message);
+}
 });
