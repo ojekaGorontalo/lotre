@@ -23,7 +23,7 @@ try {
   const serviceAccount = require('./serviceAccountKey.json');
   
   // Ganti dengan URL database Firebase Anda
-  const databaseURL = 'https://your-project-id.firebaseio.com';
+  const databaseURL = 'https://steady-fin-368617-default-rtdb.firebaseio.com/';
   
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
