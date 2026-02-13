@@ -530,7 +530,7 @@
 
                           `• Menang dalam reverse mode → TETAP dalam reverse mode\n` +
 
-                          `• Kalah 2x dalam reverse mode → KEMBALI ke mode normal\n\n` +
+                          `• Kalah dalam reverse mode → TETAP dalam reverse mode (tidak kembali normal)\n\n` +
 
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
 
@@ -729,39 +729,21 @@
   /* ========= LOGIKA REVERSE BARU ========= */
 
   function updateReverseMode(isWin) {
-
     console.log(`🔄 UPDATE REVERSE MODE: Hasil ${isWin ? 'MENANG' : 'KALAH'}, Losing Streak: ${losingStreak}`);
-    
+
     if (currentReverseMode) {
       // SAAT DALAM MODE REVERSE
       if (isWin) {
-        // Menang dalam mode reverse: TETAP dalam reverse mode
+        // Menang dalam reverse mode: TETAP dalam reverse mode
         console.log(`   ✅ MENANG dalam Reverse Mode: Tetap di Reverse Mode`);
         reverseModeWins++;
         losingStreak = 0; // Reset losing streak karena menang
       } else {
-        // Kalah dalam mode reverse
+        // Kalah dalam reverse mode: TETAP dalam reverse mode
         losingStreak++;
         reverseModeLosses++;
-        console.log(`   ❌ KALAH dalam Reverse Mode: Losing Streak = ${losingStreak}`);
-        
-        // Jika kalah 2x berturut dalam mode reverse, kembali ke mode normal
-        if (losingStreak >= 2) {
-          console.log(`   🔄 KALAH 2x dalam Reverse Mode: Kembali ke Mode Normal`);
-          currentReverseMode = false;
-          consecutiveReverseTriggers++;
-          losingStreak = 0; // Reset streak setelah kembali ke mode normal
-          
-          // Kirim notifikasi
-          const backToNormalMessage = `🔄 <b>KEMBALI KE MODE NORMAL!</b>\n\n` +
-                                    `📉 Telah kalah 2x berturut-turut dalam Reverse Mode\n` +
-                                    `🎯 Sistem kembali menggunakan prediksi normal\n` +
-                                    `💰 Siklus dimulai kembali dari awal`;
-          
-          setTimeout(() => {
-            sendTelegram(backToNormalMessage);
-          }, 1000);
-        }
+        console.log(`   ❌ KALAH dalam Reverse Mode: Losing Streak = ${losingStreak} (Tetap Reverse Mode)`);
+        // Tidak ada kondisi untuk keluar dari reverse mode
       }
     } else {
       // SAAT DALAM MODE NORMAL
@@ -773,7 +755,7 @@
         // Kalah dalam mode normal
         losingStreak++;
         console.log(`   ❌ KALAH dalam Mode Normal: Losing Streak = ${losingStreak}`);
-        
+
         // Jika kalah 3x berturut dalam mode normal, aktifkan reverse
         if (losingStreak >= 3) {
           console.log(`   🔄 KALAH 3x BERTURUT: Aktifkan Reverse Mode`);
@@ -781,20 +763,20 @@
           consecutiveReverseTriggers++;
           reverseModeWins = 0;
           reverseModeLosses = 0;
-          
+
           // Kirim notifikasi
           const reverseMessage = `🔄 <b>REVERSE MODE AKTIF!</b>\n\n` +
-                               `📉 Telah mengalami ${losingStreak} kekalahan berturut-turut\n` +
-                               `🎯 Sistem sekarang menggunakan prediksi terbalik\n` +
-                               `💰 Tetap ikuti sistem untuk recovery!`;
-          
+            `📉 Telah mengalami ${losingStreak} kekalahan berturut-turut\n` +
+            `🎯 Sistem sekarang menggunakan prediksi terbalik\n` +
+            `💰 Tetap ikuti sistem untuk recovery!`;
+
           setTimeout(() => {
             sendTelegram(reverseMessage);
           }, 1000);
         }
       }
     }
-    
+
     console.log(`   Mode Sekarang: ${currentReverseMode ? 'REVERSE' : 'NORMAL'}`);
     console.log(`   Reverse Stats: ${reverseModeWins}W / ${reverseModeLosses}L`);
   }
@@ -2023,7 +2005,7 @@
 
    Menang dalam reverse → TETAP dalam reverse
 
-   Kalah 2x dalam reverse → KEMBALI ke mode normal
+   Kalah dalam reverse → TETAP dalam reverse (tidak kembali normal)
 
 
 
@@ -2063,7 +2045,7 @@
 
    • Menang dalam reverse → tetap reverse
 
-   • Kalah 2x dalam reverse → kembali normal
+   • Kalah dalam reverse → tetap reverse (tidak kembali normal)
 
    • Saldo Awal: 247.000
 
