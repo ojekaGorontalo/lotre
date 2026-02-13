@@ -2,7 +2,7 @@
 
   console.clear();
 
-  console.log("🤖 WinGo Smart Trading Bot - New System v6.0 (Updated Formula)");
+  console.log("🤖 WinGo Smart Trading Bot - New System v6.1 (Updated Formula)");
 
 
 
@@ -62,7 +62,7 @@
 
     profitTarget: 1000000,
 
-    maxBetLevel: 8
+    maxBetLevel: 7        // Diubah dari 8 menjadi 7
 
   };
 
@@ -70,7 +70,7 @@
 
   /* ========= SALDO VIRTUAL ========= */
 
-  let virtualBalance = 2916000;  // SALDO AWAL BARU: 2.916.000
+  let virtualBalance = 247000;  // SALDO AWAL BARU: 247.000
 
   let totalBets = 0;
 
@@ -111,15 +111,14 @@
   /* ========= STRATEGI MARTINGALE BARU ========= */
 
   const betSequence = [
-  1000,
-  3000,
-  8000,
-  24000,
-  72000,
-  216000,
-  648000,
-  11940000
-];
+    1000,
+    3000,
+    7000,
+    15000,
+    31000,
+    63000,
+    127000
+  ];
 
   
 
@@ -129,17 +128,15 @@
 
     "3K", 
 
-    "8K",
+    "7K",
 
-    "24K",
+    "15K",
 
-    "72K",
+    "31K",
 
-    "216K",
+    "63K",
 
-    "648K",
-
-    "1944K"
+    "127K"
 
   ];
 
@@ -175,7 +172,7 @@
 
   /* ========= VARIABEL ANALISIS BARU ========= */
 
-  let currentReverseMode = false; // Mode reverse setelah 2x kalah
+  let currentReverseMode = false; // Mode reverse setelah 3x kalah
 
   let consecutiveReverseTriggers = 0; // Hitung berapa kali trigger reverse
 
@@ -359,7 +356,7 @@
 
       oldBalance: oldBalance,
 
-      newBalance: 2916000,
+      newBalance: 247000,
 
       reason: reason,
 
@@ -511,7 +508,7 @@
 
   function sendStartupMotivationMessage() {
 
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.0 - SYSTEM FORMULA BARU</b>\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.1 - SYSTEM FORMULA BARU</b>\n\n` +
 
                           `Sistem analisis menggunakan rumus baru:\n\n` +
 
@@ -527,7 +524,7 @@
 
                           `🔄 <b>SISTEM REVERSE TERBARU:</b>\n` +
 
-                          `• Jika kalah 2x berturut-turut → AKTIFKAN REVERSE\n` +
+                          `• Jika kalah 3x berturut-turut → AKTIFKAN REVERSE\n` +
 
                           `• Reverse: KECIL jadi BESAR, BESAR jadi KECIL\n` +
 
@@ -535,25 +532,23 @@
 
                           `• Kalah 2x dalam reverse mode → KEMBALI ke mode normal\n\n` +
 
-                          `💰 <b>SISTEM MARTINGALE 8 LEVEL:</b>\n` +
+                          `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
 
                           `1. Rp 1.000\n` +
 
                           `2. Rp 3.000\n` +
 
-                          `3. Rp 8.000\n` +
+                          `3. Rp 7.000\n` +
 
-                          `4. Rp 24.000\n` +
+                          `4. Rp 15.000\n` +
 
-                          `5. Rp 72.000\n` +
+                          `5. Rp 31.000\n` +
 
-                          `6. Rp 216.000\n` +
+                          `6. Rp 63.000\n` +
 
-                          `7. Rp 648.000\n` +
+                          `7. Rp 127.000\n\n` +
 
-                          `8. Rp 1.944.000\n\n` +
-
-                          `📊 Total saldo: 2.916.000 (cukup untuk semua level)\n` +
+                          `📊 Total saldo: 247.000 (cukup untuk semua level)\n` +
 
                           `🔄 Auto-reset saat saldo habis\n\n` +
 
@@ -779,9 +774,9 @@
         losingStreak++;
         console.log(`   ❌ KALAH dalam Mode Normal: Losing Streak = ${losingStreak}`);
         
-        // Jika kalah 2x berturut dalam mode normal, aktifkan reverse
-        if (losingStreak >= 2) {
-          console.log(`   🔄 KALAH 2x BERTURUT: Aktifkan Reverse Mode`);
+        // Jika kalah 3x berturut dalam mode normal, aktifkan reverse
+        if (losingStreak >= 3) {
+          console.log(`   🔄 KALAH 3x BERTURUT: Aktifkan Reverse Mode`);
           currentReverseMode = true;
           consecutiveReverseTriggers++;
           reverseModeWins = 0;
@@ -818,7 +813,7 @@
 
                `📉 Meskipun sudah kalah ${losingStreak}x berturut-turut,\n` +
 
-               `🔄 sistem reverse akan segera aktif jika mencapai 2x kalah.\n\n` +
+               `🔄 sistem reverse akan segera aktif jika mencapai 3x kalah.\n\n` +
 
                `🎯 <b>Tetap ikuti sistem martingale</b>\n` +
 
@@ -836,7 +831,7 @@
 
                `🔄 Reverse mode: ${currentReverseMode ? 'AKTIF' : 'NONAKTIF'}\n\n` +
 
-               `🎯 <b>Reverse biasanya aktif setelah 2x kalah berturut</b>\n` +
+               `🎯 <b>Reverse biasanya aktif setelah 3x kalah berturut</b>\n` +
 
                `💰 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`;
 
@@ -890,7 +885,7 @@
 
            `2️⃣ Sabar menunggu reversal adalah kunci\n` +
 
-           `3️⃣ Reverse mode membantu recovery setelah 2x kalah\n` +
+           `3️⃣ Reverse mode membantu recovery setelah 3x kalah\n` +
 
            `4️⃣ Trust the process, trust the system\n\n` +
 
@@ -922,7 +917,7 @@
 
            `❤️ <b>TERIMA KASIH ATAS KEPERCAYAANNYA!</b>\n` +
 
-           `Untuk yang merasa terbantu & mau support keberlanjutan prediksi ini:\n\n` +
+           `Untuk yang merasa terbantu & mau support keberlangsungan prediksi ini:\n\n` +
 
            `💰 <b>DANA: 082311640444</b>\n\n` +
 
@@ -950,7 +945,7 @@
 
            `💸 Saldo virtual sudah tidak mencukupi untuk taruhan berikutnya\n` +
 
-           `🔄 Saldo direset otomatis ke Rp 502.000\n\n` +
+           `🔄 Saldo direset otomatis ke Rp 247.000\n\n` +
 
            `📊 <b>STATISTIK SEBELUM RESET:</b>\n` +
 
@@ -984,7 +979,7 @@
 
     
 
-    let message = `<b>WINGO 30s SALDO AWAL 502.000</b>\n`;
+    let message = `<b>WINGO 30s SALDO AWAL 247.000</b>\n`;
 
     message += `<b>🆔 PERIODE ${nextIssueShort}</b>\n`;
 
@@ -1003,26 +998,6 @@
     message += `<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n`;
 
     message += `<b>📈 P/L: ${profitLoss >= 0 ? '🟢' : '🔴'} ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()}</b>\n\n`;
-
-    
-
-    // Tambahkan info rumus jika ada data cukup
-
-    if (historicalData.length >= 5) {
-
-      const firstNum = historicalData[0].number;
-
-      const fifthIssueLast = historicalData[4].issue.slice(-1);
-
-      const sum = firstNum + parseInt(fifthIssueLast);
-
-      const lastDigit = sum % 10;
-
-      
-
-      message += `🧮 <b>RUMUS: ${firstNum} + ${fifthIssueLast} = ${sum} → ${lastDigit} (${lastDigit <= 4 ? 'KECIL' : 'BESAR'})</b>\n`;
-
-    }
 
     
 
@@ -1076,9 +1051,9 @@
 
       
 
-      // Reset saldo ke awal (502.000)
+      // Reset saldo ke awal (247.000)
 
-      virtualBalance = 2916000;
+      virtualBalance = 247000;
 
       
 
@@ -1140,7 +1115,7 @@
 
       
 
-      console.log(`🔄 Saldo direset ke 502.000, kembali ke Level 1`);
+      console.log(`🔄 Saldo direset ke 247.000, kembali ke Level 1`);
 
     }
 
@@ -1420,7 +1395,7 @@
 
     
 
-    profitLoss = virtualBalance - 2916000;
+    profitLoss = virtualBalance - 247000;
 
     isBetPlaced = false;
 
@@ -1752,7 +1727,7 @@
 
   window.fetch = function(...args) {
 
-    return originalFetch.apply(this, args).then(response => {
+    return originalFetch.apply(this, arguments).then(response => {
 
       const responseClone = response.clone();
 
@@ -1880,7 +1855,7 @@
 
     
 
-    virtualBalance = 2916000;
+    virtualBalance = 247000;
 
     currentBetIndex = 0;
 
@@ -1958,21 +1933,21 @@
 
     
 
-    console.log("🔄 Bot direset ke saldo 502.000 dan diaktifkan");
+    console.log("🔄 Bot direset ke saldo 247.000 dan diaktifkan");
 
     
 
     const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (FORMULA BARU)</b>\n\n` +
 
-                      `💰 Saldo: Rp 502.000\n` +
+                      `💰 Saldo: Rp 247.000\n` +
 
                       `🎯 Mulai dari Level 1 (Rp 1.000)\n` +
 
                       `🧮 Rumus: Angka pertama + digit terakhir issue ke-5\n` +
 
-                      `🔄 Reverse: Aktif setelah 2x kalah berturut\n` +
+                      `🔄 Reverse: Aktif setelah 3x kalah berturut\n` +
 
-                      `📊 Strategi: 8 Level Recovery\n\n` +
+                      `📊 Strategi: 7 Level Recovery\n\n` +
 
                       `<i>Bot akan berjalan otomatis tanpa henti, reset otomatis jika saldo habis</i>`;
 
@@ -2014,13 +1989,13 @@
 
   console.log(`
 
-🤖 WINGO SMART TRADING BOT v6.0 - NEW FORMULA SYSTEM
+🤖 WINGO SMART TRADING BOT v6.1 - NEW FORMULA SYSTEM
 
-💰 Saldo awal: 502.000 (Support 8 level)
+💰 Saldo awal: 247.000 (Support 7 level)
 
 🧮 Analisis: Rumus Baru (Angka pertama + digit terakhir issue ke-5)
 
-📊 Strategi: Martingale 8 Level dengan Reverse Mode
+📊 Strategi: Martingale 7 Level dengan Reverse Mode
 
 📡 Firebase: Data dikirim ke wingo-bot-analytics
 
@@ -2042,7 +2017,7 @@
 
 🔄 SISTEM REVERSE TERBARU:
 
-   Kalah 2x berturut → AKTIFKAN REVERSE
+   Kalah 3x berturut → AKTIFKAN REVERSE
 
    Reverse: KECIL ↔ BESAR (terbalik)
 
@@ -2068,8 +2043,6 @@
 
    7. Rp 127.000   (x127)
 
-   8. Rp 255.000   (x255)
-
 
 
 📨 Telegram Groups:
@@ -2086,15 +2059,15 @@
 
    • Rumus Analisis Baru
 
-   • Reverse Mode setelah 2x kalah
+   • Reverse Mode setelah 3x kalah
 
    • Menang dalam reverse → tetap reverse
 
    • Kalah 2x dalam reverse → kembali normal
 
-   • Saldo Awal: 502.000
+   • Saldo Awal: 247.000
 
-   • 8 Level Martingale
+   • 7 Level Martingale
 
    • Bot TIDAK PERNAH BERHENTI otomatis
 
