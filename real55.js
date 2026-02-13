@@ -62,7 +62,7 @@
 
     profitTarget: 1000000,
 
-    maxBetLevel: 7        // Diubah dari 8 menjadi 7
+    maxBetLevel: 7
 
   };
 
@@ -70,7 +70,7 @@
 
   /* ========= SALDO VIRTUAL ========= */
 
-  let virtualBalance = 247000;  // SALDO AWAL BARU: 247.000
+  let virtualBalance = 247000;  // SALDO AWAL: 247.000
 
   let totalBets = 0;
 
@@ -108,7 +108,7 @@
 
 
 
-  /* ========= STRATEGI MARTINGALE BARU ========= */
+  /* ========= STRATEGI MARTINGALE ========= */
 
   const betSequence = [
     1000,
@@ -170,11 +170,11 @@
 
 
 
-  /* ========= VARIABEL ANALISIS BARU ========= */
+  /* ========= VARIABEL REVERSE MODE ========= */
 
   let currentReverseMode = false; // Mode reverse setelah 3x kalah
 
-  let consecutiveReverseTriggers = 0; // Hitung berapa kali trigger reverse
+  let consecutiveReverseTriggers = 0;
 
   let reverseModeWins = 0;
 
@@ -206,11 +206,7 @@
 
         method: 'POST',
 
-        headers: {
-
-          'Content-Type': 'application/json',
-
-        },
+        headers: { 'Content-Type': 'application/json' },
 
         body: JSON.stringify(dataWithTimestamp)
 
@@ -327,8 +323,6 @@
     
 
     console.log(`📤 Mengirim ke Firebase: Issue ${apiResultData.issueNumber}, Angka ${apiResultData.number}`);
-
-    
 
     console.log(`🔍 VERIFIKASI DATA API:`);
 
@@ -578,15 +572,11 @@
 
     try {
 
-      // Ambil angka pertama (data terbaru)
-
       const firstNumber = parseInt(historicalData[0].number);
 
       console.log(`🔢 Angka pertama (terbaru): ${firstNumber}`);
 
       
-
-      // Ambil issue ke-5 dan digit terakhirnya
 
       const fifthIssue = historicalData[4].issue;
 
@@ -595,8 +585,6 @@
       console.log(`🔢 Issue ke-5: ${fifthIssue} → digit terakhir: ${lastDigit}`);
 
       
-
-      // Hitung jumlah
 
       const sum = firstNumber + lastDigit;
 
@@ -608,8 +596,6 @@
 
       
 
-      // Tentukan prediksi dasar
-
       let basePrediction = (lastDigitSum <= 4) ? "KECIL" : "BESAR";
 
       
@@ -617,8 +603,6 @@
       console.log(`🔢 Prediksi dasar: ${basePrediction} (${lastDigitSum} = ${lastDigitSum <= 4 ? '0-4: KECIL' : '5-9: BESAR'})`);
 
       
-
-      // Jika dalam mode reverse, balikkan prediksi
 
       if (currentReverseMode) {
 
@@ -646,15 +630,9 @@
 
 
 
-  /* ========= FUNGSI getPrediction() YANG BARU ========= */
-
   function getPrediction() {
 
-    // Gunakan rumus baru
-
     const prediction = calculateNewPrediction();
-
-    
 
     console.log(`🎯 FINAL PREDIKSI: ${prediction}`);
 
@@ -662,15 +640,11 @@
 
     console.log(`   Losing Streak: ${losingStreak}`);
 
-    
-
     return prediction;
 
   }
 
 
-
-  /* ========= FUNGSI analyzeTrendData ========= */
 
   function analyzeTrendData(listData) {
 
@@ -698,23 +672,15 @@
 
     
 
-    // Simpan maksimal 20 data terbaru
-
     historicalData = [...results, ...historicalData].slice(0, 20);
 
     
-
-    // Tampilkan info data terbaru
 
     if (historicalData.length >= 5) {
 
       const recentNumbers = historicalData.slice(0, 5).map(d => d.number);
 
       console.log(`📊 5 DATA TERBARU: ${recentNumbers.join(', ')}`);
-
-      
-
-      // Tampilkan issue untuk debugging
 
       console.log(`📋 Issue ke-1: ${historicalData[0].issue} → angka: ${historicalData[0].number}`);
 
@@ -734,29 +700,23 @@
     if (currentReverseMode) {
       // SAAT DALAM MODE REVERSE
       if (isWin) {
-        // Menang dalam reverse mode: TETAP dalam reverse mode
         console.log(`   ✅ MENANG dalam Reverse Mode: Tetap di Reverse Mode`);
         reverseModeWins++;
-        losingStreak = 0; // Reset losing streak karena menang
+        losingStreak = 0;
       } else {
-        // Kalah dalam reverse mode: TETAP dalam reverse mode
         losingStreak++;
         reverseModeLosses++;
         console.log(`   ❌ KALAH dalam Reverse Mode: Losing Streak = ${losingStreak} (Tetap Reverse Mode)`);
-        // Tidak ada kondisi untuk keluar dari reverse mode
       }
     } else {
       // SAAT DALAM MODE NORMAL
       if (isWin) {
-        // Menang dalam mode normal: reset streak
         losingStreak = 0;
         console.log(`   ✅ MENANG dalam Mode Normal`);
       } else {
-        // Kalah dalam mode normal
         losingStreak++;
         console.log(`   ❌ KALAH dalam Mode Normal: Losing Streak = ${losingStreak}`);
 
-        // Jika kalah 3x berturut dalam mode normal, aktifkan reverse
         if (losingStreak >= 3) {
           console.log(`   🔄 KALAH 3x BERTURUT: Aktifkan Reverse Mode`);
           currentReverseMode = true;
@@ -764,15 +724,12 @@
           reverseModeWins = 0;
           reverseModeLosses = 0;
 
-          // Kirim notifikasi
           const reverseMessage = `🔄 <b>REVERSE MODE AKTIF!</b>\n\n` +
             `📉 Telah mengalami ${losingStreak} kekalahan berturut-turut\n` +
             `🎯 Sistem sekarang menggunakan prediksi terbalik\n` +
             `💰 Tetap ikuti sistem untuk recovery!`;
 
-          setTimeout(() => {
-            sendTelegram(reverseMessage);
-          }, 1000);
+          setTimeout(() => sendTelegram(reverseMessage), 1000);
         }
       }
     }
@@ -983,8 +940,6 @@
 
     
 
-    // Tambahkan info reverse stats jika dalam mode reverse
-
     if (currentReverseMode) {
 
       message += `🔄 <b>REVERSE STATS: ${reverseModeWins}W / ${reverseModeLosses}L</b>\n`;
@@ -1019,35 +974,21 @@
 
     
 
-    // Cek jika saldo tidak cukup untuk taruhan saat ini
-
     if (virtualBalance < currentBetAmount) {
 
       console.log("❌ Saldo tidak cukup, reset ke saldo awal...");
 
       const oldBalance = virtualBalance;
 
-      
-
       sendResetToFirebase(oldBalance, "saldo_habis");
 
       
 
-      // Reset saldo ke awal (247.000)
-
       virtualBalance = 247000;
-
-      
-
-      // Reset level ke awal
 
       currentBetIndex = 0;
 
       currentBetAmount = betSequence[0];
-
-      
-
-      // Reset beberapa statistik
 
       totalBets = 0;
 
@@ -1069,17 +1010,9 @@
 
       reverseModeLosses = 0;
 
-      
-
-      // Reset issue prediksi
-
       predictedIssue = null;
 
       predictedAt = null;
-
-      
-
-      // Reset data historis
 
       historicalData = [];
 
@@ -1089,21 +1022,15 @@
 
       
 
-      // Kirim notifikasi ke Telegram
-
       const outOfBalanceMessage = createOutOfBalanceMessage();
 
       sendTelegram(outOfBalanceMessage);
-
-      
 
       console.log(`🔄 Saldo direset ke 247.000, kembali ke Level 1`);
 
     }
 
     
-
-    // Kurangi saldo untuk taruhan
 
     virtualBalance -= currentBetAmount;
 
@@ -1119,17 +1046,11 @@
 
     currentPrediction = getPrediction();
 
-    
-
-    // Simpan timestamp prediksi
-
     predictedAt = new Date();
 
     
 
     console.log(`🎯 Prediksi dibuat: ${currentPrediction} (Reverse: ${currentReverseMode})`);
-
-    
 
     return true;
 
@@ -1144,10 +1065,6 @@
     
 
     const isWin = currentPrediction === result;
-
-    
-
-    const issueToSave = predictedIssue || apiData.issueNumber;
 
     
 
@@ -1181,8 +1098,6 @@
 
       lastMotivationSentAtLoss = 0;
 
-      
-
       dailyStats.wins++;
 
       dailyStats.profit += (currentBetAmount * 2);
@@ -1195,8 +1110,6 @@
 
       const winningBetAmount = currentBetAmount;
 
-      
-
       sendResultToFirebase(apiData, currentPrediction, true);
 
       
@@ -1207,35 +1120,13 @@
 
       
 
-      // Reset level hanya jika dalam mode normal DAN streak kalah sudah teratasi
+      // SETELAH MENANG, RESET LEVEL KE 1 (TANPA MEMPEDULIKAN MODE)
 
-      if (!currentReverseMode && losingStreak === 0) {
+      currentBetIndex = 0;
 
-        currentBetIndex = 0;
+      currentBetAmount = betSequence[0];
 
-        currentBetAmount = betSequence[0];
-
-        console.log(`   ✅ Reset ke Level 1 (menang dalam mode normal, streak teratasi)`);
-
-      } else if (currentReverseMode) {
-
-        // Dalam mode reverse, turun 1 level jika memungkinkan
-
-        if (currentBetIndex > 0) {
-
-          currentBetIndex--;
-
-          currentBetAmount = betSequence[currentBetIndex];
-
-          console.log(`   🔽 Turun ke Level ${currentBetIndex + 1} (menang dalam mode reverse)`);
-
-        } else {
-
-          console.log(`   📍 Tetap di Level 1 (sudah level terendah)`);
-
-        }
-
-      }
+      console.log(`   ✅ Reset ke Level 1 setelah menang`);
 
       
 
@@ -1289,8 +1180,6 @@
 
       currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
 
-      
-
       dailyStats.losses++;
 
       
@@ -1315,7 +1204,7 @@
 
       
 
-      // Naikkan level setelah kalah (baik mode normal maupun reverse)
+      // NAIKKAN LEVEL SETELAH KALAH
 
       if (currentBetIndex < betSequence.length - 1) {
 
@@ -1380,10 +1269,6 @@
     profitLoss = virtualBalance - 247000;
 
     isBetPlaced = false;
-
-    
-
-    // Reset variabel prediksi setelah hasil diproses
 
     predictedIssue = null;
 
@@ -1865,15 +1750,9 @@
 
     lastDonationMessageAtWin = 0;
 
-    
-
     predictedIssue = null;
 
     predictedAt = null;
-
-    
-
-    // Reset reverse mode
 
     currentReverseMode = false;
 
@@ -1883,13 +1762,9 @@
 
     reverseModeLosses = 0;
 
-    
-
     messageQueue = [];
 
     isSendingMessage = false;
-
-    
 
     dailyStats = {
 
@@ -1905,15 +1780,11 @@
 
     };
 
-    
-
     isBotActive = true;
 
     
 
     sendResetToFirebase(oldBalance, "manual_reset");
-
-    
 
     console.log("🔄 Bot direset ke saldo 247.000 dan diaktifkan");
 
