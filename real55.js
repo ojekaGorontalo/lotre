@@ -213,7 +213,7 @@
   }
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
-  // function sendStartupMotivationMessage() {
+  function sendStartupMotivationMessage() {
     const startupMessage =
       `🤖 <b>WINGO SMART TRADING BOT v6.3 - MODE BERGANTIAN</b>\n\n` +
       `Sistem menggunakan rumus angka pertama + digit terakhir issue ke-5, ` +
@@ -954,4 +954,3 @@
   console.log("📊 Access via: window.wingoBetData.stats");
   console.log("📊 Access via: window.wingoBetData.status");
 })();
-
