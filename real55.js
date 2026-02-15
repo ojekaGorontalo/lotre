@@ -2,7 +2,7 @@
 
   console.clear();
 
-  console.log("🤖 WinGo Smart Trading Bot - New System v6.1 (Updated Formula)");
+  console.log("🤖 WinGo Smart Trading Bot - System v6.2 (Tanpa Reverse Mode)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -42,7 +42,6 @@
   let totalLosses = 0;
   let currentStreak = 0;
   let profitLoss = 0;
-  let losingStreak = 0;
 
   let lastMotivationSentAtLoss = 0;
   let lastDonationMessageAtWin = 0;
@@ -90,12 +89,6 @@
   /* ========= VARIABEL HISTORIS ========= */
   let historicalData = [];
 
-  /* ========= VARIABEL REVERSE MODE ========= */
-  let currentReverseMode = false; // Mode reverse setelah 3x kalah
-  let consecutiveReverseTriggers = 0;
-  let reverseModeWins = 0;
-  let reverseModeLosses = 0;
-
   /* ========= FIREBASE FUNCTIONS ========= */
   async function sendToFirebase(path, data) {
     try {
@@ -141,16 +134,12 @@
       totalWins: totalWins,
       totalLosses: totalLosses,
       currentStreak: currentStreak,
-      losingStreak: losingStreak,
+      losingStreak: 0, // Tidak digunakan lagi
       dailyBets: dailyStats.bets,
       dailyWins: dailyStats.wins,
       dailyLosses: dailyStats.losses,
       dailyProfit: dailyStats.profit,
       timestamp: new Date().toISOString(),
-      reverseMode: currentReverseMode,
-      reverseTriggers: consecutiveReverseTriggers,
-      reverseModeWins: reverseModeWins,
-      reverseModeLosses: reverseModeLosses,
       debugging: {
         lastProcessedIssue: lastProcessedIssue,
         nextIssueNumber: nextIssueNumber,
@@ -172,7 +161,6 @@
     console.log(`   - Angka: ${apiResultData.number} → ${resultData.result}`);
     console.log(`   - Warna: ${apiResultData.colour}`);
     console.log(`   - Premium: ${apiResultData.premium}`);
-    console.log(`   - Reverse Mode: ${currentReverseMode}`);
 
     sendToFirebase("results", resultData);
   }
@@ -200,7 +188,6 @@
       details: details,
       timestamp: new Date().toISOString(),
       virtualBalance: virtualBalance,
-      losingStreak: losingStreak,
       dailyProfit: dailyStats.profit,
       currentBetLevel: currentBetIndex + 1
     };
@@ -256,18 +243,14 @@
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
   function sendStartupMotivationMessage() {
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.1 - SYSTEM FORMULA BARU</b>\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.2 - TANPA REVERSE MODE</b>\n\n` +
                           `Sistem analisis menggunakan rumus baru:\n\n` +
-                          `🧮 <b>RUMUS ANALISIS BARU:</b>\n` +
-                          `1. Ambil angka pertama dari data terbaru\n` +
+                          `🧮 <b>RUMUS ANALISIS:</b>\n` +
+                          `1. Ambil 3 angka terakhir, jumlahkan, ambil digit terakhir\n` +
                           `2. Ambil digit terakhir dari issue ke-5\n` +
-                          `3. Jumlahkan kedua angka tersebut\n` +
-                          `4. Hasil 0-4: KECIL, 5-9: BESAR\n\n` +
-                          `🔄 <b>SISTEM REVERSE TERBARU:</b>\n` +
-                          `• Jika kalah 3x berturut-turut → AKTIFKAN REVERSE\n` +
-                          `• Reverse: KECIL jadi BESAR, BESAR jadi KECIL\n` +
-                          `• Menang dalam reverse mode → TETAP dalam reverse mode\n` +
-                          `• Kalah dalam reverse mode → TETAP dalam reverse mode (tidak kembali normal)\n\n` +
+                          `3. Hitung (2×sumLast3 + digitIssue5) mod 10\n` +
+                          `4. Jika 2 hasil terakhir sama, tambahkan 5 (bias ke lawan)\n` +
+                          `5. Hasil 0-4: KECIL, 5-9: BESAR\n\n` +
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
                           `2. Rp 3.000\n` +
@@ -283,8 +266,8 @@
     sendTelegram(startupMessage);
   }
 
-  /* ========= ANALISIS RUMUS BARU ========= */
-  function calculateNewPrediction() {
+  /* ========= ANALISIS RUMUS ========= */
+  function calculatePrediction() {
     if (historicalData.length < 5) {
       console.log("⚠️ Data kurang dari 5, pakai default");
       return "KECIL";
@@ -293,10 +276,8 @@
     try {
       // Data terbaru adalah index 0
       const lastNumber = historicalData[0].number;
-      const lastResult = historicalData[0].result; // "KECIL" or "BESAR"
       const secondLast = historicalData[1]?.number || 0;
       const thirdLast = historicalData[2]?.number || 0;
-      const fourthLast = historicalData[3]?.number || 0;
       const fifthIssue = historicalData[4].issue;
       const fifthLastDigit = parseInt(fifthIssue.slice(-1));
 
@@ -324,17 +305,10 @@
       let finalDigit = (weighted + streakFactor) % 10;
       console.log(`   Final digit setelah streak factor: ${finalDigit}`);
 
-      let basePrediction = (finalDigit <= 4) ? "KECIL" : "BESAR";
-      console.log(`   Prediksi dasar: ${basePrediction}`);
+      let prediction = (finalDigit <= 4) ? "KECIL" : "BESAR";
+      console.log(`   Prediksi akhir: ${prediction}`);
 
-      // Reverse mode handling
-      if (currentReverseMode) {
-        const reversed = basePrediction === "KECIL" ? "BESAR" : "KECIL";
-        console.log(`🔄 REVERSE MODE: ${basePrediction} → ${reversed}`);
-        return reversed;
-      }
-
-      return basePrediction;
+      return prediction;
     } catch (error) {
       console.error("❌ Error dalam perhitungan:", error);
       return "KECIL";
@@ -342,10 +316,8 @@
   }
 
   function getPrediction() {
-    const prediction = calculateNewPrediction();
+    const prediction = calculatePrediction();
     console.log(`🎯 FINAL PREDIKSI: ${prediction}`);
-    console.log(`   Reverse Mode: ${currentReverseMode}`);
-    console.log(`   Losing Streak: ${losingStreak}`);
     return prediction;
   }
 
@@ -372,95 +344,20 @@
     }
   }
 
-  /* ========= LOGIKA REVERSE BARU ========= */
-  function updateReverseMode(isWin) {
-    console.log(`🔄 UPDATE REVERSE MODE: Hasil ${isWin ? 'MENANG' : 'KALAH'}, Losing Streak: ${losingStreak}`);
-
-    if (currentReverseMode) {
-      // SAAT DALAM MODE REVERSE
-      if (isWin) {
-        console.log(`   ✅ MENANG dalam Reverse Mode: Tetap di Reverse Mode`);
-        reverseModeWins++;
-        losingStreak = 0;
-      } else {
-        losingStreak++;
-        reverseModeLosses++;
-        console.log(`   ❌ KALAH dalam Reverse Mode: Losing Streak = ${losingStreak} (Tetap Reverse Mode)`);
-      }
-    } else {
-      // SAAT DALAM MODE NORMAL
-      if (isWin) {
-        losingStreak = 0;
-        console.log(`   ✅ MENANG dalam Mode Normal`);
-      } else {
-        losingStreak++;
-        console.log(`   ❌ KALAH dalam Mode Normal: Losing Streak = ${losingStreak}`);
-
-        if (losingStreak >= 3) {
-          console.log(`   🔄 KALAH 3x BERTURUT: Aktifkan Reverse Mode`);
-          currentReverseMode = true;
-          consecutiveReverseTriggers++;
-          reverseModeWins = 0;
-          reverseModeLosses = 0;
-
-          const reverseMessage = `🔄 <b>REVERSE MODE AKTIF!</b>\n\n` +
-            `📉 Telah mengalami ${losingStreak} kekalahan berturut-turut\n` +
-            `🎯 Sistem sekarang menggunakan prediksi terbalik\n` +
-            `💰 Tetap ikuti sistem untuk recovery!`;
-
-          setTimeout(() => sendTelegram(reverseMessage), 1000);
-        }
-      }
-    }
-
-    console.log(`   Mode Sekarang: ${currentReverseMode ? 'REVERSE' : 'NORMAL'}`);
-    console.log(`   Reverse Stats: ${reverseModeWins}W / ${reverseModeLosses}L`);
-  }
-
   /* ========= FUNGSI PESAN ========= */
   function createMotivationMessage(lossCount) {
-    switch(lossCount) {
-      case 3:
-        return `💪 <b>TERUS SEMANGAT!</b>\n\n` +
-               `📉 Meskipun sudah kalah ${losingStreak}x berturut-turut,\n` +
-               `🔄 sistem reverse akan segera aktif jika mencapai 3x kalah.\n\n` +
-               `🎯 <b>Tetap ikuti sistem martingale</b>\n` +
-               `💰 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})\n` +
-               `💪 Kesabaran adalah kunci!`;
-
-      case 5:
-        return `🔥 <b>PERTAHANKAN!</b>\n\n` +
-               `📊 Sudah ${losingStreak} kekalahan beruntun,\n` +
-               `🔄 Reverse mode: ${currentReverseMode ? 'AKTIF' : 'NONAKTIF'}\n\n` +
-               `🎯 <b>Reverse biasanya aktif setelah 3x kalah berturut</b>\n` +
-               `💰 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`;
-
-      case 7:
-        return `🚀 <b>HAMPIR SAMPAI!</b>\n\n` +
-               `📉 ${losingStreak} kekalahan beruntun - ini jarang terjadi!\n` +
-               `📊 <b>Peluang reversal sangat tinggi sekarang</b>\n\n` +
-               `🎯 <b>Reverse mode akan membantu recovery</b>\n` +
-               `💰 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})\n` +
-               `💎 Kesempatan recovery besar di depan!`;
-
-      default:
-        return "";
-    }
+    // Tidak ada reverse mode, jadi hanya pesan semangat biasa
+    return `💪 <b>TERUS SEMANGAT!</b>\n\n` +
+           `📉 Anda mengalami ${lossCount} kekalahan berturut-turut,\n` +
+           `🎯 Tetap ikuti sistem martingale\n` +
+           `💰 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})\n` +
+           `💪 Kesabaran adalah kunci!`;
   }
 
   function createWinAfterLossMessage(consecutiveLosses) {
-    const reverseInfo = currentReverseMode ?
-      ` (dengan bantuan Reverse Mode)` :
-      ` (tanpa Reverse Mode)`;
-
     return `🎉 <b>SELAMAT! KEBERHASILAN SETELAH KESABARAN</b>\n\n` +
-           `✅ Anda berhasil menang setelah ${consecutiveLosses} kekalahan beruntun${reverseInfo}\n` +
+           `✅ Anda berhasil menang setelah ${consecutiveLosses} kekalahan beruntun\n` +
            `💎 Ini membuktikan pentingnya konsistensi dan kesabaran\n\n` +
-           `🏆 <b>PELAJARAN BERHARGA:</b>\n` +
-           `1️⃣ Disiplin mengikuti sistem membuahkan hasil\n` +
-           `2️⃣ Sabar menunggu reversal adalah kunci\n` +
-           `3️⃣ Reverse mode membantu recovery setelah 3x kalah\n` +
-           `4️⃣ Trust the process, trust the system\n\n` +
            `💰 Saldo sekarang: Rp ${virtualBalance.toLocaleString()}\n` +
            `🔄 Kembali ke Level 1 untuk memulai siklus baru\n\n` +
            `🔥 <i>Teruskan semangat dan disiplin Anda!</i>`;
@@ -471,9 +368,7 @@
 
     return `🏆 <b>CAPAIAN ${totalWins} KEMENANGAN!</b>\n\n` +
            `✅ Total ${totalWins} kemenangan sejak bot mulai\n` +
-           `📊 Win Rate: ${winRate}%\n` +
-           `🔄 Reverse Triggers: ${consecutiveReverseTriggers}x\n` +
-           `🔄 Reverse Mode Wins: ${reverseModeWins}\n\n` +
+           `📊 Win Rate: ${winRate}%\n\n` +
            `❤️ <b>TERIMA KASIH ATAS KEPERCAYAANNYA!</b>\n` +
            `Untuk yang merasa terbantu & mau support keberlangsungan prediksi ini:\n\n` +
            `💰 <b>DANA: 082311640444</b>\n\n` +
@@ -496,7 +391,6 @@
            `├── ✅ Menang: ${totalWins}\n` +
            `├── ❌ Kalah: ${totalLosses}\n` +
            `├── 📊 Win Rate: ${winRate}%\n` +
-           `├── 🔄 Reverse Triggers: ${consecutiveReverseTriggers}\n` +
            `├── 📈 P/L: ${profitLoss >= 0 ? '🟢' : '🔴'} ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()}\n` +
            `└── 🔥 Streak Terakhir: ${currentStreak > 0 ? 'W' + currentStreak : 'L' + Math.abs(currentStreak)}\n\n` +
            `💪 <b>BOT TERUS BERJALAN DENGAN SALDO BARU</b>\n` +
@@ -511,13 +405,8 @@
     message += `<b>🎯 PREDIKSI B/K: ${currentPrediction} ${betLabel}</b>\n`;
     message += `━━━━━━━━━━━━━━━━━\n`;
     message += `<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n`;
-    message += `<b>🔄 REVERSE: ${currentReverseMode ? 'AKTIF' : 'NONAKTIF'}</b>\n`;
     message += `<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n`;
     message += `<b>📈 P/L: ${profitLoss >= 0 ? '🟢' : '🔴'} ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()}</b>\n\n`;
-
-    if (currentReverseMode) {
-      message += `🔄 <b>REVERSE STATS: ${reverseModeWins}W / ${reverseModeLosses}L</b>\n`;
-    }
 
     message += `📊 Wingo Analitik Dashboard\n`;
     message += `🔗 https://splendid-queijadas-d948bb.netlify.app/wingo_bot_analytics`;
@@ -544,12 +433,7 @@
       totalWins = 0;
       totalLosses = 0;
       currentStreak = 0;
-      losingStreak = 0;
       profitLoss = 0;
-      currentReverseMode = false;
-      consecutiveReverseTriggers = 0;
-      reverseModeWins = 0;
-      reverseModeLosses = 0;
       predictedIssue = null;
       predictedAt = null;
       historicalData = [];
@@ -570,7 +454,7 @@
     currentPrediction = getPrediction();
     predictedAt = new Date();
 
-    console.log(`🎯 Prediksi dibuat: ${currentPrediction} (Reverse: ${currentReverseMode})`);
+    console.log(`🎯 Prediksi dibuat: ${currentPrediction}`);
     return true;
   }
 
@@ -585,10 +469,10 @@
     console.log(`   API Colour: ${apiData.colour}`);
     console.log(`   Predicted Issue: ${predictedIssue}`);
     console.log(`   Result: ${result} (${isWin ? 'WIN' : 'LOSS'})`);
-    console.log(`   Prediction: ${currentPrediction} (Reverse: ${currentReverseMode})`);
+    console.log(`   Prediction: ${currentPrediction}`);
 
     if (isWin) {
-      const consecutiveLossesBeforeWin = losingStreak;
+      const consecutiveLossesBeforeWin = currentStreak < 0 ? Math.abs(currentStreak) : 0;
 
       virtualBalance += (currentBetAmount * 2);
       totalWins++;
@@ -602,10 +486,7 @@
       const winningBetAmount = currentBetAmount;
       sendResultToFirebase(apiData, currentPrediction, true);
 
-      // UPDATE REVERSE MODE
-      updateReverseMode(true);
-
-      // SETELAH MENANG, RESET LEVEL KE 1 (TANPA MEMPEDULIKAN MODE)
+      // SETELAH MENANG, RESET LEVEL KE 1
       currentBetIndex = 0;
       currentBetAmount = betSequence[0];
       console.log(`   ✅ Reset ke Level 1 setelah menang`);
@@ -639,13 +520,8 @@
 
       console.log(`❌ KALAH! Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
       console.log(`   Level sebelum: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`);
-      console.log(`   Losing Streak: ${losingStreak}`);
-      console.log(`   Mode: ${currentReverseMode ? 'REVERSE' : 'NORMAL'}`);
 
       sendResultToFirebase(apiData, currentPrediction, false);
-
-      // UPDATE REVERSE MODE
-      updateReverseMode(false);
 
       // NAIKKAN LEVEL SETELAH KALAH
       if (currentBetIndex < betSequence.length - 1) {
@@ -656,20 +532,21 @@
         console.log(`   ⚠️ Sudah level maksimal (${betSequence.length}), tetap di level ini`);
       }
 
-      // Motivation messages
-      if (losingStreak === 3 && lastMotivationSentAtLoss < 3) {
+      // Motivation messages berdasarkan jumlah kekalahan beruntun
+      const lossStreak = Math.abs(currentStreak);
+      if (lossStreak === 3 && lastMotivationSentAtLoss < 3) {
         setTimeout(() => {
           const motivationMessage = createMotivationMessage(3);
           sendTelegram(motivationMessage);
           lastMotivationSentAtLoss = 3;
         }, 500);
-      } else if (losingStreak === 5 && lastMotivationSentAtLoss < 5) {
+      } else if (lossStreak === 5 && lastMotivationSentAtLoss < 5) {
         setTimeout(() => {
           const motivationMessage = createMotivationMessage(5);
           sendTelegram(motivationMessage);
           lastMotivationSentAtLoss = 5;
         }, 500);
-      } else if (losingStreak === 7 && lastMotivationSentAtLoss < 7) {
+      } else if (lossStreak === 7 && lastMotivationSentAtLoss < 7) {
         setTimeout(() => {
           const motivationMessage = createMotivationMessage(7);
           sendTelegram(motivationMessage);
@@ -732,12 +609,7 @@
       virtualBalance: virtualBalance,
       currentBetLevel: currentBetIndex + 1,
       currentBetAmount: currentBetAmount,
-      losingStreak: losingStreak,
       currentStreak: currentStreak,
-      reverseMode: currentReverseMode,
-      reverseTriggers: consecutiveReverseTriggers,
-      reverseModeWins: reverseModeWins,
-      reverseModeLosses: reverseModeLosses,
       timestamp: Date.now(),
       dailyBets: dailyStats.bets,
       dailyWins: dailyStats.wins,
@@ -798,7 +670,7 @@
         };
 
         const isWin = processResult(result, apiData);
-        console.log(`   ${isWin ? '✅ MENANG' : '❌ KALAH'} | Saldo: ${virtualBalance.toLocaleString()} | Reverse: ${currentReverseMode}`);
+        console.log(`   ${isWin ? '✅ MENANG' : '❌ KALAH'} | Saldo: ${virtualBalance.toLocaleString()}`);
       }
 
       setTimeout(() => {
@@ -913,7 +785,6 @@
     totalLosses = 0;
     currentStreak = 0;
     profitLoss = 0;
-    losingStreak = 0;
     currentBetAmount = betSequence[0];
     isBetPlaced = false;
     nextIssueNumber = null;
@@ -922,10 +793,6 @@
     lastDonationMessageAtWin = 0;
     predictedIssue = null;
     predictedAt = null;
-    currentReverseMode = false;
-    consecutiveReverseTriggers = 0;
-    reverseModeWins = 0;
-    reverseModeLosses = 0;
     messageQueue = [];
     isSendingMessage = false;
     dailyStats = {
@@ -940,12 +807,11 @@
     sendResetToFirebase(oldBalance, "manual_reset");
     console.log("🔄 Bot direset ke saldo 247.000 dan diaktifkan");
 
-    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (FORMULA BARU)</b>\n\n` +
+    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (TANPA REVERSE MODE)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1 (Rp 1.000)\n` +
-                      `🧮 Rumus: Angka pertama + digit terakhir issue ke-5\n` +
-                      `🔄 Reverse: Aktif setelah 3x kalah berturut\n` +
-                      `📊 Strategi: 7 Level Recovery\n\n` +
+                      `🧮 Rumus: 3 angka terakhir + digit issue ke-5\n` +
+                      `📊 Strategi: 7 Level Martingale\n\n` +
                       `<i>Bot akan berjalan otomatis tanpa henti, reset otomatis jika saldo habis</i>`;
     sendTelegram(startupMsg);
   }
@@ -967,27 +833,21 @@
   /* ========= STARTUP ========= */
   console.log(`
 
-🤖 WINGO SMART TRADING BOT v6.1 - NEW FORMULA SYSTEM
+🤖 WINGO SMART TRADING BOT v6.2 - TANPA REVERSE MODE
 
 💰 Saldo awal: 247.000 (Support 7 level)
-🧮 Analisis: Rumus Baru (Angka pertama + digit terakhir issue ke-5)
-📊 Strategi: Martingale 7 Level dengan Reverse Mode
+🧮 Analisis: Rumus 3 angka terakhir + digit issue ke-5 + streak factor
+📊 Strategi: Martingale 7 Level
 📡 Firebase: Data dikirim ke wingo-bot-analytics
 🔒 ISSUE SINKRONISASI: AKTIF
 
 
-🧮 RUMUS BARU:
-   Ambil angka pertama dari data terbaru
-   Ambil digit terakhir dari issue ke-5
-   Jumlahkan kedua angka
+🧮 RUMUS:
+   Ambil 3 angka terakhir, jumlahkan, ambil digit terakhir (sumLast3)
+   Ambil digit terakhir issue ke-5 (digitIssue5)
+   Hitung (2×sumLast3 + digitIssue5) mod 10
+   Jika 2 hasil terakhir sama, tambahkan 5
    Hasil 0-4: KECIL, 5-9: BESAR
-
-
-🔄 SISTEM REVERSE TERBARU:
-   Kalah 3x berturut → AKTIFKAN REVERSE
-   Reverse: KECIL ↔ BESAR (terbalik)
-   Menang dalam reverse → TETAP dalam reverse
-   Kalah dalam reverse → TETAP dalam reverse (tidak kembali normal)
 
 
 📊 URUTAN TARUHAN:
@@ -1006,18 +866,14 @@
    • Multi-Group Sending: ${enableMultipleGroups ? 'AKTIF' : 'NONAKTIF'}
 
 
-🔥 FITUR BARU:
-   • Rumus Analisis Baru
-   • Reverse Mode setelah 3x kalah
-   • Menang dalam reverse → tetap reverse
-   • Kalah dalam reverse → tetap reverse (tidak kembali normal)
-   • Saldo Awal: 247.000
-   • 7 Level Martingale
-   • Bot TIDAK PERNAH BERHENTI otomatis
-   • Reset otomatis saat saldo habis
+🔥 FITUR:
+   • Rumus analisis adaptif
+   • Martingale 7 level dengan saldo 247K
+   • Auto-reset saat saldo habis
+   • Bot berjalan terus-menerus
 
 
-✅ Bot siap berjalan dengan FORMULA BARU!
+✅ Bot siap berjalan tanpa reverse mode!
 
 `);
 
@@ -1060,11 +916,8 @@
 📈 Win Rate: ${winRate}%
 🔥 Streak: ${currentStreak}
 📊 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})
-🔄 Reverse Mode: ${currentReverseMode}
-🔄 Reverse Stats: ${reverseModeWins}W / ${reverseModeLosses}L
-🔢 Reverse Triggers: ${consecutiveReverseTriggers}
 📈 Data Historis: ${historicalData.length} periode
-❌ Kalah Berturut: ${losingStreak}
+❌ Kalah Berturut: ${currentStreak < 0 ? Math.abs(currentStreak) : 0}
 📅 Hari ini: ${dailyStats.bets} bet (${dailyStats.wins}W/${dailyStats.losses}L) P/L: ${dailyStats.profit >= 0 ? '+' : ''}${dailyStats.profit.toLocaleString()}
 🚦 Status: ${isBotActive ? 'AKTIF' : 'NONAKTIF'}
 📅 Periode berikutnya: ${nextIssueNumber || 'Belum diketahui'}
@@ -1083,25 +936,32 @@
     },
     testCalc: () => {
       if (historicalData.length >= 5) {
-        const firstNum = historicalData[0].number;
-        const fifthIssueLast = historicalData[4].issue.slice(-1);
-        const sum = firstNum + parseInt(fifthIssueLast);
-        const lastDigit = sum % 10;
-        const basePrediction = lastDigit <= 4 ? "KECIL" : "BESAR";
-        const finalPrediction = currentReverseMode ?
-          (basePrediction === "KECIL" ? "BESAR" : "KECIL") :
-          basePrediction;
+        const lastNumber = historicalData[0].number;
+        const secondLast = historicalData[1]?.number || 0;
+        const thirdLast = historicalData[2]?.number || 0;
+        const fifthIssue = historicalData[4].issue;
+        const fifthLastDigit = parseInt(fifthIssue.slice(-1));
+        const sumLast3 = (lastNumber + secondLast + thirdLast) % 10;
+        const weighted = (sumLast3 * 2 + fifthLastDigit) % 10;
+        let streakFactor = 0;
+        if (historicalData.length >= 2 && historicalData[0].result === historicalData[1].result) {
+          streakFactor = 5;
+        }
+        const finalDigit = (weighted + streakFactor) % 10;
+        const prediction = (finalDigit <= 4) ? "KECIL" : "BESAR";
 
         console.log(`
 
 🧪 TEST PERHITUNGAN:
-   Data ke-1: ${firstNum} (terbaru)
-   Issue ke-5: ${historicalData[4].issue} → digit terakhir: ${fifthIssueLast}
-   Perhitungan: ${firstNum} + ${fifthIssueLast} = ${sum}
-   Digit terakhir: ${lastDigit}
-   Prediksi dasar: ${basePrediction} (${lastDigit} = ${lastDigit <= 4 ? '0-4: KECIL' : '5-9: BESAR'})
-   Reverse Mode: ${currentReverseMode}
-   Prediksi final: ${finalPrediction}
+   Data ke-1: ${lastNumber} (${historicalData[0].result})
+   Data ke-2: ${secondLast} (${historicalData[1]?.result || '-'})
+   Data ke-3: ${thirdLast} (${historicalData[2]?.result || '-'})
+   Issue ke-5: ${fifthIssue} → digit terakhir: ${fifthLastDigit}
+   sumLast3 = (${lastNumber}+${secondLast}+${thirdLast}) % 10 = ${sumLast3}
+   weighted = (${sumLast3}*2 + ${fifthLastDigit}) % 10 = ${weighted}
+   streakFactor = ${streakFactor} (karena 2 hasil terakhir ${historicalData[0].result === historicalData[1].result ? 'sama' : 'berbeda'})
+   finalDigit = (${weighted} + ${streakFactor}) % 10 = ${finalDigit}
+   Prediksi: ${prediction} (${finalDigit} = ${finalDigit <= 4 ? '0-4: KECIL' : '5-9: BESAR'})
 
         `);
       } else {
@@ -1125,11 +985,7 @@
         winRate: totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0,
         profit: profitLoss,
         streak: currentStreak,
-        losingStreak: losingStreak,
-        reverseMode: currentReverseMode,
-        reverseTriggers: consecutiveReverseTriggers,
-        reverseModeWins: reverseModeWins,
-        reverseModeLosses: reverseModeLosses
+        losingStreak: currentStreak < 0 ? Math.abs(currentStreak) : 0
       };
     },
 
@@ -1141,9 +997,7 @@
       return {
         prediction: this.prediction,
         amount: this.amount,
-        level: this.level,
-        reverseMode: currentReverseMode,
-        reverseStats: `${reverseModeWins}W / ${reverseModeLosses}L`
+        level: this.level
       };
     },
 
