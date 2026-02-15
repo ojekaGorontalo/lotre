@@ -2,14 +2,14 @@
 
   console.clear();
 
-  console.log("🤖 WinGo Smart Trading Bot - System v6.3 (Reverse setelah kalah)");
+  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (Reverse setelah 4x kalah)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
 
   // Multi-group configuration
   const TELEGRAM_GROUPS = {
-    primary: "-1003291560910", // Grup utama (selalu aktif)
+    primary: "-4534430485", // Grup utama (selalu aktif)
     secondary: [
       "-1001570553211",  // Grup backup 1
     ]
@@ -247,7 +247,7 @@
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
   function sendStartupMotivationMessage() {
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.3 - REVERSE SETELAH KALAH</b>\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - REVERSE SETELAH 4X KALAH</b>\n\n` +
                           `Sistem analisis menggunakan rumus:\n\n` +
                           `🧮 <b>RUMUS ANALISIS:</b>\n` +
                           `1. Ambil 3 angka terakhir, jumlahkan, ambil digit terakhir\n` +
@@ -256,8 +256,8 @@
                           `4. Jika 2 hasil terakhir sama, tambahkan 5 (bias ke lawan)\n` +
                           `5. Hasil 0-4: KECIL, 5-9: BESAR\n\n` +
                           `🔄 <b>SISTEM REVERSE:</b>\n` +
-                          `• Jika kalah, mode reverse aktif untuk taruhan berikutnya\n` +
-                          `• Mode reverse akan tetap aktif sampai menang\n` +
+                          `• Jika kalah 4x berturut-turut dalam mode normal, mode reverse aktif\n` +
+                          `• Mode reverse tetap aktif sampai menang\n` +
                           `• Jika menang, kembali ke mode normal\n\n` +
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
@@ -541,9 +541,11 @@
 
       sendResultToFirebase(apiData, currentPrediction, false);
 
-      // SETELAH KALAH, AKTIFKAN REVERSE MODE UNTUK TARUHAN BERIKUTNYA
-      reverseMode = true;
-      console.log(`   🔄 Reverse mode diaktifkan untuk taruhan berikutnya`);
+      // CEK APAKAH PERLU AKTIFKAN REVERSE MODE (jika kalah 4x berturut dalam mode normal)
+      if (!reverseMode && currentStreak <= -4) {
+        reverseMode = true;
+        console.log(`   🔄 Kalah 4x berturut, reverse mode diaktifkan untuk taruhan berikutnya`);
+      }
 
       // NAIKKAN LEVEL SETELAH KALAH
       if (currentBetIndex < betSequence.length - 1) {
@@ -831,11 +833,11 @@
     sendResetToFirebase(oldBalance, "manual_reset");
     console.log("🔄 Bot direset ke saldo 247.000 dan diaktifkan");
 
-    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (REVERSE SETELAH KALAH)</b>\n\n` +
+    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (REVERSE SETELAH 4X KALAH)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1 (Rp 1.000)\n` +
                       `🧮 Rumus: 3 angka terakhir + digit issue ke-5\n` +
-                      `🔄 Reverse: aktif setelah kalah, mati setelah menang\n` +
+                      `🔄 Reverse: aktif setelah 4x kalah berturut, mati setelah menang\n` +
                       `📊 Strategi: 7 Level Martingale\n\n` +
                       `<i>Bot akan berjalan otomatis tanpa henti, reset otomatis jika saldo habis</i>`;
     sendTelegram(startupMsg);
@@ -858,11 +860,11 @@
   /* ========= STARTUP ========= */
   console.log(`
 
-🤖 WINGO SMART TRADING BOT v6.3 - REVERSE SETELAH KALAH
+🤖 WINGO SMART TRADING BOT v6.5 - REVERSE SETELAH 4X KALAH
 
 💰 Saldo awal: 247.000 (Support 7 level)
 🧮 Analisis: Rumus 3 angka terakhir + digit issue ke-5 + streak factor
-📊 Strategi: Martingale 7 Level + Reverse setelah kalah
+📊 Strategi: Martingale 7 Level + Reverse setelah 4x kalah
 📡 Firebase: Data dikirim ke wingo-bot-analytics
 🔒 ISSUE SINKRONISASI: AKTIF
 
@@ -876,7 +878,7 @@
 
 
 🔄 SISTEM REVERSE:
-   • Jika kalah, mode reverse aktif untuk taruhan berikutnya
+   • Jika kalah 4x berturut-turut dalam mode normal, mode reverse aktif
    • Mode reverse tetap aktif sampai menang
    • Jika menang, kembali ke mode normal
 
@@ -899,18 +901,18 @@
 
 🔥 FITUR:
    • Rumus analisis adaptif
-   • Reverse mode otomatis setelah kalah
+   • Reverse mode aktif setelah 4x kalah berturut
    • Martingale 7 level dengan saldo 247K
    • Auto-reset saat saldo habis
    • Bot berjalan terus-menerus
 
 
-✅ Bot siap berjalan dengan reverse setelah kalah!
+✅ Bot siap berjalan dengan reverse setelah 4x kalah!
 
 `);
 
   setupDailyTimer();
-  sendStartupMotivationMessage();
+  // sendStartupMotivationMessage(); // jika ingin dikirim, hapus komentar
 
   setTimeout(() => {
     if (placeBet()) {
