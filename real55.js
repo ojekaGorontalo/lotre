@@ -280,7 +280,7 @@
                           `• Trend Follow: mengikuti hasil terakhir\n` +
                           `• Deteksi Zigzag: jika 3 periode bergantian (BESAR-KECIL-BESAR atau KECIL-BESAR-KECIL), prediksi dibalik\n` +
                           `• Reverse Mode: otomatis aktif setelah 3 kekalahan beruntun, membalik prediksi untuk memutus streak\n` +
-                          `• Trend Override: jika terdeteksi trend kuat (3 dari 4 periode sama), reverse mode diabaikan dan mengikuti trend\n\n` +
+                          `• Trend Override: jika terdeteksi trend kuat (3 dari 4 periode sama), maka zigzag dan reverse mode diabaikan, mengikuti trend\n\n` +
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
                           `2. Rp 3.000\n` +
@@ -302,24 +302,14 @@
     return colourString.split(',')[0]; // ambil warna utama (sebelum koma)
   }
 
-  /* ========= PREDIKSI BARU: TREND FOLLOW + DETEKSI ZIGZAG (3 DATA) + REVERSE MODE + TREND OVERRIDE ========= */
+  /* ========= PREDIKSI BARU: PRIORITAS TREND KUAT, BARU ZIGZAG/TREND FOLLOW, LALU REVERSE MODE ========= */
   function getPrediction() {
     if (historicalData.length === 0) {
       console.log("⚠️ Data historis kosong, default ke KECIL");
       return "KECIL";
     }
 
-    const lastResult = historicalData[0].result; // hasil terakhir
-    let zigzag = false;
-
-    // Deteksi pola zig-zag pada 3 data terakhir (jika ada)
-    if (historicalData.length >= 3) {
-      // Cek apakah 3 data terakhir bergantian semua
-      if (historicalData[0].result !== historicalData[1].result &&
-          historicalData[1].result !== historicalData[2].result) {
-        zigzag = true;
-      }
-    }
+    const lastResult = historicalData[0].result;
 
     // Deteksi trend kuat: 3 dari 4 periode terakhir sama
     let trendKuat = null;
@@ -335,28 +325,37 @@
     }
 
     let prediction;
-    if (zigzag) {
-      // Zig-zag terdeteksi → prediksi lawan dari hasil terakhir
-      prediction = (lastResult === "KECIL") ? "BESAR" : "KECIL";
-      console.log(`🔄 ZIGZAG TERDETEKSI (3 periode bergantian), prediksi lawan: ${prediction}`);
+
+    // Prioritaskan trend kuat
+    if (trendKuat) {
+      prediction = trendKuat;
+      console.log(`📊 TREND KUAT TERDETEKSI (${trendKuat}), mengikuti trend`);
     } else {
-      // Ikuti tren (hasil terakhir)
-      prediction = lastResult;
-      console.log(`📈 TREND FOLLOW: ${prediction}`);
+      // Deteksi zigzag pada 3 periode terakhir
+      let zigzag = false;
+      if (historicalData.length >= 3) {
+        if (historicalData[0].result !== historicalData[1].result &&
+            historicalData[1].result !== historicalData[2].result) {
+          zigzag = true;
+        }
+      }
+
+      if (zigzag) {
+        prediction = (lastResult === "KECIL") ? "BESAR" : "KECIL";
+        console.log(`🔄 ZIGZAG TERDETEKSI (3 periode bergantian), prediksi lawan: ${prediction}`);
+      } else {
+        prediction = lastResult;
+        console.log(`📈 TREND FOLLOW: ${prediction}`);
+      }
     }
 
-    // Jika reverse mode aktif, pertimbangkan trend kuat
-    if (reverseMode) {
-      if (trendKuat) {
-        // Override reverse mode dengan trend kuat
-        prediction = trendKuat;
-        console.log(`📊 TREND KUAT TERDETEKSI (${trendKuat}), override reverse mode`);
-        sendTelegram(`📊 <b>TREND KUAT TERDETEKSI: ${trendKuat}</b>\n\nMeskipun reverse mode aktif, sistem memilih mengikuti trend karena 3 dari 4 periode terakhir adalah ${trendKuat}.`);
-      } else {
-        // Tidak ada trend kuat, balik prediksi
-        prediction = (prediction === "KECIL") ? "BESAR" : "KECIL";
-        console.log(`🔄 REVERSE MODE AKTIF, prediksi dibalik menjadi: ${prediction}`);
-      }
+    // Reverse mode hanya aktif jika tidak ada trend kuat
+    if (reverseMode && !trendKuat) {
+      prediction = (prediction === "KECIL") ? "BESAR" : "KECIL";
+      console.log(`🔄 REVERSE MODE AKTIF, prediksi dibalik menjadi: ${prediction}`);
+      sendTelegram(`🔄 <b>REVERSE MODE AKTIF</b>\n\nPrediksi dibalik menjadi ${prediction} karena tidak ada trend kuat.`);
+    } else if (reverseMode && trendKuat) {
+      console.log(`📊 Trend kuat meng-override reverse mode`);
     }
 
     return prediction;
@@ -577,7 +576,7 @@
       if (lossStreak >= 3 && !reverseMode) {
         reverseMode = true;
         console.log(`🔄 REVERSE MODE DIAKTIFKAN setelah ${lossStreak} kekalahan`);
-        sendTelegram(`🔄 <b>REVERSE MODE DIAKTIFKAN</b>\n\nSetelah ${lossStreak} kekalahan beruntun, sistem beralih ke strategi reverse zigzag untuk menghentikan losing streak.`);
+        sendTelegram(`🔄 <b>REVERSE MODE DIAKTIFKAN</b>\n\nSetelah ${lossStreak} kekalahan beruntun, sistem beralih ke strategi reverse mode untuk menghentikan losing streak.`);
       }
 
       // NAIKKAN LEVEL SETELAH KALAH
@@ -902,9 +901,9 @@
 
 🧮 STRATEGI:
    • Trend Follow: mengikuti hasil terakhir
-   • Jika terdeteksi pola zigzag (bergantian 3 periode), prediksi dibalik
-   • Jika terjadi 3 kekalahan beruntun, Reverse Mode aktif: membalik prediksi untuk memutus streak
-   • Jika terdeteksi trend kuat (3 dari 4 periode sama), Reverse Mode diabaikan dan mengikuti trend
+   • Deteksi Zigzag: jika 3 periode bergantian, prediksi dibalik (hanya jika tidak ada trend kuat)
+   • Reverse Mode: aktif setelah 3 kekalahan beruntun, membalik prediksi (hanya jika tidak ada trend kuat)
+   • Trend Override: jika 3 dari 4 periode terakhir sama, maka trend kuat diutamakan (mengabaikan zigzag dan reverse mode)
 
 📊 URUTAN TARUHAN:
    1. Rp 1.000     (x1)
@@ -997,22 +996,6 @@
         const last = historicalData[0];
         console.log(`🧪 PREDIKSI BERDASARKAN DATA TERAKHIR:`);
         console.log(`   Hasil terakhir: ${last.result} (${last.number})`);
-        console.log(`   Prediksi trend follow: ${last.result}`);
-
-        // Deteksi zigzag sederhana (3 data)
-        if (historicalData.length >= 3) {
-          const a = historicalData[0].result;
-          const b = historicalData[1].result;
-          const c = historicalData[2].result;
-          if (a !== b && b !== c) {
-            console.log(`   Pola zigzag 3 periode terdeteksi! (${a} → ${b} → ${c})`);
-            console.log(`   Sebaiknya prediksi lawan: ${a === "KECIL" ? "BESAR" : "KECIL"}`);
-          } else {
-            console.log(`   Tidak ada pola zigzag 3 periode.`);
-          }
-        } else {
-          console.log("   Data kurang dari 3 periode untuk deteksi zigzag.");
-        }
 
         // Deteksi trend kuat
         if (historicalData.length >= 4) {
@@ -1028,8 +1011,20 @@
           }
         }
 
+        // Deteksi zigzag
+        if (historicalData.length >= 3) {
+          const a = historicalData[0].result;
+          const b = historicalData[1].result;
+          const c = historicalData[2].result;
+          if (a !== b && b !== c) {
+            console.log(`   Pola zigzag 3 periode terdeteksi! (${a} → ${b} → ${c})`);
+          } else {
+            console.log(`   Tidak ada pola zigzag.`);
+          }
+        }
+
         console.log(`   Reverse Mode saat ini: ${reverseMode ? 'AKTIF' : 'NONAKTIF'}`);
-        if (reverseMode) console.log(`   Jika reverse mode aktif dan tidak ada trend kuat, prediksi akan dibalik.`);
+        console.log(`   Prediksi akhir akan mengikuti: trend kuat > zigzag/trend follow > reverse mode`);
       } else {
         console.log("❌ Data kurang dari 1");
       }
