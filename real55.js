@@ -2,7 +2,7 @@
 
   console.clear();
 
-  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (Trend Follow + Anti Zigzag + Reverse Mode)");
+  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (Trend Follow + Anti Zigzag + Reverse Mode + Trend Override)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -274,12 +274,13 @@
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
   function sendStartupMotivationMessage() {
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG + REVERSE MODE</b>\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG + REVERSE MODE + TREND OVERRIDE</b>\n\n` +
                           `Sistem analisis menggunakan:\n\n` +
                           `🧮 <b>STRATEGI:</b>\n` +
                           `• Trend Follow: mengikuti hasil terakhir\n` +
                           `• Deteksi Zigzag: jika 3 periode bergantian (BESAR-KECIL-BESAR atau KECIL-BESAR-KECIL), prediksi dibalik\n` +
-                          `• Reverse Mode: otomatis aktif setelah 3 kekalahan beruntun, membalik prediksi untuk memutus streak\n\n` +
+                          `• Reverse Mode: otomatis aktif setelah 3 kekalahan beruntun, membalik prediksi untuk memutus streak\n` +
+                          `• Trend Override: jika terdeteksi trend kuat (3 dari 4 periode sama), reverse mode diabaikan dan mengikuti trend\n\n` +
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
                           `2. Rp 3.000\n` +
@@ -301,7 +302,7 @@
     return colourString.split(',')[0]; // ambil warna utama (sebelum koma)
   }
 
-  /* ========= PREDIKSI BARU: TREND FOLLOW + DETEKSI ZIGZAG (3 DATA) + REVERSE MODE ========= */
+  /* ========= PREDIKSI BARU: TREND FOLLOW + DETEKSI ZIGZAG (3 DATA) + REVERSE MODE + TREND OVERRIDE ========= */
   function getPrediction() {
     if (historicalData.length === 0) {
       console.log("⚠️ Data historis kosong, default ke KECIL");
@@ -320,6 +321,19 @@
       }
     }
 
+    // Deteksi trend kuat: 3 dari 4 periode terakhir sama
+    let trendKuat = null;
+    if (historicalData.length >= 4) {
+      const last4 = historicalData.slice(0, 4).map(d => d.result);
+      const countBesar = last4.filter(r => r === "BESAR").length;
+      const countKecil = last4.filter(r => r === "KECIL").length;
+      if (countBesar >= 3) {
+        trendKuat = "BESAR";
+      } else if (countKecil >= 3) {
+        trendKuat = "KECIL";
+      }
+    }
+
     let prediction;
     if (zigzag) {
       // Zig-zag terdeteksi → prediksi lawan dari hasil terakhir
@@ -331,10 +345,18 @@
       console.log(`📈 TREND FOLLOW: ${prediction}`);
     }
 
-    // Jika reverse mode aktif, balik prediksi
+    // Jika reverse mode aktif, pertimbangkan trend kuat
     if (reverseMode) {
-      prediction = (prediction === "KECIL") ? "BESAR" : "KECIL";
-      console.log(`🔄 REVERSE MODE AKTIF, prediksi dibalik menjadi: ${prediction}`);
+      if (trendKuat) {
+        // Override reverse mode dengan trend kuat
+        prediction = trendKuat;
+        console.log(`📊 TREND KUAT TERDETEKSI (${trendKuat}), override reverse mode`);
+        sendTelegram(`📊 <b>TREND KUAT TERDETEKSI: ${trendKuat}</b>\n\nMeskipun reverse mode aktif, sistem memilih mengikuti trend karena 3 dari 4 periode terakhir adalah ${trendKuat}.`);
+      } else {
+        // Tidak ada trend kuat, balik prediksi
+        prediction = (prediction === "KECIL") ? "BESAR" : "KECIL";
+        console.log(`🔄 REVERSE MODE AKTIF, prediksi dibalik menjadi: ${prediction}`);
+      }
     }
 
     return prediction;
@@ -844,10 +866,10 @@
     sendResetToFirebase(oldBalance, "manual_reset");
     console.log("🔄 Bot direset ke saldo 247.000 dan diaktifkan");
 
-    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (TREND FOLLOW + ANTI ZIGZAG + REVERSE MODE)</b>\n\n` +
+    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (TREND FOLLOW + ANTI ZIGZAG + REVERSE MODE + TREND OVERRIDE)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1 (Rp 1.000)\n` +
-                      `🧮 Strategi: Trend Follow + Deteksi Zigzag (3 periode) + Reverse Mode\n` +
+                      `🧮 Strategi: Trend Follow + Deteksi Zigzag (3 periode) + Reverse Mode + Trend Override\n` +
                       `📊 Martingale 7 Level\n\n` +
                       `<i>Bot akan berjalan otomatis tanpa henti, reset otomatis jika saldo habis</i>`;
     sendTelegram(startupMsg);
@@ -870,10 +892,10 @@
   /* ========= STARTUP ========= */
   console.log(`
 
-🤖 WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG + REVERSE MODE
+🤖 WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG + REVERSE MODE + TREND OVERRIDE
 
 💰 Saldo awal: 247.000 (Support 7 level)
-🧮 Strategi: Trend Follow + Deteksi Zigzag (3 periode) + Reverse Mode (aktif setelah 3 kalah)
+🧮 Strategi: Trend Follow + Deteksi Zigzag (3 periode) + Reverse Mode (aktif setelah 3 kalah) + Trend Override
 📊 Martingale 7 Level
 📡 Firebase: Data dikirim ke wingo-bot-analytics (termasuk prediksi)
 🔒 ISSUE SINKRONISASI: AKTIF
@@ -882,6 +904,7 @@
    • Trend Follow: mengikuti hasil terakhir
    • Jika terdeteksi pola zigzag (bergantian 3 periode), prediksi dibalik
    • Jika terjadi 3 kekalahan beruntun, Reverse Mode aktif: membalik prediksi untuk memutus streak
+   • Jika terdeteksi trend kuat (3 dari 4 periode sama), Reverse Mode diabaikan dan mengikuti trend
 
 📊 URUTAN TARUHAN:
    1. Rp 1.000     (x1)
@@ -901,12 +924,13 @@
    • Trend Follow adaptif
    • Deteksi zigzag otomatis (3 periode)
    • Reverse Mode otomatis setelah 3 kalah
+   • Trend Override untuk menghindari kesalahan saat trend kuat
    • Martingale 7 level dengan saldo 247K
    • Auto-reset saat saldo habis
    • Bot berjalan terus-menerus
    • Prediksi dikirim ke Firebase sebelum hasil
 
-✅ Bot siap berjalan dengan strategi Trend Follow + Anti Zigzag + Reverse Mode!
+✅ Bot siap berjalan dengan strategi Trend Follow + Anti Zigzag + Reverse Mode + Trend Override!
 
 `);
 
@@ -990,8 +1014,22 @@
           console.log("   Data kurang dari 3 periode untuk deteksi zigzag.");
         }
 
+        // Deteksi trend kuat
+        if (historicalData.length >= 4) {
+          const last4 = historicalData.slice(0, 4).map(d => d.result);
+          const countBesar = last4.filter(r => r === "BESAR").length;
+          const countKecil = last4.filter(r => r === "KECIL").length;
+          if (countBesar >= 3) {
+            console.log(`   📊 Trend kuat BESAR terdeteksi (3/4)`);
+          } else if (countKecil >= 3) {
+            console.log(`   📊 Trend kuat KECIL terdeteksi (3/4)`);
+          } else {
+            console.log(`   Tidak ada trend kuat.`);
+          }
+        }
+
         console.log(`   Reverse Mode saat ini: ${reverseMode ? 'AKTIF' : 'NONAKTIF'}`);
-        if (reverseMode) console.log(`   Jika reverse mode aktif, prediksi akan dibalik.`);
+        if (reverseMode) console.log(`   Jika reverse mode aktif dan tidak ada trend kuat, prediksi akan dibalik.`);
       } else {
         console.log("❌ Data kurang dari 1");
       }
