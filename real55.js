@@ -2,14 +2,14 @@
 
   console.clear();
 
-  console.log("🤖 WinGo Smart Trading Bot - System v6.4 (Reverse setelah 2x kalah)");
+  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (Reverse setelah 4x kalah + Analisis Warna)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
 
   // Multi-group configuration
   const TELEGRAM_GROUPS = {
-    primary: "-1003291560910", // Grup utama (selalu aktif)
+    primary: "-4534430485", // Grup utama (selalu aktif)
     secondary: [
       "-1001570553211",  // Grup backup 1
     ]
@@ -169,6 +169,33 @@
     sendToFirebase("results", resultData);
   }
 
+  // Fungsi baru: mengirim data prediksi ke Firebase
+  function sendPredictionToFirebase() {
+    if (!predictedIssue) {
+      console.warn("⚠️ predictedIssue tidak tersedia, prediksi tidak dikirim ke Firebase");
+      return;
+    }
+
+    const predictionData = {
+      issue: predictedIssue,
+      prediction: currentPrediction,
+      betAmount: currentBetAmount,
+      betLevel: currentBetIndex + 1,
+      reverseMode: reverseMode,
+      balanceAfterBet: virtualBalance,           // saldo setelah dikurangi taruhan
+      totalBets: totalBets,
+      totalWins: totalWins,
+      totalLosses: totalLosses,
+      currentStreak: currentStreak,
+      profitLoss: profitLoss,
+      predictedAt: predictedAt.toISOString(),
+      timestamp: new Date().toISOString()
+    };
+
+    sendToFirebase("predictions", predictionData);
+    console.log(`📤 Prediksi dikirim ke Firebase: ${predictedIssue} → ${currentPrediction}`);
+  }
+
   function sendResetToFirebase(oldBalance, reason) {
     const resetData = {
       oldBalance: oldBalance,
@@ -247,16 +274,17 @@
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
   function sendStartupMotivationMessage() {
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.4 - REVERSE SETELAH 2X KALAH</b>\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - REVERSE SETELAH 4X KALAH + ANALISIS WARNA</b>\n\n` +
                           `Sistem analisis menggunakan rumus:\n\n` +
                           `🧮 <b>RUMUS ANALISIS:</b>\n` +
                           `1. Ambil 3 angka terakhir, jumlahkan, ambil digit terakhir\n` +
                           `2. Ambil digit terakhir dari issue ke-5\n` +
                           `3. Hitung (2×sumLast3 + digitIssue5) mod 10\n` +
                           `4. Jika 2 hasil terakhir sama, tambahkan 5 (bias ke lawan)\n` +
-                          `5. Hasil 0-4: KECIL, 5-9: BESAR\n\n` +
+                          `5. Jika 2 warna terakhir sama, tambahkan 5 (bias ke lawan)\n` +
+                          `6. Hasil 0-4: KECIL, 5-9: BESAR\n\n` +
                           `🔄 <b>SISTEM REVERSE:</b>\n` +
-                          `• Jika kalah 2x berturut-turut dalam mode normal, mode reverse aktif\n` +
+                          `• Jika kalah 4x berturut-turut dalam mode normal, mode reverse aktif\n` +
                           `• Mode reverse tetap aktif sampai menang\n` +
                           `• Jika menang, kembali ke mode normal\n\n` +
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
@@ -274,7 +302,24 @@
     sendTelegram(startupMessage);
   }
 
+  /* ========= FUNGSI BANTU ========= */
+  function getMainColour(colourString) {
+    if (!colourString) return '';
+    return colourString.split(',')[0]; // ambil warna utama (sebelum koma)
+  }
+
   /* ========= ANALISIS RUMUS ========= */
+  function getColourFactor() {
+    if (historicalData.length < 2) return 0;
+    const lastColour = getMainColour(historicalData[0].colour);
+    const prevColour = getMainColour(historicalData[1].colour);
+    if (lastColour && prevColour && lastColour === prevColour) {
+      console.log(`   Warna sama: ${lastColour} & ${prevColour}, bias +5`);
+      return 5;
+    }
+    return 0;
+  }
+
   function calculateBasePrediction() {
     if (historicalData.length < 5) {
       console.log("⚠️ Data kurang dari 5, pakai default");
@@ -290,7 +335,7 @@
       const fifthLastDigit = parseInt(fifthIssue.slice(-1));
 
       console.log(`📊 Data untuk prediksi:`);
-      console.log(`   Angka terbaru: ${lastNumber} (${historicalData[0].result})`);
+      console.log(`   Angka terbaru: ${lastNumber} (${historicalData[0].result}) Warna: ${historicalData[0].colour}`);
       console.log(`   3 angka terakhir: ${lastNumber}, ${secondLast}, ${thirdLast}`);
       console.log(`   Issue ke-5: ${fifthIssue} → digit terakhir: ${fifthLastDigit}`);
 
@@ -309,9 +354,12 @@
         console.log(`   Streak 2x ${historicalData[0].result} terdeteksi, bias ke lawan.`);
       }
 
+      // Indikator 4: Warna sama -> bias ke lawan
+      const colourFactor = getColourFactor();
+
       // Gabungkan
-      let finalDigit = (weighted + streakFactor) % 10;
-      console.log(`   Final digit setelah streak factor: ${finalDigit}`);
+      let finalDigit = (weighted + streakFactor + colourFactor) % 10;
+      console.log(`   Final digit setelah streak factor (${streakFactor}) dan colour factor (${colourFactor}): ${finalDigit}`);
 
       let basePrediction = (finalDigit <= 4) ? "KECIL" : "BESAR";
       console.log(`   Prediksi dasar: ${basePrediction}`);
@@ -355,7 +403,7 @@
     if (historicalData.length >= 5) {
       const recentNumbers = historicalData.slice(0, 5).map(d => d.number);
       console.log(`📊 5 DATA TERBARU: ${recentNumbers.join(', ')}`);
-      console.log(`📋 Issue ke-1: ${historicalData[0].issue} → angka: ${historicalData[0].number}`);
+      console.log(`📋 Issue ke-1: ${historicalData[0].issue} → angka: ${historicalData[0].number}, warna: ${historicalData[0].colour}`);
       console.log(`📋 Issue ke-5: ${historicalData[4].issue} → digit terakhir: ${historicalData[4].issue.slice(-1)}`);
     }
   }
@@ -470,6 +518,8 @@
     isBetPlaced = true;
     currentPrediction = getPrediction();
     predictedAt = new Date();
+    predictedIssue = nextIssueNumber;          // Simpan periode yang akan diprediksi
+    sendPredictionToFirebase();                 // Kirim prediksi ke Firebase
 
     console.log(`🎯 Prediksi dibuat: ${currentPrediction} (Reverse: ${reverseMode})`);
     return true;
@@ -541,10 +591,10 @@
 
       sendResultToFirebase(apiData, currentPrediction, false);
 
-      // CEK APAKAH PERLU AKTIFKAN REVERSE MODE (jika kalah 2x berturut dalam mode normal)
-      if (!reverseMode && currentStreak <= -2) {
+      // CEK APAKAH PERLU AKTIFKAN REVERSE MODE (jika kalah 4x berturut dalam mode normal)
+      if (!reverseMode && currentStreak <= -4) {
         reverseMode = true;
-        console.log(`   🔄 Kalah 2x berturut, reverse mode diaktifkan untuk taruhan berikutnya`);
+        console.log(`   🔄 Kalah 4x berturut, reverse mode diaktifkan untuk taruhan berikutnya`);
       }
 
       // NAIKKAN LEVEL SETELAH KALAH
@@ -833,11 +883,11 @@
     sendResetToFirebase(oldBalance, "manual_reset");
     console.log("🔄 Bot direset ke saldo 247.000 dan diaktifkan");
 
-    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (REVERSE SETELAH 2X KALAH)</b>\n\n` +
+    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (REVERSE SETELAH 4X KALAH + ANALISIS WARNA)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1 (Rp 1.000)\n` +
-                      `🧮 Rumus: 3 angka terakhir + digit issue ke-5\n` +
-                      `🔄 Reverse: aktif setelah 2x kalah berturut, mati setelah menang\n` +
+                      `🧮 Rumus: 3 angka terakhir + digit issue ke-5 + streak factor + warna sama\n` +
+                      `🔄 Reverse: aktif setelah 4x kalah berturut, mati setelah menang\n` +
                       `📊 Strategi: 7 Level Martingale\n\n` +
                       `<i>Bot akan berjalan otomatis tanpa henti, reset otomatis jika saldo habis</i>`;
     sendTelegram(startupMsg);
@@ -860,12 +910,12 @@
   /* ========= STARTUP ========= */
   console.log(`
 
-🤖 WINGO SMART TRADING BOT v6.4 - REVERSE SETELAH 2X KALAH
+🤖 WINGO SMART TRADING BOT v6.5 - REVERSE SETELAH 4X KALAH + ANALISIS WARNA
 
 💰 Saldo awal: 247.000 (Support 7 level)
-🧮 Analisis: Rumus 3 angka terakhir + digit issue ke-5 + streak factor
-📊 Strategi: Martingale 7 Level + Reverse setelah 2x kalah
-📡 Firebase: Data dikirim ke wingo-bot-analytics
+🧮 Analisis: Rumus 3 angka terakhir + digit issue ke-5 + streak factor + warna sama
+📊 Strategi: Martingale 7 Level + Reverse setelah 4x kalah
+📡 Firebase: Data dikirim ke wingo-bot-analytics (termasuk prediksi)
 🔒 ISSUE SINKRONISASI: AKTIF
 
 
@@ -874,11 +924,12 @@
    Ambil digit terakhir issue ke-5 (digitIssue5)
    Hitung (2×sumLast3 + digitIssue5) mod 10
    Jika 2 hasil terakhir sama, tambahkan 5
+   Jika 2 warna terakhir sama, tambahkan 5
    Hasil 0-4: KECIL, 5-9: BESAR
 
 
 🔄 SISTEM REVERSE:
-   • Jika kalah 2x berturut-turut dalam mode normal, mode reverse aktif
+   • Jika kalah 4x berturut-turut dalam mode normal, mode reverse aktif
    • Mode reverse tetap aktif sampai menang
    • Jika menang, kembali ke mode normal
 
@@ -900,19 +951,20 @@
 
 
 🔥 FITUR:
-   • Rumus analisis adaptif
-   • Reverse mode aktif setelah 2x kalah berturut
+   • Rumus analisis adaptif + warna
+   • Reverse mode aktif setelah 4x kalah berturut
    • Martingale 7 level dengan saldo 247K
    • Auto-reset saat saldo habis
    • Bot berjalan terus-menerus
+   • Prediksi dikirim ke Firebase sebelum hasil
 
 
-✅ Bot siap berjalan dengan reverse setelah 2x kalah!
+✅ Bot siap berjalan dengan reverse setelah 4x kalah dan analisis warna!
 
 `);
 
   setupDailyTimer();
-  sendStartupMotivationMessage();
+  // sendStartupMotivationMessage(); // jika ingin dikirim, hapus komentar
 
   setTimeout(() => {
     if (placeBet()) {
@@ -982,21 +1034,23 @@
         if (historicalData.length >= 2 && historicalData[0].result === historicalData[1].result) {
           streakFactor = 5;
         }
-        const finalDigit = (weighted + streakFactor) % 10;
+        const colourFactor = getColourFactor();
+        const finalDigit = (weighted + streakFactor + colourFactor) % 10;
         const basePrediction = (finalDigit <= 4) ? "KECIL" : "BESAR";
         const finalPrediction = reverseMode ? (basePrediction === "KECIL" ? "BESAR" : "KECIL") : basePrediction;
 
         console.log(`
 
 🧪 TEST PERHITUNGAN:
-   Data ke-1: ${lastNumber} (${historicalData[0].result})
-   Data ke-2: ${secondLast} (${historicalData[1]?.result || '-'})
-   Data ke-3: ${thirdLast} (${historicalData[2]?.result || '-'})
+   Data ke-1: ${lastNumber} (${historicalData[0].result}) warna: ${historicalData[0].colour}
+   Data ke-2: ${secondLast} (${historicalData[1]?.result || '-'}) warna: ${historicalData[1]?.colour}
+   Data ke-3: ${thirdLast} (${historicalData[2]?.result || '-'}) warna: ${historicalData[2]?.colour}
    Issue ke-5: ${fifthIssue} → digit terakhir: ${fifthLastDigit}
    sumLast3 = (${lastNumber}+${secondLast}+${thirdLast}) % 10 = ${sumLast3}
    weighted = (${sumLast3}*2 + ${fifthLastDigit}) % 10 = ${weighted}
    streakFactor = ${streakFactor} (karena 2 hasil terakhir ${historicalData[0].result === historicalData[1].result ? 'sama' : 'berbeda'})
-   finalDigit = (${weighted} + ${streakFactor}) % 10 = ${finalDigit}
+   colourFactor = ${colourFactor}
+   finalDigit = (${weighted} + ${streakFactor} + ${colourFactor}) % 10 = ${finalDigit}
    Prediksi dasar: ${basePrediction}
    Reverse Mode: ${reverseMode ? 'AKTIF' : 'NONAKTIF'}
    Prediksi final: ${finalPrediction}
