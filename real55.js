@@ -278,7 +278,7 @@
                           `Sistem analisis menggunakan:\n\n` +
                           `🧮 <b>STRATEGI:</b>\n` +
                           `• Trend Follow: mengikuti hasil terakhir\n` +
-                          `• Deteksi Zigzag: jika 3-4 periode bergantian, prediksi dibalik\n` +
+                          `• Deteksi Zigzag: jika 3 periode bergantian (BESAR-KECIL-BESAR atau KECIL-BESAR-KECIL), prediksi dibalik\n` +
                           `• Tidak akan terkena 8x loss beruntun karena zigzag\n\n` +
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
@@ -301,7 +301,7 @@
     return colourString.split(',')[0]; // ambil warna utama (sebelum koma)
   }
 
-  /* ========= PREDIKSI BARU: TREND FOLLOW + DETEKSI ZIGZAG ========= */
+  /* ========= PREDIKSI BARU: TREND FOLLOW + DETEKSI ZIGZAG (3 DATA) ========= */
   function getPrediction() {
     if (historicalData.length === 0) {
       console.log("⚠️ Data historis kosong, default ke KECIL");
@@ -311,16 +311,9 @@
     const lastResult = historicalData[0].result; // hasil terakhir
     let zigzag = false;
 
-    // Deteksi pola zig-zag pada 4 data terakhir (jika ada)
-    if (historicalData.length >= 4) {
-      // Cek apakah 4 data terakhir bergantian semua
-      if (historicalData[0].result !== historicalData[1].result &&
-          historicalData[1].result !== historicalData[2].result &&
-          historicalData[2].result !== historicalData[3].result) {
-        zigzag = true;
-      }
-    } else if (historicalData.length >= 3) {
-      // Jika hanya 3, cek 3 data bergantian
+    // Deteksi pola zig-zag pada 3 data terakhir (jika ada)
+    if (historicalData.length >= 3) {
+      // Cek apakah 3 data terakhir bergantian semua
       if (historicalData[0].result !== historicalData[1].result &&
           historicalData[1].result !== historicalData[2].result) {
         zigzag = true;
@@ -331,7 +324,7 @@
     if (zigzag) {
       // Zig-zag terdeteksi → prediksi lawan dari hasil terakhir
       prediction = (lastResult === "KECIL") ? "BESAR" : "KECIL";
-      console.log(`🔄 ZIGZAG TERDETEKSI, prediksi lawan: ${prediction}`);
+      console.log(`🔄 ZIGZAG TERDETEKSI (3 periode bergantian), prediksi lawan: ${prediction}`);
     } else {
       // Ikuti tren (hasil terakhir)
       prediction = lastResult;
@@ -375,7 +368,7 @@
   function createWinAfterLossMessage(consecutiveLosses) {
     return `🎉 <b>SELAMAT! KEBERHASILAN SETELAH KESABARAN</b>\n\n` +
            `✅ Anda berhasil menang setelah ${consecutiveLosses} kekalahan beruntun\n` +
-           `💎 Ini membuktikan pentingnya konsistensi dan kesabaran\n\n` +
+           `💋 Ini membuktikan pentingnya konsistensi dan kesabaran\n\n` +
            `💰 Saldo sekarang: Rp ${virtualBalance.toLocaleString()}\n` +
            `🔄 Kembali ke Level 1 untuk memulai siklus baru\n\n` +
            `🔥 <i>Teruskan semangat dan disiplin Anda!</i>`;
@@ -421,7 +414,7 @@
     let message = `<b>WINGO 30s SALDO AWAL 247.000</b>\n`;
     message += `<b>🆔 PERIODE ${nextIssueShort}</b>\n`;
     message += `<b>🎯 PREDIKSI B/K: ${currentPrediction} ${betLabel}</b>\n`;
-    message += `━━━━━━━━━━━━━━━━━\n`;
+    message += `─────────────────\n`;
     message += `<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n`;
     message += `<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n`;
     message += `<b>📈 P/L: ${profitLoss >= 0 ? '🟢' : '🔴'} ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()}</b>\n\n`;
@@ -674,7 +667,7 @@
         return;
       }
 
-      console.log(`\n════════════════════════════════════════`);
+      console.log(`\n══════════════════════════════════════════════════`);
       console.log(`📊 PERIODE ${getShortIssue(issueNumber)}: ANGKA ${number} (${result})`);
 
       if (predictedIssue) {
@@ -835,7 +828,7 @@
     const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (TREND FOLLOW + ANTI ZIGZAG)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1 (Rp 1.000)\n` +
-                      `🧮 Strategi: Trend Follow + Deteksi Zigzag\n` +
+                      `🧮 Strategi: Trend Follow + Deteksi Zigzag (3 periode)\n` +
                       `📊 Martingale 7 Level\n\n` +
                       `<i>Bot akan berjalan otomatis tanpa henti, reset otomatis jika saldo habis</i>`;
     sendTelegram(startupMsg);
@@ -861,17 +854,15 @@
 🤖 WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG
 
 💰 Saldo awal: 247.000 (Support 7 level)
-🧮 Strategi: Trend Follow + Deteksi Zigzag
+🧮 Strategi: Trend Follow + Deteksi Zigzag (3 periode)
 📊 Martingale 7 Level
 📡 Firebase: Data dikirim ke wingo-bot-analytics (termasuk prediksi)
 🔒 ISSUE SINKRONISASI: AKTIF
 
-
 🧮 STRATEGI:
    • Trend Follow: mengikuti hasil terakhir
-   • Jika terdeteksi pola zigzag (bergantian 3-4 kali), prediksi dibalik
+   • Jika terdeteksi pola zigzag (bergantian 3 periode), prediksi dibalik
    • Dengan deteksi dini, tidak akan terkena 8x loss beruntun akibat zigzag
-
 
 📊 URUTAN TARUHAN:
    1. Rp 1.000     (x1)
@@ -882,21 +873,18 @@
    6. Rp 63.000    (x63)
    7. Rp 127.000   (x127)
 
-
 📨 Telegram Groups:
    • Primary Group: ${TELEGRAM_GROUPS.primary}
    • Secondary Groups: ${TELEGRAM_GROUPS.secondary.length > 0 ? TELEGRAM_GROUPS.secondary.join(', ') : 'Tidak ada'}
    • Multi-Group Sending: ${enableMultipleGroups ? 'AKTIF' : 'NONAKTIF'}
 
-
 🔥 FITUR:
    • Trend Follow adaptif
-   • Deteksi zigzag otomatis
+   • Deteksi zigzag otomatis (3 periode)
    • Martingale 7 level dengan saldo 247K
    • Auto-reset saat saldo habis
    • Bot berjalan terus-menerus
    • Prediksi dikirim ke Firebase sebelum hasil
-
 
 ✅ Bot siap berjalan dengan strategi Trend Follow + Anti Zigzag!
 
@@ -936,9 +924,9 @@
       console.log(`
 
 💰 Saldo: ${virtualBalance.toLocaleString()}
-📊 P/L: ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()}
+📈 P/L: ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()}
 🎯 Bet: ${totalBets} (W:${totalWins}/L:${totalLosses})
-📈 Win Rate: ${winRate}%
+📊 Win Rate: ${winRate}%
 🔥 Streak: ${currentStreak}
 📊 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})
 📈 Data Historis: ${historicalData.length} periode
@@ -966,24 +954,19 @@
         console.log(`   Hasil terakhir: ${last.result} (${last.number})`);
         console.log(`   Prediksi trend follow: ${last.result}`);
 
-        // Deteksi zigzag sederhana
-        if (historicalData.length >= 4) {
-          const a = historicalData[0].result;
-          const b = historicalData[1].result;
-          const c = historicalData[2].result;
-          const d = historicalData[3].result;
-          if (a !== b && b !== c && c !== d) {
-            console.log(`   Pola zigzag 4 periode terdeteksi!`);
-            console.log(`   Sebaiknya prediksi lawan: ${a === "KECIL" ? "BESAR" : "KECIL"}`);
-          }
-        } else if (historicalData.length >= 3) {
+        // Deteksi zigzag sederhana (3 data)
+        if (historicalData.length >= 3) {
           const a = historicalData[0].result;
           const b = historicalData[1].result;
           const c = historicalData[2].result;
           if (a !== b && b !== c) {
-            console.log(`   Pola zigzag 3 periode terdeteksi!`);
+            console.log(`   Pola zigzag 3 periode terdeteksi! (${a} → ${b} → ${c})`);
             console.log(`   Sebaiknya prediksi lawan: ${a === "KECIL" ? "BESAR" : "KECIL"}`);
+          } else {
+            console.log(`   Tidak ada pola zigzag 3 periode.`);
           }
+        } else {
+          console.log("   Data kurang dari 3 periode untuk deteksi zigzag.");
         }
       } else {
         console.log("❌ Data kurang dari 1");
