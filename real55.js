@@ -2,7 +2,7 @@
 
   console.clear();
 
-  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (Trend Follow + Anti Zigzag)");
+  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (Trend Follow + Anti Zigzag + Reverse Mode)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -89,8 +89,8 @@
   /* ========= VARIABEL HISTORIS ========= */
   let historicalData = [];
 
-  /* ========= VARIABEL REVERSE MODE (TIDAK DIGUNAKAN LAGI) ========= */
-  let reverseMode = false; // Masih ada untuk kompatibilitas, tapi tidak dipakai dalam prediksi
+  /* ========= VARIABEL REVERSE MODE ========= */
+  let reverseMode = false; // Awalnya nonaktif
 
   /* ========= FIREBASE FUNCTIONS ========= */
   async function sendToFirebase(path, data) {
@@ -274,12 +274,12 @@
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
   function sendStartupMotivationMessage() {
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG</b>\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG + REVERSE MODE</b>\n\n` +
                           `Sistem analisis menggunakan:\n\n` +
                           `🧮 <b>STRATEGI:</b>\n` +
                           `• Trend Follow: mengikuti hasil terakhir\n` +
                           `• Deteksi Zigzag: jika 3 periode bergantian (BESAR-KECIL-BESAR atau KECIL-BESAR-KECIL), prediksi dibalik\n` +
-                          `• Tidak akan terkena 8x loss beruntun karena zigzag\n\n` +
+                          `• Reverse Mode: otomatis aktif setelah 3 kekalahan beruntun, membalik prediksi untuk memutus streak\n\n` +
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
                           `2. Rp 3.000\n` +
@@ -301,7 +301,7 @@
     return colourString.split(',')[0]; // ambil warna utama (sebelum koma)
   }
 
-  /* ========= PREDIKSI BARU: TREND FOLLOW + DETEKSI ZIGZAG (3 DATA) ========= */
+  /* ========= PREDIKSI BARU: TREND FOLLOW + DETEKSI ZIGZAG (3 DATA) + REVERSE MODE ========= */
   function getPrediction() {
     if (historicalData.length === 0) {
       console.log("⚠️ Data historis kosong, default ke KECIL");
@@ -329,6 +329,12 @@
       // Ikuti tren (hasil terakhir)
       prediction = lastResult;
       console.log(`📈 TREND FOLLOW: ${prediction}`);
+    }
+
+    // Jika reverse mode aktif, balik prediksi
+    if (reverseMode) {
+      prediction = (prediction === "KECIL") ? "BESAR" : "KECIL";
+      console.log(`🔄 REVERSE MODE AKTIF, prediksi dibalik menjadi: ${prediction}`);
     }
 
     return prediction;
@@ -497,6 +503,13 @@
 
       console.log(`✅ MENANG! Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
 
+      // Jika reverse mode aktif, matikan setelah menang
+      if (reverseMode) {
+        reverseMode = false;
+        console.log("✅ REVERSE MODE DINONAKTIFKAN setelah menang");
+        sendTelegram("✅ <b>REVERSE MODE DINONAKTIFKAN</b>\n\nSistem kembali ke strategi normal setelah meraih kemenangan.");
+      }
+
       const winningBetAmount = currentBetAmount;
       sendResultToFirebase(apiData, currentPrediction, true);
 
@@ -537,7 +550,13 @@
 
       sendResultToFirebase(apiData, currentPrediction, false);
 
-      // REVERSE MODE LAMA TIDAK DIGUNAKAN, JADI TIDAK ADA AKTIVASI REVERSE
+      // Cek untuk mengaktifkan reverse mode setelah 3 kali kalah berturut-turut
+      const lossStreak = Math.abs(currentStreak);
+      if (lossStreak >= 3 && !reverseMode) {
+        reverseMode = true;
+        console.log(`🔄 REVERSE MODE DIAKTIFKAN setelah ${lossStreak} kekalahan`);
+        sendTelegram(`🔄 <b>REVERSE MODE DIAKTIFKAN</b>\n\nSetelah ${lossStreak} kekalahan beruntun, sistem beralih ke strategi reverse zigzag untuk menghentikan losing streak.`);
+      }
 
       // NAIKKAN LEVEL SETELAH KALAH
       if (currentBetIndex < betSequence.length - 1) {
@@ -549,20 +568,20 @@
       }
 
       // Motivation messages berdasarkan jumlah kekalahan beruntun
-      const lossStreak = Math.abs(currentStreak);
-      if (lossStreak === 3 && lastMotivationSentAtLoss < 3) {
+      const lossStreakMsg = Math.abs(currentStreak);
+      if (lossStreakMsg === 3 && lastMotivationSentAtLoss < 3) {
         setTimeout(() => {
           const motivationMessage = createMotivationMessage(3);
           sendTelegram(motivationMessage);
           lastMotivationSentAtLoss = 3;
         }, 500);
-      } else if (lossStreak === 5 && lastMotivationSentAtLoss < 5) {
+      } else if (lossStreakMsg === 5 && lastMotivationSentAtLoss < 5) {
         setTimeout(() => {
           const motivationMessage = createMotivationMessage(5);
           sendTelegram(motivationMessage);
           lastMotivationSentAtLoss = 5;
         }, 500);
-      } else if (lossStreak === 7 && lastMotivationSentAtLoss < 7) {
+      } else if (lossStreakMsg === 7 && lastMotivationSentAtLoss < 7) {
         setTimeout(() => {
           const motivationMessage = createMotivationMessage(7);
           sendTelegram(motivationMessage);
@@ -825,10 +844,10 @@
     sendResetToFirebase(oldBalance, "manual_reset");
     console.log("🔄 Bot direset ke saldo 247.000 dan diaktifkan");
 
-    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (TREND FOLLOW + ANTI ZIGZAG)</b>\n\n` +
+    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (TREND FOLLOW + ANTI ZIGZAG + REVERSE MODE)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1 (Rp 1.000)\n` +
-                      `🧮 Strategi: Trend Follow + Deteksi Zigzag (3 periode)\n` +
+                      `🧮 Strategi: Trend Follow + Deteksi Zigzag (3 periode) + Reverse Mode\n` +
                       `📊 Martingale 7 Level\n\n` +
                       `<i>Bot akan berjalan otomatis tanpa henti, reset otomatis jika saldo habis</i>`;
     sendTelegram(startupMsg);
@@ -851,10 +870,10 @@
   /* ========= STARTUP ========= */
   console.log(`
 
-🤖 WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG
+🤖 WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG + REVERSE MODE
 
 💰 Saldo awal: 247.000 (Support 7 level)
-🧮 Strategi: Trend Follow + Deteksi Zigzag (3 periode)
+🧮 Strategi: Trend Follow + Deteksi Zigzag (3 periode) + Reverse Mode (aktif setelah 3 kalah)
 📊 Martingale 7 Level
 📡 Firebase: Data dikirim ke wingo-bot-analytics (termasuk prediksi)
 🔒 ISSUE SINKRONISASI: AKTIF
@@ -862,7 +881,7 @@
 🧮 STRATEGI:
    • Trend Follow: mengikuti hasil terakhir
    • Jika terdeteksi pola zigzag (bergantian 3 periode), prediksi dibalik
-   • Dengan deteksi dini, tidak akan terkena 8x loss beruntun akibat zigzag
+   • Jika terjadi 3 kekalahan beruntun, Reverse Mode aktif: membalik prediksi untuk memutus streak
 
 📊 URUTAN TARUHAN:
    1. Rp 1.000     (x1)
@@ -881,12 +900,13 @@
 🔥 FITUR:
    • Trend Follow adaptif
    • Deteksi zigzag otomatis (3 periode)
+   • Reverse Mode otomatis setelah 3 kalah
    • Martingale 7 level dengan saldo 247K
    • Auto-reset saat saldo habis
    • Bot berjalan terus-menerus
    • Prediksi dikirim ke Firebase sebelum hasil
 
-✅ Bot siap berjalan dengan strategi Trend Follow + Anti Zigzag!
+✅ Bot siap berjalan dengan strategi Trend Follow + Anti Zigzag + Reverse Mode!
 
 `);
 
@@ -937,6 +957,7 @@
 📨 Antrian Pesan: ${messageQueue.length} pesan
 🔒 Issue Prediksi: ${predictedIssue || 'Belum ada'}
 ⏰ Predicted At: ${predictedAt || 'Belum ada'}
+🔄 Reverse Mode: ${reverseMode ? 'AKTIF' : 'NONAKTIF'}
 
       `);
     },
@@ -968,6 +989,9 @@
         } else {
           console.log("   Data kurang dari 3 periode untuk deteksi zigzag.");
         }
+
+        console.log(`   Reverse Mode saat ini: ${reverseMode ? 'AKTIF' : 'NONAKTIF'}`);
+        if (reverseMode) console.log(`   Jika reverse mode aktif, prediksi akan dibalik.`);
       } else {
         console.log("❌ Data kurang dari 1");
       }
@@ -1010,7 +1034,8 @@
         isActive: isBotActive,
         isBetPlaced: isBetPlaced,
         nextIssue: nextIssueNumber,
-        predictedIssue: predictedIssue
+        predictedIssue: predictedIssue,
+        reverseMode: reverseMode
       };
     }
   };
