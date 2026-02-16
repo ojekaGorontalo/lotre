@@ -2,7 +2,7 @@
 
   console.clear();
 
-  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (Reverse setelah 4x kalah + Analisis Warna)");
+  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (Trend Follow + Anti Zigzag)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -89,8 +89,8 @@
   /* ========= VARIABEL HISTORIS ========= */
   let historicalData = [];
 
-  /* ========= VARIABEL REVERSE MODE ========= */
-  let reverseMode = false; // Mode reverse: jika true, prediksi dibalik
+  /* ========= VARIABEL REVERSE MODE (TIDAK DIGUNAKAN LAGI) ========= */
+  let reverseMode = false; // Masih ada untuk kompatibilitas, tapi tidak dipakai dalam prediksi
 
   /* ========= FIREBASE FUNCTIONS ========= */
   async function sendToFirebase(path, data) {
@@ -274,19 +274,12 @@
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
   function sendStartupMotivationMessage() {
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - REVERSE SETELAH 4X KALAH + ANALISIS WARNA</b>\n\n` +
-                          `Sistem analisis menggunakan rumus:\n\n` +
-                          `🧮 <b>RUMUS ANALISIS:</b>\n` +
-                          `1. Ambil 3 angka terakhir, jumlahkan, ambil digit terakhir\n` +
-                          `2. Ambil digit terakhir dari issue ke-5\n` +
-                          `3. Hitung (2×sumLast3 + digitIssue5) mod 10\n` +
-                          `4. Jika 2 hasil terakhir sama, tambahkan 5 (bias ke lawan)\n` +
-                          `5. Jika 2 warna terakhir sama, tambahkan 5 (bias ke lawan)\n` +
-                          `6. Hasil 0-4: KECIL, 5-9: BESAR\n\n` +
-                          `🔄 <b>SISTEM REVERSE:</b>\n` +
-                          `• Jika kalah 4x berturut-turut dalam mode normal, mode reverse aktif\n` +
-                          `• Mode reverse tetap aktif sampai menang\n` +
-                          `• Jika menang, kembali ke mode normal\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG</b>\n\n` +
+                          `Sistem analisis menggunakan:\n\n` +
+                          `🧮 <b>STRATEGI:</b>\n` +
+                          `• Trend Follow: mengikuti hasil terakhir\n` +
+                          `• Deteksi Zigzag: jika 3-4 periode bergantian, prediksi dibalik\n` +
+                          `• Tidak akan terkena 8x loss beruntun karena zigzag\n\n` +
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
                           `2. Rp 3.000\n` +
@@ -308,81 +301,44 @@
     return colourString.split(',')[0]; // ambil warna utama (sebelum koma)
   }
 
-  /* ========= ANALISIS RUMUS ========= */
-  function getColourFactor() {
-    if (historicalData.length < 2) return 0;
-    const lastColour = getMainColour(historicalData[0].colour);
-    const prevColour = getMainColour(historicalData[1].colour);
-    if (lastColour && prevColour && lastColour === prevColour) {
-      console.log(`   Warna sama: ${lastColour} & ${prevColour}, bias +5`);
-      return 5;
-    }
-    return 0;
-  }
-
-  function calculateBasePrediction() {
-    if (historicalData.length < 5) {
-      console.log("⚠️ Data kurang dari 5, pakai default");
-      return "KECIL";
-    }
-
-    try {
-      // Data terbaru adalah index 0
-      const lastNumber = historicalData[0].number;
-      const secondLast = historicalData[1]?.number || 0;
-      const thirdLast = historicalData[2]?.number || 0;
-      const fifthIssue = historicalData[4].issue;
-      const fifthLastDigit = parseInt(fifthIssue.slice(-1));
-
-      console.log(`📊 Data untuk prediksi:`);
-      console.log(`   Angka terbaru: ${lastNumber} (${historicalData[0].result}) Warna: ${historicalData[0].colour}`);
-      console.log(`   3 angka terakhir: ${lastNumber}, ${secondLast}, ${thirdLast}`);
-      console.log(`   Issue ke-5: ${fifthIssue} → digit terakhir: ${fifthLastDigit}`);
-
-      // Indikator 1: Jumlah 3 angka terakhir modulo 10
-      const sumLast3 = (lastNumber + secondLast + thirdLast) % 10;
-      console.log(`   Jumlah 3 angka terakhir mod 10: ${sumLast3}`);
-
-      // Indikator 2: Kombinasi dengan digit issue ke-5 (bobot 2:1)
-      const weighted = (sumLast3 * 2 + fifthLastDigit) % 10;
-      console.log(`   Bobot (sumLast3*2 + digitIssue5) mod 10: ${weighted}`);
-
-      // Indikator 3: Streak 2 hasil sama -> bias ke lawan
-      let streakFactor = 0;
-      if (historicalData.length >= 2 && historicalData[0].result === historicalData[1].result) {
-        streakFactor = 5; // Menambahkan 5 akan membalikkan (0-4 jadi 5-9, dst)
-        console.log(`   Streak 2x ${historicalData[0].result} terdeteksi, bias ke lawan.`);
-      }
-
-      // Indikator 4: Warna sama -> bias ke lawan
-      const colourFactor = getColourFactor();
-
-      // Gabungkan
-      let finalDigit = (weighted + streakFactor + colourFactor) % 10;
-      console.log(`   Final digit setelah streak factor (${streakFactor}) dan colour factor (${colourFactor}): ${finalDigit}`);
-
-      let basePrediction = (finalDigit <= 4) ? "KECIL" : "BESAR";
-      console.log(`   Prediksi dasar: ${basePrediction}`);
-
-      return basePrediction;
-    } catch (error) {
-      console.error("❌ Error dalam perhitungan:", error);
-      return "KECIL";
-    }
-  }
-
+  /* ========= PREDIKSI BARU: TREND FOLLOW + DETEKSI ZIGZAG ========= */
   function getPrediction() {
-    const base = calculateBasePrediction();
-    let finalPrediction;
-    if (reverseMode) {
-      finalPrediction = (base === "KECIL") ? "BESAR" : "KECIL";
-      console.log(`🔄 REVERSE MODE: ${base} → ${finalPrediction}`);
-    } else {
-      finalPrediction = base;
-      console.log(`✅ MODE NORMAL: ${finalPrediction}`);
+    if (historicalData.length === 0) {
+      console.log("⚠️ Data historis kosong, default ke KECIL");
+      return "KECIL";
     }
-    console.log(`   Reverse Mode: ${reverseMode}`);
-    return finalPrediction;
+
+    const lastResult = historicalData[0].result; // hasil terakhir
+    let zigzag = false;
+
+    // Deteksi pola zig-zag pada 4 data terakhir (jika ada)
+    if (historicalData.length >= 4) {
+      // Cek apakah 4 data terakhir bergantian semua
+      if (historicalData[0].result !== historicalData[1].result &&
+          historicalData[1].result !== historicalData[2].result &&
+          historicalData[2].result !== historicalData[3].result) {
+        zigzag = true;
+      }
+    } else if (historicalData.length >= 3) {
+      // Jika hanya 3, cek 3 data bergantian
+      if (historicalData[0].result !== historicalData[1].result &&
+          historicalData[1].result !== historicalData[2].result) {
+        zigzag = true;
+      }
+    }
+
+    let prediction;
+    if (zigzag) {
+      // Zig-zag terdeteksi → prediksi lawan dari hasil terakhir
+      prediction = (lastResult === "KECIL") ? "BESAR" : "KECIL";
+      console.log(`🔄 ZIGZAG TERDETEKSI, prediksi lawan: ${prediction}`);
+    } else {
+      // Ikuti tren (hasil terakhir)
+      prediction = lastResult;
+      console.log(`📈 TREND FOLLOW: ${prediction}`);
+    }
+
+    return prediction;
   }
 
   function analyzeTrendData(listData) {
@@ -412,7 +368,6 @@
   function createMotivationMessage(lossCount) {
     return `💪 <b>TERUS SEMANGAT!</b>\n\n` +
            `📉 Anda mengalami ${lossCount} kekalahan berturut-turut,\n` +
-           `🔄 Mode reverse aktif: ${reverseMode ? 'YA' : 'TIDAK'}\n` +
            `💰 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})\n` +
            `💪 Kesabaran adalah kunci!`;
   }
@@ -468,7 +423,6 @@
     message += `<b>🎯 PREDIKSI B/K: ${currentPrediction} ${betLabel}</b>\n`;
     message += `━━━━━━━━━━━━━━━━━\n`;
     message += `<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n`;
-    message += `<b>🔄 REVERSE: ${reverseMode ? 'AKTIF' : 'NONAKTIF'}</b>\n`;
     message += `<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n`;
     message += `<b>📈 P/L: ${profitLoss >= 0 ? '🟢' : '🔴'} ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()}</b>\n\n`;
 
@@ -521,7 +475,7 @@
     predictedIssue = nextIssueNumber;          // Simpan periode yang akan diprediksi
     sendPredictionToFirebase();                 // Kirim prediksi ke Firebase
 
-    console.log(`🎯 Prediksi dibuat: ${currentPrediction} (Reverse: ${reverseMode})`);
+    console.log(`🎯 Prediksi dibuat: ${currentPrediction}`);
     return true;
   }
 
@@ -536,7 +490,7 @@
     console.log(`   API Colour: ${apiData.colour}`);
     console.log(`   Predicted Issue: ${predictedIssue}`);
     console.log(`   Result: ${result} (${isWin ? 'WIN' : 'LOSS'})`);
-    console.log(`   Prediction: ${currentPrediction} (Reverse: ${reverseMode})`);
+    console.log(`   Prediction: ${currentPrediction}`);
 
     if (isWin) {
       const consecutiveLossesBeforeWin = currentStreak < 0 ? Math.abs(currentStreak) : 0;
@@ -553,11 +507,10 @@
       const winningBetAmount = currentBetAmount;
       sendResultToFirebase(apiData, currentPrediction, true);
 
-      // SETELAH MENANG, RESET LEVEL KE 1 DAN MATIKAN REVERSE MODE
+      // SETELAH MENANG, RESET LEVEL KE 1
       currentBetIndex = 0;
       currentBetAmount = betSequence[0];
-      reverseMode = false;
-      console.log(`   ✅ Reset ke Level 1, reverse mode dimatikan`);
+      console.log(`   ✅ Reset ke Level 1`);
 
       if (consecutiveLossesBeforeWin >= 5) {
         setTimeout(() => {
@@ -591,11 +544,7 @@
 
       sendResultToFirebase(apiData, currentPrediction, false);
 
-      // CEK APAKAH PERLU AKTIFKAN REVERSE MODE (jika kalah 4x berturut dalam mode normal)
-      if (!reverseMode && currentStreak <= -4) {
-        reverseMode = true;
-        console.log(`   🔄 Kalah 4x berturut, reverse mode diaktifkan untuk taruhan berikutnya`);
-      }
+      // REVERSE MODE LAMA TIDAK DIGUNAKAN, JADI TIDAK ADA AKTIVASI REVERSE
 
       // NAIKKAN LEVEL SETELAH KALAH
       if (currentBetIndex < betSequence.length - 1) {
@@ -745,7 +694,7 @@
         };
 
         const isWin = processResult(result, apiData);
-        console.log(`   ${isWin ? '✅ MENANG' : '❌ KALAH'} | Saldo: ${virtualBalance.toLocaleString()} | Reverse: ${reverseMode}`);
+        console.log(`   ${isWin ? '✅ MENANG' : '❌ KALAH'} | Saldo: ${virtualBalance.toLocaleString()}`);
       }
 
       setTimeout(() => {
@@ -883,12 +832,11 @@
     sendResetToFirebase(oldBalance, "manual_reset");
     console.log("🔄 Bot direset ke saldo 247.000 dan diaktifkan");
 
-    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (REVERSE SETELAH 4X KALAH + ANALISIS WARNA)</b>\n\n` +
+    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (TREND FOLLOW + ANTI ZIGZAG)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1 (Rp 1.000)\n` +
-                      `🧮 Rumus: 3 angka terakhir + digit issue ke-5 + streak factor + warna sama\n` +
-                      `🔄 Reverse: aktif setelah 4x kalah berturut, mati setelah menang\n` +
-                      `📊 Strategi: 7 Level Martingale\n\n` +
+                      `🧮 Strategi: Trend Follow + Deteksi Zigzag\n` +
+                      `📊 Martingale 7 Level\n\n` +
                       `<i>Bot akan berjalan otomatis tanpa henti, reset otomatis jika saldo habis</i>`;
     sendTelegram(startupMsg);
   }
@@ -910,28 +858,19 @@
   /* ========= STARTUP ========= */
   console.log(`
 
-🤖 WINGO SMART TRADING BOT v6.5 - REVERSE SETELAH 4X KALAH + ANALISIS WARNA
+🤖 WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG
 
 💰 Saldo awal: 247.000 (Support 7 level)
-🧮 Analisis: Rumus 3 angka terakhir + digit issue ke-5 + streak factor + warna sama
-📊 Strategi: Martingale 7 Level + Reverse setelah 4x kalah
+🧮 Strategi: Trend Follow + Deteksi Zigzag
+📊 Martingale 7 Level
 📡 Firebase: Data dikirim ke wingo-bot-analytics (termasuk prediksi)
 🔒 ISSUE SINKRONISASI: AKTIF
 
 
-🧮 RUMUS:
-   Ambil 3 angka terakhir, jumlahkan, ambil digit terakhir (sumLast3)
-   Ambil digit terakhir issue ke-5 (digitIssue5)
-   Hitung (2×sumLast3 + digitIssue5) mod 10
-   Jika 2 hasil terakhir sama, tambahkan 5
-   Jika 2 warna terakhir sama, tambahkan 5
-   Hasil 0-4: KECIL, 5-9: BESAR
-
-
-🔄 SISTEM REVERSE:
-   • Jika kalah 4x berturut-turut dalam mode normal, mode reverse aktif
-   • Mode reverse tetap aktif sampai menang
-   • Jika menang, kembali ke mode normal
+🧮 STRATEGI:
+   • Trend Follow: mengikuti hasil terakhir
+   • Jika terdeteksi pola zigzag (bergantian 3-4 kali), prediksi dibalik
+   • Dengan deteksi dini, tidak akan terkena 8x loss beruntun akibat zigzag
 
 
 📊 URUTAN TARUHAN:
@@ -951,15 +890,15 @@
 
 
 🔥 FITUR:
-   • Rumus analisis adaptif + warna
-   • Reverse mode aktif setelah 4x kalah berturut
+   • Trend Follow adaptif
+   • Deteksi zigzag otomatis
    • Martingale 7 level dengan saldo 247K
    • Auto-reset saat saldo habis
    • Bot berjalan terus-menerus
    • Prediksi dikirim ke Firebase sebelum hasil
 
 
-✅ Bot siap berjalan dengan reverse setelah 4x kalah dan analisis warna!
+✅ Bot siap berjalan dengan strategi Trend Follow + Anti Zigzag!
 
 `);
 
@@ -1002,7 +941,6 @@
 📈 Win Rate: ${winRate}%
 🔥 Streak: ${currentStreak}
 📊 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})
-🔄 Reverse Mode: ${reverseMode ? 'AKTIF' : 'NONAKTIF'}
 📈 Data Historis: ${historicalData.length} periode
 ❌ Kalah Berturut: ${currentStreak < 0 ? Math.abs(currentStreak) : 0}
 📅 Hari ini: ${dailyStats.bets} bet (${dailyStats.wins}W/${dailyStats.losses}L) P/L: ${dailyStats.profit >= 0 ? '+' : ''}${dailyStats.profit.toLocaleString()}
@@ -1022,42 +960,33 @@
       });
     },
     testCalc: () => {
-      if (historicalData.length >= 5) {
-        const lastNumber = historicalData[0].number;
-        const secondLast = historicalData[1]?.number || 0;
-        const thirdLast = historicalData[2]?.number || 0;
-        const fifthIssue = historicalData[4].issue;
-        const fifthLastDigit = parseInt(fifthIssue.slice(-1));
-        const sumLast3 = (lastNumber + secondLast + thirdLast) % 10;
-        const weighted = (sumLast3 * 2 + fifthLastDigit) % 10;
-        let streakFactor = 0;
-        if (historicalData.length >= 2 && historicalData[0].result === historicalData[1].result) {
-          streakFactor = 5;
+      if (historicalData.length >= 1) {
+        const last = historicalData[0];
+        console.log(`🧪 PREDIKSI BERDASARKAN DATA TERAKHIR:`);
+        console.log(`   Hasil terakhir: ${last.result} (${last.number})`);
+        console.log(`   Prediksi trend follow: ${last.result}`);
+
+        // Deteksi zigzag sederhana
+        if (historicalData.length >= 4) {
+          const a = historicalData[0].result;
+          const b = historicalData[1].result;
+          const c = historicalData[2].result;
+          const d = historicalData[3].result;
+          if (a !== b && b !== c && c !== d) {
+            console.log(`   Pola zigzag 4 periode terdeteksi!`);
+            console.log(`   Sebaiknya prediksi lawan: ${a === "KECIL" ? "BESAR" : "KECIL"}`);
+          }
+        } else if (historicalData.length >= 3) {
+          const a = historicalData[0].result;
+          const b = historicalData[1].result;
+          const c = historicalData[2].result;
+          if (a !== b && b !== c) {
+            console.log(`   Pola zigzag 3 periode terdeteksi!`);
+            console.log(`   Sebaiknya prediksi lawan: ${a === "KECIL" ? "BESAR" : "KECIL"}`);
+          }
         }
-        const colourFactor = getColourFactor();
-        const finalDigit = (weighted + streakFactor + colourFactor) % 10;
-        const basePrediction = (finalDigit <= 4) ? "KECIL" : "BESAR";
-        const finalPrediction = reverseMode ? (basePrediction === "KECIL" ? "BESAR" : "KECIL") : basePrediction;
-
-        console.log(`
-
-🧪 TEST PERHITUNGAN:
-   Data ke-1: ${lastNumber} (${historicalData[0].result}) warna: ${historicalData[0].colour}
-   Data ke-2: ${secondLast} (${historicalData[1]?.result || '-'}) warna: ${historicalData[1]?.colour}
-   Data ke-3: ${thirdLast} (${historicalData[2]?.result || '-'}) warna: ${historicalData[2]?.colour}
-   Issue ke-5: ${fifthIssue} → digit terakhir: ${fifthLastDigit}
-   sumLast3 = (${lastNumber}+${secondLast}+${thirdLast}) % 10 = ${sumLast3}
-   weighted = (${sumLast3}*2 + ${fifthLastDigit}) % 10 = ${weighted}
-   streakFactor = ${streakFactor} (karena 2 hasil terakhir ${historicalData[0].result === historicalData[1].result ? 'sama' : 'berbeda'})
-   colourFactor = ${colourFactor}
-   finalDigit = (${weighted} + ${streakFactor} + ${colourFactor}) % 10 = ${finalDigit}
-   Prediksi dasar: ${basePrediction}
-   Reverse Mode: ${reverseMode ? 'AKTIF' : 'NONAKTIF'}
-   Prediksi final: ${finalPrediction}
-
-        `);
       } else {
-        console.log("❌ Data kurang dari 5");
+        console.log("❌ Data kurang dari 1");
       }
     }
   };
@@ -1077,8 +1006,7 @@
         winRate: totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0,
         profit: profitLoss,
         streak: currentStreak,
-        losingStreak: currentStreak < 0 ? Math.abs(currentStreak) : 0,
-        reverseMode: reverseMode
+        losingStreak: currentStreak < 0 ? Math.abs(currentStreak) : 0
       };
     },
 
@@ -1090,8 +1018,7 @@
       return {
         prediction: this.prediction,
         amount: this.amount,
-        level: this.level,
-        reverseMode: reverseMode
+        level: this.level
       };
     },
 
@@ -1111,4 +1038,3 @@
   console.log("📊 Access via: window.wingoBetData.status");
 
 })();
-
