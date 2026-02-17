@@ -97,32 +97,13 @@
             letter-spacing: 1px;
         }
         
-        .row-pred {
-            display: flex;
-            justify-content: space-between;
-            margin: 12px 0;
-            padding: 12px 15px;
-            border-radius: 12px;
+        /* Grafik line chart menggantikan baris BESAR/KECIL */
+        .chart-container {
+            margin: 15px 0;
             background: rgba(255,255,255,0.05);
-            transition: 0.3s;
+            border-radius: 12px;
+            padding: 10px;
             border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .row-pred .label {
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-        
-        .row-pred .value {
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-        
-        .active-pred {
-            background: rgba(220, 38, 38, 0.25);
-            box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
-            transform: scale(1.02);
-            border-color: #dc2626;
         }
         
         .final-prediction {
@@ -471,22 +452,19 @@
             <p>Real-time monitoring bot trading WinGo</p>
         </div>
         
-        <!-- PREDICTION BOX -->
+        <!-- PREDICTION BOX (grafik + prediksi angka sinkron Firebase) -->
         <div class="prediction-box">
             <div class="timer-row">
                 <span class="timer-label">⏳ Next Result</span>
                 <span id="timerDisplay">30</span>
             </div>
-            <div class="prediction-title">📈 ANALISA PREDIKSI</div>
-            <div class="row-pred" id="besarRow">
-                <span class="label">BESAR</span>
-                <span class="value" id="besarVal">0%</span>
+            <div class="prediction-title">📈 GRAFIK RESULT TERAKHIR</div>
+            <!-- Canvas untuk line chart -->
+            <div class="chart-container">
+                <canvas id="predictionChart" height="140"></canvas>
             </div>
-            <div class="row-pred" id="kecilRow">
-                <span class="label">KECIL</span>
-                <span class="value" id="kecilVal">0%</span>
-            </div>
-            <div class="final-prediction" id="hasilPrediksi">MENUNGGU...</div>
+            <!-- Final prediction menampilkan angka berdasarkan prediksi terbaru dari Firebase -->
+            <div class="final-prediction" id="hasilPrediksi">PREDIKSI ANGKA ...</div>
         </div>
         
         <!-- STATISTIK UTAMA -->
@@ -692,6 +670,9 @@
         <source src="https://raw.githubusercontent.com/ojekaGorontalo/lotre/main/sound%2030%20detik.mp3" type="audio/mpeg">
     </audio>
 
+    <!-- Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         // ========== PAGINATION ==========
         let currentPage = 1;
@@ -729,40 +710,86 @@
             }, 1000);
         }
         
-        // ========== RANDOM PREDICTION ANIMATION ==========
-        const besarVal = document.getElementById('besarVal');
-        const kecilVal = document.getElementById('kecilVal');
-        const besarRow = document.getElementById('besarRow');
-        const kecilRow = document.getElementById('kecilRow');
+        // ========== PREDIKSI ANGKA (berdasarkan prediksi terbaru dari Firebase) ==========
         const hasilPrediksi = document.getElementById('hasilPrediksi');
         
-        function updateRandomPrediction() {
-            const besar = Math.floor(Math.random() * 100);
-            const kecil = 100 - besar;
-            
-            besarVal.textContent = besar + '%';
-            kecilVal.textContent = kecil + '%';
-            
-            besarRow.classList.remove('active-pred');
-            kecilRow.classList.remove('active-pred');
-            
-            if (besar > kecil) {
-                besarRow.classList.add('active-pred');
-                hasilPrediksi.textContent = 'PREDIKSI: BESAR';
-            } else if (kecil > besar) {
-                kecilRow.classList.add('active-pred');
-                hasilPrediksi.textContent = 'PREDIKSI: KECIL';
-            } else {
-                if (Math.random() < 0.5) {
-                    besarRow.classList.add('active-pred');
-                    hasilPrediksi.textContent = 'PREDIKSI: BESAR';
+        // Fungsi untuk memperbarui tampilan prediksi angka berdasarkan data Firebase
+        function updatePredictionFromData() {
+            if (allPredictions.length > 0) {
+                // Ambil prediksi terbaru (index 0 karena sudah di-unshift)
+                const latestPred = allPredictions[0];
+                const predText = latestPred.prediction; // Misal 'BESAR' atau 'KECIL'
+                let angka;
+                if (predText && predText.toUpperCase() === 'BESAR') {
+                    // Hasilkan angka acak 5-9 (tetap untuk prediksi ini, tidak berubah sampai prediksi baru)
+                    angka = Math.floor(Math.random() * 5) + 5;
+                } else if (predText && predText.toUpperCase() === 'KECIL') {
+                    angka = Math.floor(Math.random() * 5); // 0-4
                 } else {
-                    kecilRow.classList.add('active-pred');
-                    hasilPrediksi.textContent = 'PREDIKSI: KECIL';
+                    // Jika tidak dikenali, default
+                    angka = Math.floor(Math.random() * 10);
                 }
+                hasilPrediksi.textContent = `PREDIKSI ANGKA ${angka}`;
+            } else {
+                // Jika belum ada data prediksi, tampilkan placeholder
+                hasilPrediksi.textContent = 'PREDIKSI ANGKA ...';
             }
         }
-        setInterval(updateRandomPrediction, 1000);
+        
+        // ========== CHART INISIALISASI ==========
+        let chart;
+
+        function initChart() {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Angka',
+                        data: [],
+                        tension: 0.35,
+                        fill: true,
+                        backgroundColor: 'rgba(220, 38, 38, 0.2)',
+                        borderColor: '#f87171',
+                        pointBackgroundColor: '#fca5a5',
+                        pointBorderColor: '#fff',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 9,
+                            ticks: { stepSize: 1, color: '#94a3b8' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#94a3b8', maxRotation: 0, autoSkip: true }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChartFromResults() {
+            if (!chart || allResults.length === 0) return;
+
+            // Ambil 20 data terbaru, urutkan dari lama ke baru untuk grafik
+            const latest = allResults.slice(0, 20).reverse();
+
+            chart.data.labels = latest.map(r => r.issue?.slice(-3) || '');
+            chart.data.datasets[0].data = latest.map(r => r.number ?? 0);
+            chart.update();
+        }
         
         // ========== FIREBASE ==========
         const firebaseConfig = {
@@ -790,6 +817,7 @@
         let mergedData = [];
         
         document.addEventListener('DOMContentLoaded', function() {
+            initChart(); // Inisialisasi grafik
             loadAllData();
             setInterval(loadAllData, 30000);
             setTimer(30); // timer awal 30 detik
@@ -826,6 +854,9 @@
                     }
                 }
                 
+                // Update grafik setiap kali data results berubah
+                updateChartFromResults();
+                
                 mergeDataAndDisplay();
                 updateStats();
             }, showConnectionError);
@@ -838,6 +869,8 @@
                     data.id = child.key;
                     allPredictions.unshift(data);
                 });
+                // Setelah data prediksi diperbarui, update tampilan prediksi angka
+                updatePredictionFromData();
                 mergeDataAndDisplay();
             }, showConnectionError);
             
@@ -919,6 +952,9 @@
             merged.sort((a, b) => b.timestamp - a.timestamp);
             mergedData = merged;
             displayMergedData();
+            
+            // Update grafik juga saat merge (untuk jaga-jaga)
+            updateChartFromResults();
         }
         
         function playNotificationSound() {
@@ -1172,4 +1208,4 @@
         };
     </script>
 </body>
-</html>
+</html>di 
