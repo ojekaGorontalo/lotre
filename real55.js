@@ -448,7 +448,6 @@
     message += `<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n`;
     message += `<b>📈 P/L: ${profitLoss >= 0 ? '🟢' : '🔴'} ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()}</b>\n`;
     message += `<b>🚦 STATUS: ${reverseStatus}</b>\n\n`;
-
     message += `📊 Wingo Analitik Dashboard\n`;
     message += `🔗 https://splendid-queijadas-d948bb.netlify.app/wingo_bot_analytics`;
 
@@ -577,13 +576,13 @@
       const lossStreak = Math.abs(currentStreak);
       let justActivated = false;
 
-      // Aktifkan reverse mode jika streak >= 3 dan belum dalam zigzag
-      if (lossStreak >= 3 && !reverseMode && !zigzagActive) {
+      // MODIFIKASI: Aktifkan reverse mode hanya jika lossStreak === 3 (tepat 3 kekalahan)
+      if (lossStreak === 3 && !reverseMode && !zigzagActive) {
         reverseMode = true;
         zigzagActive = true;
         justActivated = true;
         console.log(`🔄 REVERSE MODE DIAKTIFKAN setelah ${lossStreak} kekalahan (memasuki mode zigzag)`);
-        sendTelegram(`🔄 <b>REVERSE MODE DIAKTIFKAN</b>\n\nSetelah ${lossStreak} kekalahan beruntun. Memasuki mode zigzag (toggle tiap kalah).`);
+        sendTelegram(`🔄 <b>REVERSE MODE DIAKTIFKAN</b>\n\nSetelah ${lossStreak} kekalahan beruntun. Memasuki mode zigzag (hanya aktif sekali).`);
       }
 
       if (currentBetIndex < betSequence.length - 1) {
@@ -594,10 +593,12 @@
         console.log(`   ⚠️ Sudah level maksimal, tetap di level ini`);
       }
 
-      // Jika dalam mode zigzag dan bukan baru diaktifkan, toggle reverse untuk taruhan berikutnya
-      if (zigzagActive && !justActivated) {
-        reverseMode = !reverseMode;
-        console.log(`🔄 Zigzag: reverse mode di-toggle menjadi ${reverseMode ? 'AKTIF' : 'NONAKTIF'} untuk taruhan berikutnya`);
+      // MODIFIKASI: Hapus toggle, ganti dengan: jika reverse mode aktif dan bukan baru diaktifkan, matikan setelah kalah
+      if (reverseMode && !justActivated) {
+        reverseMode = false;
+        zigzagActive = false;
+        console.log("🔄 Reverse mode dimatikan setelah kalah (hanya aktif sekali)");
+        sendTelegram("🔄 <b>REVERSE MODE DINONAKTIFKAN</b>\n\nKembali ke strategi normal setelah kalah.");
       }
 
       const lossStreakMsg = Math.abs(currentStreak);
@@ -878,7 +879,7 @@
     const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (STRICT TREND OVERRIDE)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1\n` +
-                      `🧮 Strategi: Trend Follow + Zigzag + Reverse Mode (zigzag toggle) + Strict Trend Override (4/4)\n` +
+                      `🧮 Strategi: Trend Follow + Zigzag + Reverse Mode (aktif sekali saat 3 kalah) + Strict Trend Override (4/4)\n` +
                       `📊 Martingale 7 Level\n\n` +
                       `<i>Bot berjalan otomatis.</i>`;
     sendTelegram(startupMsg);
@@ -903,7 +904,7 @@
 🤖 WINGO SMART TRADING BOT v6.5 - STRICT TREND OVERRIDE
 
 💰 Saldo awal: 247.000
-🧮 Strategi: Trend Follow + Zigzag (3 periode) + Reverse Mode (zigzag toggle) + Strict Trend Override (4/4)
+🧮 Strategi: Trend Follow + Zigzag (3 periode) + Reverse Mode (aktif sekali saat 3 kalah) + Strict Trend Override (4/4)
 📊 Martingale 7 Level
 📡 Firebase aktif
 🔒 Sinkronisasi issue AKTIF
