@@ -2,7 +2,7 @@
 
   console.clear();
 
-  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (Trend Follow + Anti Zigzag + Reverse Mode + Strict Trend Override)");
+  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (Trend Follow + Anti Zigzag + Strict Trend Override)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -89,10 +89,6 @@
   /* ========= VARIABEL HISTORIS ========= */
   let historicalData = [];
 
-  /* ========= VARIABEL REVERSE MODE & ZIGZAG ========= */
-  let reverseMode = false; // Awalnya nonaktif
-  let zigzagActive = false; // Menandai sedang dalam mode zigzag (setelah reverse aktif)
-
   /* ========= FIREBASE FUNCTIONS ========= */
   async function sendToFirebase(path, data) {
     try {
@@ -143,8 +139,6 @@
       dailyLosses: dailyStats.losses,
       dailyProfit: dailyStats.profit,
       timestamp: new Date().toISOString(),
-      reverseMode: reverseMode,
-      zigzagActive: zigzagActive,
       debugging: {
         lastProcessedIssue: lastProcessedIssue,
         nextIssueNumber: nextIssueNumber,
@@ -166,7 +160,6 @@
     console.log(`   - Angka: ${apiResultData.number} → ${resultData.result}`);
     console.log(`   - Warna: ${apiResultData.colour}`);
     console.log(`   - Premium: ${apiResultData.premium}`);
-    console.log(`   - Reverse Mode: ${reverseMode}, Zigzag: ${zigzagActive}`);
 
     sendToFirebase("results", resultData);
   }
@@ -182,8 +175,6 @@
       prediction: currentPrediction,
       betAmount: currentBetAmount,
       betLevel: currentBetIndex + 1,
-      reverseMode: reverseMode,
-      zigzagActive: zigzagActive,
       balanceAfterBet: virtualBalance,
       totalBets: totalBets,
       totalWins: totalWins,
@@ -276,13 +267,12 @@
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
   function sendStartupMotivationMessage() {
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG + REVERSE MODE + STRICT TREND OVERRIDE</b>\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - TREND FOLLOW + ANTI ZIGZAG + STRICT TREND OVERRIDE</b>\n\n` +
                           `Sistem analisis menggunakan:\n\n` +
                           `🧮 <b>STRATEGI:</b>\n` +
                           `• Trend Follow: mengikuti hasil terakhir\n` +
                           `• Deteksi Zigzag: jika 3 periode bergantian, prediksi dibalik (hanya jika tidak ada trend super kuat)\n` +
-                          `• Reverse Mode: otomatis aktif setelah 3 kekalahan beruntun, lalu zigzag (toggle tiap kalah) sampai menang\n` +
-                          `• Strict Trend Override: jika 4 dari 4 periode terakhir sama, maka trend super kuat diutamakan (mengabaikan zigzag dan reverse mode)\n\n` +
+                          `• Strict Trend Override: jika 4 dari 4 periode terakhir sama, maka trend super kuat diutamakan\n\n` +
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
                           `2. Rp 3.000\n` +
@@ -304,7 +294,7 @@
     return colourString.split(',')[0];
   }
 
-  /* ========= PREDIKSI BARU: PRIORITAS TREND SUPER KUAT, BARU ZIGZAG/TREND FOLLOW, LALU REVERSE MODE ========= */
+  /* ========= PREDIKSI: PRIORITAS TREND SUPER KUAT, BARU ZIGZAG/TREND FOLLOW ========= */
   function getPrediction() {
     if (historicalData.length === 0) {
       console.log("⚠️ Data historis kosong, default ke KECIL");
@@ -326,40 +316,30 @@
       }
     }
 
-    let prediction;
-
     // Prioritaskan trend super kuat
     if (trendSuperKuat) {
-      prediction = trendSuperKuat;
       console.log(`📊 TREND SUPER KUAT TERDETEKSI (4/4 ${trendSuperKuat}), mengikuti trend`);
       sendTelegram(`📊 <b>TREND SUPER KUAT: ${trendSuperKuat}</b>\n\n4 periode berturut-turut! Sistem mengikuti trend ini.`);
-    } else {
-      // Deteksi zigzag pada 3 periode terakhir
-      let zigzag = false;
-      if (historicalData.length >= 3) {
-        if (historicalData[0].result !== historicalData[1].result &&
-            historicalData[1].result !== historicalData[2].result) {
-          zigzag = true;
-        }
-      }
+      return trendSuperKuat;
+    }
 
-      if (zigzag) {
-        prediction = (lastResult === "KECIL") ? "BESAR" : "KECIL";
-        console.log(`🔄 ZIGZAG TERDETEKSI (3 periode bergantian), prediksi lawan: ${prediction}`);
-      } else {
-        prediction = lastResult;
-        console.log(`📈 TREND FOLLOW: ${prediction}`);
-      }
-
-      // Reverse mode hanya aktif jika tidak ada trend super kuat
-      if (reverseMode) {
-        prediction = (prediction === "KECIL") ? "BESAR" : "KECIL";
-        console.log(`🔄 REVERSE MODE ${reverseMode ? 'AKTIF' : 'NONAKTIF'}, prediksi dibalik menjadi: ${prediction}`);
-        if (reverseMode) sendTelegram(`🔄 <b>REVERSE MODE AKTIF</b>\n\nPrediksi dibalik menjadi ${prediction} (zigzag mode).`);
+    // Deteksi zigzag pada 3 periode terakhir
+    let zigzag = false;
+    if (historicalData.length >= 3) {
+      if (historicalData[0].result !== historicalData[1].result &&
+          historicalData[1].result !== historicalData[2].result) {
+        zigzag = true;
       }
     }
 
-    return prediction;
+    if (zigzag) {
+      const prediction = (lastResult === "KECIL") ? "BESAR" : "KECIL";
+      console.log(`🔄 ZIGZAG TERDETEKSI (3 periode bergantian), prediksi lawan: ${prediction}`);
+      return prediction;
+    } else {
+      console.log(`📈 TREND FOLLOW: ${lastResult}`);
+      return lastResult;
+    }
   }
 
   function analyzeTrendData(listData) {
@@ -438,7 +418,6 @@
 
   function createPredictionMessage(nextIssueShort) {
     const betLabel = betLabels[currentBetIndex];
-    const reverseStatus = reverseMode ? "🔀 REVERSE ON" : "➡️ NORMAL";
 
     let message = `<b>WINGO 30s SALDO AWAL 247.000</b>\n`;
     message += `<b>🆔 PERIODE ${nextIssueShort}</b>\n`;
@@ -446,8 +425,7 @@
     message += `─────────────────\n`;
     message += `<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n`;
     message += `<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n`;
-    message += `<b>📈 P/L: ${profitLoss >= 0 ? '🟢' : '🔴'} ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()}</b>\n`;
-    message += `<b>🚦 STATUS: ${reverseStatus}</b>\n\n`;
+    message += `<b>📈 P/L: ${profitLoss >= 0 ? '🟢' : '🔴'} ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()}</b>\n\n`;
     message += `📊 Wingo Analitik Dashboard\n`;
     message += `🔗 https://splendid-queijadas-d948bb.netlify.app/wingo_bot_analytics`;
 
@@ -474,8 +452,6 @@
       totalLosses = 0;
       currentStreak = 0;
       profitLoss = 0;
-      reverseMode = false;
-      zigzagActive = false;
       predictedIssue = null;
       predictedAt = null;
       historicalData = [];
@@ -527,13 +503,6 @@
 
       console.log(`✅ MENANG! Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
 
-      if (reverseMode || zigzagActive) {
-        reverseMode = false;
-        zigzagActive = false;
-        console.log("✅ REVERSE MODE & ZIGZAG DINONAKTIFKAN setelah menang");
-        sendTelegram("✅ <b>REVERSE MODE DINONAKTIFKAN</b>\n\nSistem kembali ke strategi normal.");
-      }
-
       const winningBetAmount = currentBetAmount;
       sendResultToFirebase(apiData, currentPrediction, true);
 
@@ -574,16 +543,6 @@
       sendResultToFirebase(apiData, currentPrediction, false);
 
       const lossStreak = Math.abs(currentStreak);
-      let justActivated = false;
-
-      // MODIFIKASI: Aktifkan reverse mode hanya jika lossStreak === 3 (tepat 3 kekalahan)
-      if (lossStreak === 3 && !reverseMode && !zigzagActive) {
-        reverseMode = true;
-        zigzagActive = true;
-        justActivated = true;
-        console.log(`🔄 REVERSE MODE DIAKTIFKAN setelah ${lossStreak} kekalahan (memasuki mode zigzag)`);
-        sendTelegram(`🔄 <b>REVERSE MODE DIAKTIFKAN</b>\n\nSetelah ${lossStreak} kekalahan beruntun. Memasuki mode zigzag (hanya aktif sekali).`);
-      }
 
       if (currentBetIndex < betSequence.length - 1) {
         currentBetIndex++;
@@ -591,14 +550,6 @@
         console.log(`   Level setelah: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`);
       } else {
         console.log(`   ⚠️ Sudah level maksimal, tetap di level ini`);
-      }
-
-      // MODIFIKASI: Hapus toggle, ganti dengan: jika reverse mode aktif dan bukan baru diaktifkan, matikan setelah kalah
-      if (reverseMode && !justActivated) {
-        reverseMode = false;
-        zigzagActive = false;
-        console.log("🔄 Reverse mode dimatikan setelah kalah (hanya aktif sekali)");
-        sendTelegram("🔄 <b>REVERSE MODE DINONAKTIFKAN</b>\n\nKembali ke strategi normal setelah kalah.");
       }
 
       const lossStreakMsg = Math.abs(currentStreak);
@@ -676,8 +627,6 @@
       currentBetLevel: currentBetIndex + 1,
       currentBetAmount: currentBetAmount,
       currentStreak: currentStreak,
-      reverseMode: reverseMode,
-      zigzagActive: zigzagActive,
       timestamp: Date.now(),
       dailyBets: dailyStats.bets,
       dailyWins: dailyStats.wins,
@@ -860,8 +809,6 @@
     lastDonationMessageAtWin = 0;
     predictedIssue = null;
     predictedAt = null;
-    reverseMode = false;
-    zigzagActive = false;
     messageQueue = [];
     isSendingMessage = false;
     dailyStats = {
@@ -879,7 +826,7 @@
     const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (STRICT TREND OVERRIDE)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1\n` +
-                      `🧮 Strategi: Trend Follow + Zigzag + Reverse Mode (aktif sekali saat 3 kalah) + Strict Trend Override (4/4)\n` +
+                      `🧮 Strategi: Trend Follow + Zigzag + Strict Trend Override (4/4)\n` +
                       `📊 Martingale 7 Level\n\n` +
                       `<i>Bot berjalan otomatis.</i>`;
     sendTelegram(startupMsg);
@@ -904,7 +851,7 @@
 🤖 WINGO SMART TRADING BOT v6.5 - STRICT TREND OVERRIDE
 
 💰 Saldo awal: 247.000
-🧮 Strategi: Trend Follow + Zigzag (3 periode) + Reverse Mode (aktif sekali saat 3 kalah) + Strict Trend Override (4/4)
+🧮 Strategi: Trend Follow + Zigzag (3 periode) + Strict Trend Override (4/4)
 📊 Martingale 7 Level
 📡 Firebase aktif
 🔒 Sinkronisasi issue AKTIF
@@ -956,8 +903,6 @@
 📅 Hari ini: ${dailyStats.bets} bet (${dailyStats.wins}W/${dailyStats.losses}L) P/L: ${dailyStats.profit >= 0 ? '+' : ''}${dailyStats.profit.toLocaleString()}
 🚦 Status: ${isBotActive ? 'AKTIF' : 'NONAKTIF'}
 📅 Periode berikutnya: ${nextIssueNumber || 'Belum diketahui'}
-🔄 Reverse Mode: ${reverseMode ? 'AKTIF' : 'NONAKTIF'}
-🔀 Zigzag Mode: ${zigzagActive ? 'AKTIF' : 'NONAKTIF'}
 
       `);
     },
@@ -988,7 +933,7 @@
       return { prediction: this.prediction, amount: this.amount, level: this.level };
     },
     get status() {
-      return { isActive: isBotActive, isBetPlaced, nextIssue: nextIssueNumber, predictedIssue, reverseMode, zigzagActive };
+      return { isActive: isBotActive, isBetPlaced, nextIssue: nextIssueNumber, predictedIssue };
     }
   };
 
