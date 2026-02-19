@@ -89,8 +89,8 @@
   /* ========= VARIABEL HISTORIS ========= */
   let historicalData = [];
 
-  /* ========= VARIABEL ZIGZAG ONCE ========= */
-  let zigzagUsed = false;   // Flag untuk menandai apakah zigzag sudah dipakai
+  /* ========= VARIABEL ZIGZAG KONFIRMASI ========= */
+  let pendingZigzag = false; // Menandakan apakah sedang menunggu konfirmasi zigzag
 
   /* ========= FIREBASE FUNCTIONS ========= */
   async function sendToFirebase(path, data) {
@@ -323,7 +323,7 @@
     if (trendSuperKuat) {
       console.log(`📊 TREND SUPER KUAT TERDETEKSI (4/4 ${trendSuperKuat}), mengikuti trend`);
       sendTelegram(`📊 <b>TREND SUPER KUAT: ${trendSuperKuat}</b>\n\n4 periode berturut-turut! Sistem mengikuti trend ini.`);
-      zigzagUsed = false;   // Reset flag karena trend super kuat mengesampingkan zigzag
+      pendingZigzag = false; // Reset karena trend super kuat
       return trendSuperKuat;
     }
 
@@ -336,20 +336,23 @@
       }
     }
 
-    // Logika zigzag dengan flag penggunaan
+    // Logika zigzag dengan konfirmasi
     if (zigzag) {
-      if (!zigzagUsed) {
-        zigzagUsed = true;
-        const prediction = (lastResult === "KECIL") ? "BESAR" : "KECIL";
-        console.log(`🔄 ZIGZAG TERDETEKSI (3 periode bergantian) dan digunakan, prediksi lawan: ${prediction}`);
-        return prediction;
+      if (!pendingZigzag) {
+        // Pertama kali zigzag terdeteksi, tunggu konfirmasi dengan trend follow
+        pendingZigzag = true;
+        console.log(`🔄 ZIGZAG TERDETEKSI (pertama), menggunakan trend follow untuk konfirmasi. Prediksi: ${lastResult}`);
+        return lastResult; // trend follow
       } else {
-        console.log(`📈 ZIGZAG TERDETEKSI tapi sudah digunakan, mengikuti trend: ${lastResult}`);
-        return lastResult;
+        // Zigzag terdeteksi lagi, berarti pola berlanjut, gunakan zigzag sekarang
+        pendingZigzag = false; // reset setelah digunakan
+        const prediction = (lastResult === "KECIL") ? "BESAR" : "KECIL";
+        console.log(`🔄 ZIGZAG TERKONFIRMASI, menggunakan prediksi lawan: ${prediction}`);
+        return prediction;
       }
     } else {
-      // Tidak ada zigzag, reset flag
-      zigzagUsed = false;
+      // Tidak ada zigzag, reset pending
+      pendingZigzag = false;
       console.log(`📈 TREND FOLLOW: ${lastResult}`);
       return lastResult;
     }
@@ -822,6 +825,7 @@
     lastDonationMessageAtWin = 0;
     predictedIssue = null;
     predictedAt = null;
+    pendingZigzag = false; // Reset zigzag pending
     messageQueue = [];
     isSendingMessage = false;
     dailyStats = {
@@ -839,7 +843,7 @@
     const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (STRICT TREND OVERRIDE)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1\n` +
-                      `🧮 Strategi: Trend Follow + Zigzag (sekali pakai) + Strict Trend Override (4/4)\n` +
+                      `🧮 Strategi: Trend Follow + Zigzag (konfirmasi) + Strict Trend Override (4/4)\n` +
                       `📊 Martingale 7 Level\n\n` +
                       `<i>Bot berjalan otomatis.</i>`;
     sendTelegram(startupMsg);
@@ -864,7 +868,7 @@
 🤖 WINGO SMART TRADING BOT v6.5 - STRICT TREND OVERRIDE
 
 💰 Saldo awal: 247.000
-🧮 Strategi: Trend Follow + Zigzag (sekali pakai) + Strict Trend Override (4/4)
+🧮 Strategi: Trend Follow + Zigzag (konfirmasi) + Strict Trend Override (4/4)
 📊 Martingale 7 Level
 📡 Firebase aktif
 🔒 Sinkronisasi issue AKTIF
