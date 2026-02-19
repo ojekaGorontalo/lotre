@@ -89,6 +89,9 @@
   /* ========= VARIABEL HISTORIS ========= */
   let historicalData = [];
 
+  /* ========= VARIABEL ZIGZAG ONCE ========= */
+  let zigzagUsed = false;   // Flag untuk menandai apakah zigzag sudah dipakai
+
   /* ========= FIREBASE FUNCTIONS ========= */
   async function sendToFirebase(path, data) {
     try {
@@ -320,6 +323,7 @@
     if (trendSuperKuat) {
       console.log(`📊 TREND SUPER KUAT TERDETEKSI (4/4 ${trendSuperKuat}), mengikuti trend`);
       sendTelegram(`📊 <b>TREND SUPER KUAT: ${trendSuperKuat}</b>\n\n4 periode berturut-turut! Sistem mengikuti trend ini.`);
+      zigzagUsed = false;   // Reset flag karena trend super kuat mengesampingkan zigzag
       return trendSuperKuat;
     }
 
@@ -332,11 +336,20 @@
       }
     }
 
+    // Logika zigzag dengan flag penggunaan
     if (zigzag) {
-      const prediction = (lastResult === "KECIL") ? "BESAR" : "KECIL";
-      console.log(`🔄 ZIGZAG TERDETEKSI (3 periode bergantian), prediksi lawan: ${prediction}`);
-      return prediction;
+      if (!zigzagUsed) {
+        zigzagUsed = true;
+        const prediction = (lastResult === "KECIL") ? "BESAR" : "KECIL";
+        console.log(`🔄 ZIGZAG TERDETEKSI (3 periode bergantian) dan digunakan, prediksi lawan: ${prediction}`);
+        return prediction;
+      } else {
+        console.log(`📈 ZIGZAG TERDETEKSI tapi sudah digunakan, mengikuti trend: ${lastResult}`);
+        return lastResult;
+      }
     } else {
+      // Tidak ada zigzag, reset flag
+      zigzagUsed = false;
       console.log(`📈 TREND FOLLOW: ${lastResult}`);
       return lastResult;
     }
@@ -826,7 +839,7 @@
     const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (STRICT TREND OVERRIDE)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1\n` +
-                      `🧮 Strategi: Trend Follow + Zigzag + Strict Trend Override (4/4)\n` +
+                      `🧮 Strategi: Trend Follow + Zigzag (sekali pakai) + Strict Trend Override (4/4)\n` +
                       `📊 Martingale 7 Level\n\n` +
                       `<i>Bot berjalan otomatis.</i>`;
     sendTelegram(startupMsg);
@@ -851,7 +864,7 @@
 🤖 WINGO SMART TRADING BOT v6.5 - STRICT TREND OVERRIDE
 
 💰 Saldo awal: 247.000
-🧮 Strategi: Trend Follow + Zigzag (3 periode) + Strict Trend Override (4/4)
+🧮 Strategi: Trend Follow + Zigzag (sekali pakai) + Strict Trend Override (4/4)
 📊 Martingale 7 Level
 📡 Firebase aktif
 🔒 Sinkronisasi issue AKTIF
