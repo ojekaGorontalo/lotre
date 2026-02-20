@@ -213,6 +213,14 @@
             background: #b91c1c;
         }
         
+        /* Tombol Telegram khusus */
+        .btn-telegram {
+            background: #0088cc;
+        }
+        .btn-telegram:hover {
+            background: #0077b5;
+        }
+        
         #connectionStatus {
             align-self: center;
         }
@@ -657,6 +665,26 @@
             </div>
             <div class="loading" id="loadingBalance">Memuat perubahan saldo...</div>
             <div class="empty-state" id="emptyBalance" style="display: none;"><span>📭</span><p>Tidak ada perubahan saldo</p></div>
+        </div>
+
+        <!-- ========== PENAMBAHAN: TOMBOL GRUP TELEGRAM & INFO MARTINGALE ========== -->
+        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;">
+                <div>
+                    <a href="https://t.me/WingoPredictionHub" target="_blank" class="btn btn-telegram" style="text-decoration: none; display: inline-flex; gap: 10px; padding: 12px 24px;">
+                        <span>📱</span> Gabung Grup Telegram
+                    </a>
+                    <p style="margin-top: 8px; color: #555; font-size: 0.9rem;">Admin: @PredictorUser</p>
+                </div>
+                <div style="max-width: 500px;">
+                    <p style="color: #dc2626; font-weight: 600; margin-bottom: 5px;">⚠️ Informasi Prediksi:</p>
+                    <p style="color: #333; font-size: 0.95rem; line-height: 1.5;">
+                        Menggunakan sistem <strong>Martingale 7 level</strong> dengan manajemen risiko. 
+                        Hasil prediksi tidak 100% akurat. Keuntungan dan kerugian tergantung pada kondisi pasar. 
+                        Selalu gunakan uang dingin dan bijak dalam bertaruh. Jangan pernah bertaruh melebihi kemampuan Anda.
+                    </p>
+                </div>
+            </div>
         </div>
         
         <!-- LAST UPDATE -->
@@ -1208,4 +1236,4 @@
         };
     </script>
 </body>
-</html>di 
+</html>
