@@ -2,7 +2,7 @@
 
   console.clear();
 
-  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (TREND FOLLOWER ONLY)");
+  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (ZIG-ZAG + STRICT TREND OVERRIDE)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -267,11 +267,11 @@
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
   function sendStartupMotivationMessage() {
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - TREND FOLLOWER ONLY</b>\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - ZIG-ZAG + STRICT TREND OVERRIDE</b>\n\n` +
                           `Sistem analisis menggunakan:\n\n` +
                           `🧮 <b>STRATEGI:</b>\n` +
-                          `• Trend Follow: mengikuti hasil terakhir (ZIGZAG DIHAPUS)\n` +
-                          `• Strict Trend Override: jika 4 dari 4 periode terakhir sama, maka trend super kuat diutamakan\n\n` +
+                          `• Zig-Zag: angka terakhir + digit terakhir issue ke-5, hasil digit akhir menentukan KECIL (0-4) / BESAR (5-9)\n` +
+                          `• Strict Trend Override: jika 4 dari 4 periode terakhir sama, trend super kuat diutamakan\n\n` +
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
                           `2. Rp 3.000\n` +
@@ -293,14 +293,12 @@
     return colourString.split(',')[0];
   }
 
-  /* ========= PREDIKSI: TREND FOLLOWER + STRICT TREND OVERRIDE ========= */
+  /* ========= PREDIKSI: ZIG-ZAG + STRICT TREND OVERRIDE ========= */
   function getPrediction() {
     if (historicalData.length === 0) {
       console.log("⚠️ Data historis kosong, default ke KECIL");
       return "KECIL";
     }
-
-    const lastResult = historicalData[0].result;
 
     // Deteksi trend super kuat: 4 dari 4 periode terakhir sama
     let trendSuperKuat = null;
@@ -322,9 +320,22 @@
       return trendSuperKuat;
     }
 
-    // TREND FOLLOWER MURNI (tanpa zigzag)
-    console.log(`📈 TREND FOLLOW: ${lastResult}`);
-    return lastResult;
+    // Jika data kurang dari 5, fallback ke KECIL
+    if (historicalData.length < 5) {
+      console.log("⚠️ Data historis kurang dari 5 periode, default ke KECIL");
+      return "KECIL";
+    }
+
+    // Logika Zig-Zag: angka terakhir + digit terakhir issue ke-5
+    const lastNumber = historicalData[0].number;
+    const fifthIssue = historicalData[4].issue;
+    const lastDigitIssue = parseInt(fifthIssue.slice(-1), 10);
+    const sum = lastNumber + lastDigitIssue;
+    const lastDigitSum = sum % 10;
+    const prediction = lastDigitSum <= 4 ? "KECIL" : "BESAR";
+
+    console.log(`🔮 ZIG-ZAG: ${lastNumber} + ${lastDigitIssue} = ${sum} → digit akhir ${lastDigitSum} → ${prediction}`);
+    return prediction;
   }
 
   function analyzeTrendData(listData) {
@@ -404,7 +415,7 @@
   function createPredictionMessage(nextIssueShort) {
     const betLabel = betLabels[currentBetIndex];
 
-    let message = `<b>WINGO 30s TREND FOLLOWER ONLY</b>\n`;
+    let message = `<b>WINGO 30s ZIG-ZAG + TREND OVERRIDE</b>\n`;
     message += `<b>🆔 PERIODE ${nextIssueShort}</b>\n`;
     message += `<b>🎯 PREDIKSI: ${currentPrediction} ${betLabel}</b>\n`;
     message += `─────────────────\n`;
@@ -808,10 +819,10 @@
     sendResetToFirebase(oldBalance, "manual_reset");
     console.log("🔄 Bot direset ke saldo 247.000 dan diaktifkan");
 
-    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (TREND FOLLOWER ONLY)</b>\n\n` +
+    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (ZIG-ZAG + TREND OVERRIDE)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1\n` +
-                      `🧮 Strategi: Trend Follow + Strict Trend Override (4/4)\n` +
+                      `🧮 Strategi: Zig-Zag + Strict Trend Override (4/4)\n` +
                       `📊 Martingale 7 Level\n\n` +
                       `<i>Bot berjalan otomatis.</i>`;
     sendTelegram(startupMsg);
@@ -833,10 +844,10 @@
   /* ========= STARTUP ========= */
   console.log(`
 
-🤖 WINGO SMART TRADING BOT v6.5 - TREND FOLLOWER ONLY
+🤖 WINGO SMART TRADING BOT v6.5 - ZIG-ZAG + STRICT TREND OVERRIDE
 
 💰 Saldo awal: 247.000
-🧮 Strategi: Trend Follow + Strict Trend Override (4/4) - ZIGZAG DIHAPUS
+🧮 Strategi: Zig-Zag (angka terakhir + digit terakhir issue ke-5) + Strict Trend Override (4/4)
 📊 Martingale 7 Level
 📡 Firebase aktif
 🔒 Sinkronisasi issue AKTIF
