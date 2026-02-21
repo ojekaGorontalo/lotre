@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WinGo Bot Analytics Dashboard</title>
+    <title>WinGo Bot Analytics (Private)</title>
+    <!-- Firebase untuk analitik (wingo-bot-analytics) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        /* ========== CSS SAMA SEPERTI SEBELUMNYA ========== */
+        /* ===== CSS SAMA + TAMBAHAN UNTUK LOGIN ===== */
         * {
             margin: 0;
             padding: 0;
@@ -30,6 +31,109 @@
             margin: 0 auto;
         }
         
+        /* ===== HALAMAN LOGIN ===== */
+        .login-container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .login-container h2 {
+            color: #dc2626;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .login-container p {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+        }
+        
+        .login-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            transition: border 0.3s;
+        }
+        
+        .login-input:focus {
+            border-color: #dc2626;
+            outline: none;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background 0.3s;
+            margin-bottom: 10px;
+        }
+        
+        .login-btn:hover {
+            background: #b91c1c;
+        }
+        
+        .register-btn {
+            background: #2563eb;
+        }
+        .register-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .login-error {
+            color: #dc2626;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            min-height: 20px;
+        }
+        
+        .login-info {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #888;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        
+        /* Form set password */
+        .set-password-container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            display: none;
+        }
+        
+        /* Konten dashboard disembunyikan awal */
+        .dashboard-content {
+            display: none;
+        }
+        
+        /* sisanya sama seperti style sebelumnya */
         .header {
             text-align: center;
             margin-bottom: 20px;
@@ -55,7 +159,6 @@
             opacity: 0.95;
         }
         
-        /* ===== PREDICTION BOX ===== */
         .prediction-box {
             background: #0f172a;
             padding: 20px;
@@ -97,7 +200,6 @@
             letter-spacing: 1px;
         }
         
-        /* Grafik line chart menggantikan baris BESAR/KECIL */
         .chart-container {
             margin: 15px 0;
             background: rgba(255,255,255,0.05);
@@ -118,7 +220,6 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         
-        /* ===== STATISTIK DLL ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -213,7 +314,6 @@
             background: #b91c1c;
         }
         
-        /* Tombol Telegram khusus */
         .btn-telegram {
             background: #0088cc;
         }
@@ -436,6 +536,17 @@
             border: 1px solid #e5e7eb;
         }
         
+        /* Tombol logout */
+        .logout-btn {
+            background: #333;
+            margin-left: 10px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+        .logout-btn:hover {
+            background: #222;
+        }
+        
         @media (min-width: 768px) {
             body { padding: 20px; font-size: 16px; }
             .container { max-width: 1400px; }
@@ -453,243 +564,269 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- HEADER -->
-        <div class="header">
-            <h1><span class="bot-icon">📊</span> WinGo Bot Analytics</h1>
-            <p>Real-time monitoring bot trading WinGo</p>
+    <!-- HALAMAN LOGIN (awalnya tampil) -->
+    <div id="loginPage" class="login-container">
+        <h2><span>🔒</span> WinGo Bot Private</h2>
+        <p>Masukkan UID dan Password Anda</p>
+        <input type="text" id="uidInput" class="login-input" placeholder="UID" autocomplete="off">
+        <input type="password" id="passwordInput" class="login-input" placeholder="Password" autocomplete="off">
+        <button class="login-btn" onclick="handleLogin()"><span>🔑</span> Masuk</button>
+        <button class="login-btn register-btn" onclick="showRegisterOptions()"><span>📝</span> Belum Punya UID? Daftar</button>
+        <div id="loginError" class="login-error"></div>
+        <div class="login-info">
+            <p>Hanya mitra terdaftar yang dapat mengakses prediksi eksklusif.</p>
+            <p>Setelah mendaftar, Anda wajib menghubungkan rekening bank/e-wallet dan deposit minimal Rp 247.000 untuk keamanan.</p>
         </div>
-        
-        <!-- PREDICTION BOX (grafik + prediksi angka sinkron Firebase) -->
-        <div class="prediction-box">
-            <div class="timer-row">
-                <span class="timer-label">⏳ Next Result</span>
-                <span id="timerDisplay">30</span>
-            </div>
-            <div class="prediction-title">📈 GRAFIK RESULT TERAKHIR</div>
-            <!-- Canvas untuk line chart -->
-            <div class="chart-container">
-                <canvas id="predictionChart" height="140"></canvas>
-            </div>
-            <!-- Final prediction menampilkan angka berdasarkan prediksi terbaru dari Firebase -->
-            <div class="final-prediction" id="hasilPrediksi">PREDIKSI ANGKA ...</div>
-        </div>
-        
-        <!-- STATISTIK UTAMA -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3><span>🎲</span> Total Taruhan</h3>
-                <div class="value" id="totalBets">0</div>
-                <div class="subtext">Sejak bot mulai</div>
-            </div>
-            <div class="stat-card">
-                <h3><span>📈</span> Win Rate</h3>
-                <div class="value" id="winRate">0%</div>
-                <div class="subtext">Persentase kemenangan</div>
-            </div>
-            <div class="stat-card">
-                <h3><span>🔄</span> Total Reset</h3>
-                <div class="value" id="totalResets">0</div>
-                <div class="subtext">Reset saldo</div>
-            </div>
-            <div class="stat-card">
-                <h3><span>💰</span> Profit/Loss</h3>
-                <div class="value" id="totalProfit">Rp 0</div>
-                <div class="subtext">Total laba/rugi</div>
-            </div>
-        </div>
-        
-        <!-- SUMMARY -->
-        <div class="summary">
-            <div class="summary-item">
-                <div class="summary-value" id="totalWins">0</div>
-                <div class="summary-label">Kemenangan</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-value" id="totalLosses">0</div>
-                <div class="summary-label">Kekalahan</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-value" id="currentStreak">0</div>
-                <div class="summary-label">Streak Saat Ini</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-value" id="avgBetAmount">Rp 0</div>
-                <div class="summary-label">Rata-rata Taruhan</div>
-            </div>
-        </div>
-        
-        <!-- CONTROLS -->
-        <div class="controls">
-            <div class="filters">
-                <input type="date" id="dateFilter" class="filter-input">
-                <input type="text" id="searchFilter" class="filter-input" placeholder="Cari...">
-                <button class="btn" onclick="refreshData()"><span>🔄</span> Refresh Data</button>
-                <button class="btn" onclick="toggleSound()"><span>🔊</span> <span id="soundStatus">Suara: ON</span></button>
-            </div>
-            <div>
-                <span id="connectionStatus" class="status-connected"><span>✅</span> Terhubung</span>
-            </div>
-        </div>
-        
-        <!-- TABS -->
-        <div class="tabs-container">
-            <div class="tabs">
-                <button class="tab active" onclick="openTab(event, 'results')"><span class="tab-icon">📋</span> Hasil & Prediksi</button>
-                <button class="tab" onclick="openTab(event, 'resets')"><span class="tab-icon">🔄</span> Data Reset</button>
-                <button class="tab" onclick="openTab(event, 'reports')"><span class="tab-icon">📊</span> Laporan Harian</button>
-                <button class="tab" onclick="openTab(event, 'safety')"><span class="tab-icon">⚠️</span> Safety Events</button>
-                <button class="tab" onclick="openTab(event, 'balance')"><span class="tab-icon">💰</span> Perubahan Saldo</button>
-            </div>
-        </div>
-        
-        <!-- TAB RESULTS -->
-        <div id="results" class="tab-content active">
-            <h2><span>🎯</span> Data Hasil & Prediksi (Menunggu) Saldo Awal Rp 247.000</h2>
-            <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="font-size: 0.9rem; color: #666;">Total: <span id="totalRecords">0</span> data</div>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <button class="pagination-btn" onclick="previousPage()" id="prevBtn" disabled>◀ Prev</button>
-                    <span id="pageInfo">Halaman 1</span>
-                    <button class="pagination-btn" onclick="nextPage()" id="nextBtn" disabled>Next ▶</button>
-                </div>
-            </div>
-            <div class="table-container">
-                <table id="resultsTable">
-                    <thead>
-                        <tr>
-                            <th>Waktu</th>
-                            <th>Periode</th>
-                            <th>Angka</th>
-                            <th>Colour</th>
-                            <th>Hasil</th>
-                            <th>Prediksi</th>
-                            <th>Status</th>
-                            <th>Level</th>
-                            <th>Taruhan</th>
-                            <th>P/L</th>
-                            <th>Saldo</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsBody"></tbody>
-                </table>
-            </div>
-            <div class="loading" id="loadingResults">Memuat data...</div>
-            <div class="empty-state" id="emptyResults" style="display: none;"><span>📭</span><p>Tidak ada data</p></div>
-        </div>
-        
-        <!-- TAB RESETS -->
-        <div id="resets" class="tab-content">
-            <h2><span>🔄</span> Data Reset Saldo</h2>
-            <div class="table-container">
-                <table id="resetsTable">
-                    <thead>
-                        <tr>
-                            <th>Waktu</th>
-                            <th>Alasan</th>
-                            <th>Saldo Lama</th>
-                            <th>Saldo Baru</th>
-                            <th>Total Bet</th>
-                            <th>Level</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resetsBody"></tbody>
-                </table>
-            </div>
-            <div class="loading" id="loadingResets">Memuat data reset...</div>
-            <div class="empty-state" id="emptyResets" style="display: none;"><span>📭</span><p>Tidak ada data reset</p></div>
-        </div>
-        
-        <!-- TAB REPORTS -->
-        <div id="reports" class="tab-content">
-            <h2><span>📊</span> Laporan Harian</h2>
-            <div class="table-container">
-                <table id="reportsTable">
-                    <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Total Taruhan</th>
-                            <th>Menang</th>
-                            <th>Kalah</th>
-                            <th>Win Rate</th>
-                            <th>Profit/Loss</th>
-                            <th>Saldo Akhir</th>
-                            <th>Level</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportsBody"></tbody>
-                </table>
-            </div>
-            <div class="loading" id="loadingReports">Memuat laporan harian...</div>
-            <div class="empty-state" id="emptyReports" style="display: none;"><span>📭</span><p>Tidak ada laporan</p></div>
-        </div>
-        
-        <!-- TAB SAFETY -->
-        <div id="safety" class="tab-content">
-            <h2><span>⚠️</span> Safety Events</h2>
-            <div class="table-container">
-                <table id="safetyTable">
-                    <thead>
-                        <tr>
-                            <th>Waktu</th>
-                            <th>Event</th>
-                            <th>Detail</th>
-                            <th>Saldo</th>
-                            <th>Kalah Berturut</th>
-                            <th>Level</th>
-                        </tr>
-                    </thead>
-                    <tbody id="safetyBody"></tbody>
-                </table>
-            </div>
-            <div class="loading" id="loadingSafety">Memuat safety events...</div>
-            <div class="empty-state" id="emptySafety" style="display: none;"><span>📭</span><p>Tidak ada safety events</p></div>
-        </div>
-        
-        <!-- TAB BALANCE -->
-        <div id="balance" class="tab-content">
-            <h2><span>💰</span> Perubahan Saldo</h2>
-            <div class="table-container">
-                <table id="balanceTable">
-                    <thead>
-                        <tr>
-                            <th>Waktu</th>
-                            <th>Jenis</th>
-                            <th>Jumlah</th>
-                            <th>Saldo Baru</th>
-                            <th>Keterangan</th>
-                        </tr>
-                    </thead>
-                    <tbody id="balanceBody"></tbody>
-                </table>
-            </div>
-            <div class="loading" id="loadingBalance">Memuat perubahan saldo...</div>
-            <div class="empty-state" id="emptyBalance" style="display: none;"><span>📭</span><p>Tidak ada perubahan saldo</p></div>
-        </div>
+    </div>
 
-        <!-- ========== PENAMBAHAN: TOMBOL GRUP TELEGRAM & INFO MARTINGALE ========== -->
-        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
-            <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;">
-                <div>
-                    <a href="https://t.me/WingoPredictionHub" target="_blank" class="btn btn-telegram" style="text-decoration: none; display: inline-flex; gap: 10px; padding: 12px 24px;">
-                        <span>📱</span> Gabung Grup Telegram
-                    </a>
-                    <p style="margin-top: 8px; color: #555; font-size: 0.9rem;">Admin: @PredictorUser</p>
+    <!-- HALAMAN SET PASSWORD (untuk user yang sudah punya UID tapi belum punya password) -->
+    <div id="setPasswordPage" class="set-password-container" style="display: none;">
+        <h2><span>🔐</span> Buat Password</h2>
+        <p>UID Anda sudah terdaftar. Buat password untuk mengakses dashboard.</p>
+        <input type="password" id="newPassword" class="login-input" placeholder="Password baru">
+        <input type="password" id="confirmPassword" class="login-input" placeholder="Konfirmasi Password">
+        <button class="login-btn" onclick="setPassword()"><span>💾</span> Simpan Password</button>
+        <div id="setPasswordError" class="login-error"></div>
+    </div>
+
+    <!-- KONTEN DASHBOARD (disembunyikan sampai login sukses) -->
+    <div id="dashboardContent" class="dashboard-content">
+        <div class="container">
+            <!-- HEADER dengan tombol logout -->
+            <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h1><span class="bot-icon">📊</span> WinGo Bot Analytics</h1>
+                <button class="btn logout-btn" onclick="logout()"><span>🚪</span> Keluar</button>
+            </div>
+            
+            <!-- PREDICTION BOX -->
+            <div class="prediction-box">
+                <div class="timer-row">
+                    <span class="timer-label">⏳ Next Result</span>
+                    <span id="timerDisplay">30</span>
                 </div>
-                <div style="max-width: 500px;">
-                    <p style="color: #dc2626; font-weight: 600; margin-bottom: 5px;">⚠️ Informasi Prediksi:</p>
-                    <p style="color: #333; font-size: 0.95rem; line-height: 1.5;">
-                        Menggunakan sistem <strong>Martingale 7 level</strong> dengan manajemen risiko. 
-                        Hasil prediksi tidak 100% akurat. Keuntungan dan kerugian tergantung pada kondisi pasar. 
-                        Selalu gunakan uang dingin dan bijak dalam bertaruh. Jangan pernah bertaruh melebihi kemampuan Anda.
-                    </p>
+                <div class="prediction-title">📈 GRAFIK RESULT TERAKHIR</div>
+                <div class="chart-container">
+                    <canvas id="predictionChart" height="140"></canvas>
+                </div>
+                <div class="final-prediction" id="hasilPrediksi">PREDIKSI ANGKA ...</div>
+            </div>
+            
+            <!-- STATISTIK UTAMA -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3><span>🎲</span> Total Taruhan</h3>
+                    <div class="value" id="totalBets">0</div>
+                    <div class="subtext">Sejak bot mulai</div>
+                </div>
+                <div class="stat-card">
+                    <h3><span>📈</span> Win Rate</h3>
+                    <div class="value" id="winRate">0%</div>
+                    <div class="subtext">Persentase kemenangan</div>
+                </div>
+                <div class="stat-card">
+                    <h3><span>🔄</span> Total Reset</h3>
+                    <div class="value" id="totalResets">0</div>
+                    <div class="subtext">Reset saldo</div>
+                </div>
+                <div class="stat-card">
+                    <h3><span>💰</span> Profit/Loss</h3>
+                    <div class="value" id="totalProfit">Rp 0</div>
+                    <div class="subtext">Total laba/rugi</div>
                 </div>
             </div>
-        </div>
-        
-        <!-- LAST UPDATE -->
-        <div class="last-update">
-            <strong>Terakhir diperbarui:</strong> <span id="lastUpdate">-</span>
+            
+            <!-- SUMMARY -->
+            <div class="summary">
+                <div class="summary-item">
+                    <div class="summary-value" id="totalWins">0</div>
+                    <div class="summary-label">Kemenangan</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="totalLosses">0</div>
+                    <div class="summary-label">Kekalahan</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="currentStreak">0</div>
+                    <div class="summary-label">Streak Saat Ini</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="avgBetAmount">Rp 0</div>
+                    <div class="summary-label">Rata-rata Taruhan</div>
+                </div>
+            </div>
+            
+            <!-- CONTROLS -->
+            <div class="controls">
+                <div class="filters">
+                    <input type="date" id="dateFilter" class="filter-input">
+                    <input type="text" id="searchFilter" class="filter-input" placeholder="Cari...">
+                    <button class="btn" onclick="refreshData()"><span>🔄</span> Refresh Data</button>
+                    <button class="btn" onclick="toggleSound()"><span>🔊</span> <span id="soundStatus">Suara: ON</span></button>
+                </div>
+                <div>
+                    <span id="connectionStatus" class="status-connected"><span>✅</span> Terhubung</span>
+                </div>
+            </div>
+            
+            <!-- TABS -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab active" onclick="openTab(event, 'results')"><span class="tab-icon">📋</span> Hasil & Prediksi</button>
+                    <button class="tab" onclick="openTab(event, 'resets')"><span class="tab-icon">🔄</span> Data Reset</button>
+                    <button class="tab" onclick="openTab(event, 'reports')"><span class="tab-icon">📊</span> Laporan Harian</button>
+                    <button class="tab" onclick="openTab(event, 'safety')"><span class="tab-icon">⚠️</span> Safety Events</button>
+                    <button class="tab" onclick="openTab(event, 'balance')"><span class="tab-icon">💰</span> Perubahan Saldo</button>
+                </div>
+            </div>
+            
+            <!-- TAB RESULTS -->
+            <div id="results" class="tab-content active">
+                <h2><span>🎯</span> Data Hasil & Prediksi (Menunggu) Saldo Awal Rp 247.000</h2>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 0.9rem; color: #666;">Total: <span id="totalRecords">0</span> data</div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="pagination-btn" onclick="previousPage()" id="prevBtn" disabled>◀ Prev</button>
+                        <span id="pageInfo">Halaman 1</span>
+                        <button class="pagination-btn" onclick="nextPage()" id="nextBtn" disabled>Next ▶</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Waktu</th>
+                                <th>Periode</th>
+                                <th>Angka</th>
+                                <th>Colour</th>
+                                <th>Hasil</th>
+                                <th>Prediksi</th>
+                                <th>Status</th>
+                                <th>Level</th>
+                                <th>Taruhan</th>
+                                <th>P/L</th>
+                                <th>Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+                </div>
+                <div class="loading" id="loadingResults">Memuat data...</div>
+                <div class="empty-state" id="emptyResults" style="display: none;"><span>📭</span><p>Tidak ada data</p></div>
+            </div>
+            
+            <!-- TAB RESETS -->
+            <div id="resets" class="tab-content">
+                <h2><span>🔄</span> Data Reset Saldo</h2>
+                <div class="table-container">
+                    <table id="resetsTable">
+                        <thead>
+                            <tr>
+                                <th>Waktu</th>
+                                <th>Alasan</th>
+                                <th>Saldo Lama</th>
+                                <th>Saldo Baru</th>
+                                <th>Total Bet</th>
+                                <th>Level</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resetsBody"></tbody>
+                    </table>
+                </div>
+                <div class="loading" id="loadingResets">Memuat data reset...</div>
+                <div class="empty-state" id="emptyResets" style="display: none;"><span>📭</span><p>Tidak ada data reset</p></div>
+            </div>
+            
+            <!-- TAB REPORTS -->
+            <div id="reports" class="tab-content">
+                <h2><span>📊</span> Laporan Harian</h2>
+                <div class="table-container">
+                    <table id="reportsTable">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Total Taruhan</th>
+                                <th>Menang</th>
+                                <th>Kalah</th>
+                                <th>Win Rate</th>
+                                <th>Profit/Loss</th>
+                                <th>Saldo Akhir</th>
+                                <th>Level</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsBody"></tbody>
+                    </table>
+                </div>
+                <div class="loading" id="loadingReports">Memuat laporan harian...</div>
+                <div class="empty-state" id="emptyReports" style="display: none;"><span>📭</span><p>Tidak ada laporan</p></div>
+            </div>
+            
+            <!-- TAB SAFETY -->
+            <div id="safety" class="tab-content">
+                <h2><span>⚠️</span> Safety Events</h2>
+                <div class="table-container">
+                    <table id="safetyTable">
+                        <thead>
+                            <tr>
+                                <th>Waktu</th>
+                                <th>Event</th>
+                                <th>Detail</th>
+                                <th>Saldo</th>
+                                <th>Kalah Berturut</th>
+                                <th>Level</th>
+                            </tr>
+                        </thead>
+                        <tbody id="safetyBody"></tbody>
+                    </table>
+                </div>
+                <div class="loading" id="loadingSafety">Memuat safety events...</div>
+                <div class="empty-state" id="emptySafety" style="display: none;"><span>📭</span><p>Tidak ada safety events</p></div>
+            </div>
+            
+            <!-- TAB BALANCE -->
+            <div id="balance" class="tab-content">
+                <h2><span>💰</span> Perubahan Saldo</h2>
+                <div class="table-container">
+                    <table id="balanceTable">
+                        <thead>
+                            <tr>
+                                <th>Waktu</th>
+                                <th>Jenis</th>
+                                <th>Jumlah</th>
+                                <th>Saldo Baru</th>
+                                <th>Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="balanceBody"></tbody>
+                    </table>
+                </div>
+                <div class="loading" id="loadingBalance">Memuat perubahan saldo...</div>
+                <div class="empty-state" id="emptyBalance" style="display: none;"><span>📭</span><p>Tidak ada perubahan saldo</p></div>
+            </div>
+
+            <!-- TOMBOL GRUP TELEGRAM & INFO -->
+            <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;">
+                    <div>
+                        <a href="https://t.me/WingoPredictionHub" target="_blank" class="btn btn-telegram" style="text-decoration: none; display: inline-flex; gap: 10px; padding: 12px 24px;">
+                            <span>📱</span> Gabung Grup Telegram
+                        </a>
+                        <p style="margin-top: 8px; color: #555; font-size: 0.9rem;">Admin: @PredictorUser</p>
+                    </div>
+                    <div style="max-width: 500px;">
+                        <p style="color: #dc2626; font-weight: 600; margin-bottom: 5px;">⚠️ Informasi Prediksi:</p>
+                        <p style="color: #333; font-size: 0.95rem; line-height: 1.5;">
+                            Menggunakan sistem <strong>Martingale 7 level</strong> dengan manajemen risiko. 
+                            Hasil prediksi tidak 100% akurat. Keuntungan dan kerugian tergantung pada kondisi pasar. 
+                            Selalu gunakan uang dingin dan bijak dalam bertaruh. Jangan pernah bertaruh melebihi kemampuan Anda.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- LAST UPDATE -->
+            <div class="last-update">
+                <strong>Terakhir diperbarui:</strong> <span id="lastUpdate">-</span>
+            </div>
         </div>
     </div>
 
@@ -702,31 +839,206 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // ========== PAGINATION ==========
+        // ========== FIREBASE INIT ==========
+        // Konfigurasi untuk database analitik (wingo-bot-analytics) - tempat data bot
+        const analyticsConfig = {
+            apiKey: "AIzaSyCwepdohDnAFm7j9yGZ3Wan5etfMlYIY4w",
+            authDomain: "wingo-bot-analytics.firebaseapp.com",
+            databaseURL: "https://wingo-bot-analytics-default-rtdb.firebaseio.com",
+            projectId: "wingo-bot-analytics",
+            storageBucket: "wingo-bot-analytics.appspot.com",
+            messagingSenderId: "46011860748",
+            appId: "1:46011860748:web:f5d61b92de5201a6ed818e"
+        };
+
+        // Konfigurasi untuk database UID (steady-fin) - tempat data user
+        const authConfig = {
+            apiKey: "AIzaSyDtZxsl5LZp3n1KZJfdVAdqQj22ZBPoQbU",
+            authDomain: "steady-fin-368617.firebaseapp.com",
+            databaseURL: "https://steady-fin-368617-default-rtdb.firebaseio.com",
+            projectId: "steady-fin-368617",
+            storageBucket: "steady-fin-368617.firebasestorage.app",
+            messagingSenderId: "626971902484",
+            appId: "1:626971902484:web:98f7cdbd55c5990dfe9d01",
+            measurementId: "G-70D3LR995Y"
+        };
+
+        // Inisialisasi kedua Firebase app
+        const analyticsApp = firebase.initializeApp(analyticsConfig, 'analytics');
+        const authApp = firebase.initializeApp(authConfig, 'auth');
+
+        const analyticsDb = analyticsApp.database();
+        const authDb = authApp.database();
+
+        // ========== GLOBAL VARIABLES ==========
+        let allResults = [];
+        let allPredictions = [];
+        let allResets = [];
+        let allReports = [];
+        let allSafetyEvents = [];
+        let allBalanceChanges = [];
+        let mergedData = [];
         let currentPage = 1;
         const rowsPerPage = 10;
         let totalFilteredResults = 0;
         let totalPages = 1;
-        
-        function updatePaginationInfo() {
-            document.getElementById('pageInfo').textContent = `Halaman ${currentPage} dari ${totalPages}`;
-            document.getElementById('totalRecords').textContent = totalFilteredResults;
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage === totalPages;
-        }
-        
-        function nextPage() {
-            if (currentPage < totalPages) { currentPage++; displayMergedData(); }
-        }
-        function previousPage() {
-            if (currentPage > 1) { currentPage--; displayMergedData(); }
-        }
-        
-        // ========== TIMER ==========
         let timerSeconds = 30;
         let timerInterval = null;
         const timerDisplay = document.getElementById('timerDisplay');
-        
+        let lastResultTimestamp = 0;
+        let soundEnabled = true;
+        let chart;
+
+        // ========== LOGIN STATE ==========
+        let currentUid = null;
+
+        // ========== FUNGSI LOGIN ==========
+        function checkLogin() {
+            const savedUid = localStorage.getItem('wingo_uid');
+            if (savedUid) {
+                // Cek apakah UID masih ada di database auth
+                authDb.ref('uids/' + savedUid).once('value').then(snapshot => {
+                    if (snapshot.exists()) {
+                        // Ada UID, cek apakah ada password
+                        const userData = snapshot.val();
+                        if (userData.password) {
+                            // Sudah punya password, tapi perlu verifikasi ulang? Kita simpan status login
+                            // Untuk keamanan, kita bisa minta login ulang jika password tidak tersimpan di localStorage
+                            // Di sini kita asumsikan jika localStorage ada, user sudah login
+                            // Tapi kita bisa tambahkan pengecekan session
+                            currentUid = savedUid;
+                            showDashboard();
+                        } else {
+                            // UID ada tapi belum punya password, arahkan ke set password
+                            localStorage.removeItem('wingo_uid'); // Hapus karena belum login
+                            showSetPassword(savedUid);
+                        }
+                    } else {
+                        localStorage.removeItem('wingo_uid');
+                        showLogin();
+                    }
+                }).catch(() => {
+                    showLogin();
+                });
+            } else {
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('loginPage').style.display = 'block';
+            document.getElementById('setPasswordPage').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'none';
+        }
+
+        function showSetPassword(uid) {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('setPasswordPage').style.display = 'block';
+            document.getElementById('dashboardContent').style.display = 'none';
+            // Simpan uid sementara di dataset
+            document.getElementById('setPasswordPage').dataset.uid = uid;
+        }
+
+        function showDashboard() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('setPasswordPage').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'block';
+            // Inisialisasi dashboard
+            initDashboard();
+        }
+
+        function handleLogin() {
+            const uid = document.getElementById('uidInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
+            const errorEl = document.getElementById('loginError');
+
+            if (!uid || !password) {
+                errorEl.textContent = 'UID dan password harus diisi';
+                return;
+            }
+
+            errorEl.textContent = 'Memeriksa...';
+
+            authDb.ref('uids/' + uid).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    if (userData.password) {
+                        // Cek password
+                        if (userData.password === password) {
+                            // Login sukses
+                            localStorage.setItem('wingo_uid', uid);
+                            currentUid = uid;
+                            showDashboard();
+                        } else {
+                            errorEl.textContent = 'Password salah';
+                        }
+                    } else {
+                        // UID ada tapi belum punya password, arahkan ke set password
+                        errorEl.textContent = 'UID ini belum memiliki password. Silakan buat password.';
+                        showSetPassword(uid);
+                    }
+                } else {
+                    errorEl.textContent = 'UID tidak terdaftar. Silakan daftar terlebih dahulu.';
+                }
+            }).catch(err => {
+                console.error(err);
+                errorEl.textContent = 'Gagal menghubungi database';
+            });
+        }
+
+        function setPassword() {
+            const newPass = document.getElementById('newPassword').value.trim();
+            const confirmPass = document.getElementById('confirmPassword').value.trim();
+            const errorEl = document.getElementById('setPasswordError');
+            const uid = document.getElementById('setPasswordPage').dataset.uid;
+
+            if (!newPass || !confirmPass) {
+                errorEl.textContent = 'Password tidak boleh kosong';
+                return;
+            }
+            if (newPass !== confirmPass) {
+                errorEl.textContent = 'Password tidak cocok';
+                return;
+            }
+
+            errorEl.textContent = 'Menyimpan...';
+
+            // Simpan password ke database auth
+            authDb.ref('uids/' + uid).update({ password: newPass })
+                .then(() => {
+                    errorEl.textContent = 'Password berhasil disimpan! Silakan login.';
+                    setTimeout(() => {
+                        showLogin();
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error(err);
+                    errorEl.textContent = 'Gagal menyimpan password';
+                });
+        }
+
+        function showRegisterOptions() {
+            const msg = "Untuk mendapatkan akses prediksi, Anda harus terdaftar sebagai mitra kami. Silakan daftar melalui salah satu link berikut:\n\n1. https://www.lixnobe.com/#/register?invitationCode=DtX6m351494\n2. https://www.qumbrot.com/#/register?invitationCode=DtX6m351494\n\nSetelah mendaftar, Anda wajib:\n- Menghubungkan rekening bank/e-wallet\n- Deposit minimal Rp 247.000 untuk keamanan\n\nSetelah itu, UID Anda akan otomatis terdaftar di sistem kami.";
+            alert(msg);
+            // Bisa juga buka tab baru
+            window.open('https://www.lixnobe.com/#/register?invitationCode=DtX6m351494', '_blank');
+        }
+
+        function logout() {
+            localStorage.removeItem('wingo_uid');
+            currentUid = null;
+            showLogin();
+            if (timerInterval) clearInterval(timerInterval);
+        }
+
+        // ========== DASHBOARD FUNCTIONS (sama seperti sebelumnya) ==========
+        function initDashboard() {
+            initChart();
+            loadAllData();
+            setInterval(loadAllData, 30000);
+            setTimer(30);
+        }
+
         function setTimer(seconds) {
             if (timerInterval) clearInterval(timerInterval);
             timerSeconds = seconds;
@@ -737,35 +1049,6 @@
                 timerDisplay.textContent = timerSeconds;
             }, 1000);
         }
-        
-        // ========== PREDIKSI ANGKA (berdasarkan prediksi terbaru dari Firebase) ==========
-        const hasilPrediksi = document.getElementById('hasilPrediksi');
-        
-        // Fungsi untuk memperbarui tampilan prediksi angka berdasarkan data Firebase
-        function updatePredictionFromData() {
-            if (allPredictions.length > 0) {
-                // Ambil prediksi terbaru (index 0 karena sudah di-unshift)
-                const latestPred = allPredictions[0];
-                const predText = latestPred.prediction; // Misal 'BESAR' atau 'KECIL'
-                let angka;
-                if (predText && predText.toUpperCase() === 'BESAR') {
-                    // Hasilkan angka acak 5-9 (tetap untuk prediksi ini, tidak berubah sampai prediksi baru)
-                    angka = Math.floor(Math.random() * 5) + 5;
-                } else if (predText && predText.toUpperCase() === 'KECIL') {
-                    angka = Math.floor(Math.random() * 5); // 0-4
-                } else {
-                    // Jika tidak dikenali, default
-                    angka = Math.floor(Math.random() * 10);
-                }
-                hasilPrediksi.textContent = `PREDIKSI ANGKA ${angka}`;
-            } else {
-                // Jika belum ada data prediksi, tampilkan placeholder
-                hasilPrediksi.textContent = 'PREDIKSI ANGKA ...';
-            }
-        }
-        
-        // ========== CHART INISIALISASI ==========
-        let chart;
 
         function initChart() {
             const ctx = document.getElementById('predictionChart').getContext('2d');
@@ -808,55 +1091,11 @@
             });
         }
 
-        function updateChartFromResults() {
-            if (!chart || allResults.length === 0) return;
-
-            // Ambil 20 data terbaru, urutkan dari lama ke baru untuk grafik
-            const latest = allResults.slice(0, 20).reverse();
-
-            chart.data.labels = latest.map(r => r.issue?.slice(-3) || '');
-            chart.data.datasets[0].data = latest.map(r => r.number ?? 0);
-            chart.update();
-        }
-        
-        // ========== FIREBASE ==========
-        const firebaseConfig = {
-            apiKey: "AIzaSyCwepdohDnAFm7j9yGZ3Wan5etfMlYIY4w",
-            authDomain: "wingo-bot-analytics.firebaseapp.com",
-            databaseURL: "https://wingo-bot-analytics-default-rtdb.firebaseio.com",
-            projectId: "wingo-bot-analytics",
-            storageBucket: "wingo-bot-analytics.appspot.com",
-            messagingSenderId: "46011860748",
-            appId: "1:46011860748:web:f5d61b92de5201a6ed818e"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        
-        // Global variables
-        let allResults = [];
-        let allPredictions = [];
-        let allResets = [];
-        let allReports = [];
-        let allSafetyEvents = [];
-        let allBalanceChanges = [];
-        let lastResultTimestamp = 0; // untuk tracking hasil baru
-        let soundEnabled = true;
-        let previousResultsCount = 0;
-        let mergedData = [];
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            initChart(); // Inisialisasi grafik
-            loadAllData();
-            setInterval(loadAllData, 30000);
-            setTimer(30); // timer awal 30 detik
-        });
-        
         function loadAllData() {
             console.log('Memuat data...');
-            previousResultsCount = allResults.length;
-            
-            // Results
-            database.ref('results').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
+
+            // Gunakan analyticsDb untuk semua data bot
+            analyticsDb.ref('results').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
                 allResults = [];
                 snapshot.forEach((child) => {
                     const data = child.val();
@@ -864,46 +1103,37 @@
                     allResults.unshift(data);
                 });
                 
-                // Deteksi hasil baru
                 if (allResults.length > 0) {
                     const latestResult = allResults[0];
                     if (latestResult.timestamp > lastResultTimestamp) {
-                        // Hasil baru: reset timer ke 30
                         setTimer(30);
                         lastResultTimestamp = latestResult.timestamp;
-                        // Mainkan suara jika diaktifkan
-                        if (soundEnabled && lastResultTimestamp > 0) {
+                        if (soundEnabled) {
                             playNotificationSound();
                         }
                     } else if (lastResultTimestamp === 0 && allResults.length > 0) {
-                        // Load pertama: set timer ke 30
                         setTimer(30);
                         lastResultTimestamp = latestResult.timestamp;
                     }
                 }
                 
-                // Update grafik setiap kali data results berubah
                 updateChartFromResults();
-                
                 mergeDataAndDisplay();
                 updateStats();
             }, showConnectionError);
             
-            // Predictions (tidak mempengaruhi timer)
-            database.ref('predictions').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
+            analyticsDb.ref('predictions').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
                 allPredictions = [];
                 snapshot.forEach((child) => {
                     const data = child.val();
                     data.id = child.key;
                     allPredictions.unshift(data);
                 });
-                // Setelah data prediksi diperbarui, update tampilan prediksi angka
                 updatePredictionFromData();
                 mergeDataAndDisplay();
             }, showConnectionError);
             
-            // Resets
-            database.ref('resets').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+            analyticsDb.ref('resets').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
                 allResets = [];
                 snapshot.forEach((child) => {
                     const data = child.val();
@@ -914,8 +1144,7 @@
                 updateStats();
             }, showConnectionError);
             
-            // Reports
-            database.ref('daily_reports').orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => {
+            analyticsDb.ref('daily_reports').orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => {
                 allReports = [];
                 snapshot.forEach((child) => {
                     const data = child.val();
@@ -925,8 +1154,7 @@
                 displayReports();
             }, showConnectionError);
             
-            // Safety
-            database.ref('safety_events').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+            analyticsDb.ref('safety_events').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
                 allSafetyEvents = [];
                 snapshot.forEach((child) => {
                     const data = child.val();
@@ -936,8 +1164,7 @@
                 displaySafetyEvents();
             }, showConnectionError);
             
-            // Balance
-            database.ref('balance_changes').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+            analyticsDb.ref('balance_changes').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
                 allBalanceChanges = [];
                 snapshot.forEach((child) => {
                     const data = child.val();
@@ -951,7 +1178,34 @@
             document.getElementById('connectionStatus').innerHTML = '<span>✅</span> Terhubung';
             document.getElementById('connectionStatus').className = 'status-connected';
         }
-        
+
+        function updatePredictionFromData() {
+            const hasilPrediksi = document.getElementById('hasilPrediksi');
+            if (allPredictions.length > 0) {
+                const latestPred = allPredictions[0];
+                const predText = latestPred.prediction;
+                let angka;
+                if (predText && predText.toUpperCase() === 'BESAR') {
+                    angka = Math.floor(Math.random() * 5) + 5;
+                } else if (predText && predText.toUpperCase() === 'KECIL') {
+                    angka = Math.floor(Math.random() * 5);
+                } else {
+                    angka = Math.floor(Math.random() * 10);
+                }
+                hasilPrediksi.textContent = `PREDIKSI ANGKA ${angka}`;
+            } else {
+                hasilPrediksi.textContent = 'PREDIKSI ANGKA ...';
+            }
+        }
+
+        function updateChartFromResults() {
+            if (!chart || allResults.length === 0) return;
+            const latest = allResults.slice(0, 20).reverse();
+            chart.data.labels = latest.map(r => r.issue?.slice(-3) || '');
+            chart.data.datasets[0].data = latest.map(r => r.number ?? 0);
+            chart.update();
+        }
+
         function mergeDataAndDisplay() {
             const resultMap = new Map();
             allResults.forEach(r => { if (r.issue) resultMap.set(r.issue, r); });
@@ -980,64 +1234,9 @@
             merged.sort((a, b) => b.timestamp - a.timestamp);
             mergedData = merged;
             displayMergedData();
-            
-            // Update grafik juga saat merge (untuk jaga-jaga)
-            updateChartFromResults();
         }
-        
-        function playNotificationSound() {
-            const audio = document.getElementById('notificationSound');
-            if (audio) {
-                audio.currentTime = 0;
-                audio.play().catch(() => showNotification("Data baru tersedia!"));
-                flashHeader();
-            }
-        }
-        
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            const status = document.getElementById('soundStatus');
-            status.textContent = soundEnabled ? 'Suara: ON' : 'Suara: OFF';
-            document.querySelector('.btn[onclick="toggleSound()"]').style.background = soundEnabled ? '#dc2626' : '#666';
-            showNotification(`Suara ${soundEnabled ? 'diaktifkan' : 'dimatikan'}`);
-        }
-        
-        function showNotification(msg) {
-            let notif = document.getElementById('tempNotification');
-            if (!notif) {
-                notif = document.createElement('div');
-                notif.id = 'tempNotification';
-                notif.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:15px 25px;border-radius:10px;z-index:1000;font-weight:600;opacity:0;transition:0.3s';
-                document.body.appendChild(notif);
-            }
-            notif.innerHTML = `<span>🔔</span> ${msg}`;
-            notif.style.opacity = '1';
-            setTimeout(() => { notif.style.opacity = '0'; setTimeout(() => notif.remove(), 300); }, 3000);
-        }
-        
-        function flashHeader() {
-            const header = document.querySelector('.header');
-            header.style.animation = 'none';
-            setTimeout(() => header.style.animation = 'flash 0.5s ease', 10);
-            if (!document.querySelector('#flashAnimation')) {
-                const style = document.createElement('style');
-                style.id = 'flashAnimation';
-                style.textContent = '@keyframes flash{0%{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}50%{background:linear-gradient(135deg,#22c55e 0%,#15803d 100%)}100%{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}}';
-                document.head.appendChild(style);
-            }
-        }
-        
-        function renderColourDots(colourStr) {
-            if (!colourStr) return '-';
-            const colours = colourStr.split(',').map(c => c.trim().toLowerCase());
-            let html = '<div class="colour-dots">';
-            colours.forEach(c => {
-                let cls = 'colour-' + (['red','green','violet'].includes(c) ? c : 'blue');
-                html += `<div class="colour-dot ${cls}" title="${c}"></div>`;
-            });
-            return html + '</div>';
-        }
-        
+
+        // ========== FUNGSI TAMPILAN (sama seperti asli) ==========
         function displayMergedData() {
             const tbody = document.getElementById('resultsBody');
             const loading = document.getElementById('loadingResults');
@@ -1095,7 +1294,37 @@
             empty.style.display = 'none';
             updatePaginationInfo();
         }
-        
+
+        function renderColourDots(colourStr) {
+            if (!colourStr) return '-';
+            const colours = colourStr.split(',').map(c => c.trim().toLowerCase());
+            let html = '<div class="colour-dots">';
+            colours.forEach(c => {
+                let cls = 'colour-' + (['red','green','violet'].includes(c) ? c : 'blue');
+                html += `<div class="colour-dot ${cls}" title="${c}"></div>`;
+            });
+            return html + '</div>';
+        }
+
+        function formatNumber(num) {
+            if (num===undefined||num===null) return '0';
+            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+        }
+
+        function updatePaginationInfo() {
+            document.getElementById('pageInfo').textContent = `Halaman ${currentPage} dari ${totalPages}`;
+            document.getElementById('totalRecords').textContent = totalFilteredResults;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) { currentPage++; displayMergedData(); }
+        }
+        function previousPage() {
+            if (currentPage > 1) { currentPage--; displayMergedData(); }
+        }
+
         function displayResets() {
             const tbody = document.getElementById('resetsBody');
             if (allResets.length === 0) { document.getElementById('loadingResets').style.display='none'; document.getElementById('emptyResets').style.display='block'; tbody.innerHTML=''; return; }
@@ -1108,7 +1337,7 @@
             document.getElementById('loadingResets').style.display='none';
             document.getElementById('emptyResets').style.display='none';
         }
-        
+
         function displayReports() {
             const tbody = document.getElementById('reportsBody');
             if (allReports.length === 0) { document.getElementById('loadingReports').style.display='none'; document.getElementById('emptyReports').style.display='block'; tbody.innerHTML=''; return; }
@@ -1128,7 +1357,7 @@
             document.getElementById('loadingReports').style.display='none';
             document.getElementById('emptyReports').style.display='none';
         }
-        
+
         function displaySafetyEvents() {
             const tbody = document.getElementById('safetyBody');
             if (allSafetyEvents.length === 0) { document.getElementById('loadingSafety').style.display='none'; document.getElementById('emptySafety').style.display='block'; tbody.innerHTML=''; return; }
@@ -1142,7 +1371,7 @@
             document.getElementById('loadingSafety').style.display='none';
             document.getElementById('emptySafety').style.display='none';
         }
-        
+
         function displayBalanceChanges() {
             const tbody = document.getElementById('balanceBody');
             if (allBalanceChanges.length === 0) { document.getElementById('loadingBalance').style.display='none'; document.getElementById('emptyBalance').style.display='block'; tbody.innerHTML=''; return; }
@@ -1156,7 +1385,7 @@
             document.getElementById('loadingBalance').style.display='none';
             document.getElementById('emptyBalance').style.display='none';
         }
-        
+
         function updateStats() {
             if (allResults.length === 0) {
                 document.getElementById('totalBets').textContent = '0';
@@ -1182,7 +1411,7 @@
             const avg = allResults.length>0?Math.round(totalBetAmount/allResults.length):0;
             document.getElementById('avgBetAmount').textContent = 'Rp '+formatNumber(avg);
         }
-        
+
         function openTab(evt, tabName) {
             document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -1190,17 +1419,7 @@
             evt.currentTarget.classList.add('active');
             if (tabName==='results') { currentPage=1; displayMergedData(); }
         }
-        
-        function formatNumber(num) {
-            if (num===undefined||num===null) return '0';
-            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-        }
-        
-        function truncate(txt, len) {
-            if (!txt||txt==='-') return '-';
-            return txt.length<=len?txt:txt.substring(0,len)+'...';
-        }
-        
+
         function refreshData() {
             currentPage=1;
             document.getElementById('connectionStatus').innerHTML = '<span>⏳</span> Memuat ulang...';
@@ -1209,19 +1428,78 @@
             document.querySelectorAll('.empty-state').forEach(e=>e.style.display='none');
             setTimeout(loadAllData,500);
         }
-        
+
         function showConnectionError() {
             document.getElementById('connectionStatus').innerHTML = '<span>❌</span> Gagal menghubungi database';
             document.getElementById('connectionStatus').className = 'status-disconnected';
         }
-        
+
+        function playNotificationSound() {
+            const audio = document.getElementById('notificationSound');
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(() => showNotification("Data baru tersedia!"));
+                flashHeader();
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const status = document.getElementById('soundStatus');
+            status.textContent = soundEnabled ? 'Suara: ON' : 'Suara: OFF';
+            document.querySelector('.btn[onclick="toggleSound()"]').style.background = soundEnabled ? '#dc2626' : '#666';
+            showNotification(`Suara ${soundEnabled ? 'diaktifkan' : 'dimatikan'}`);
+        }
+
+        function showNotification(msg) {
+            let notif = document.getElementById('tempNotification');
+            if (!notif) {
+                notif = document.createElement('div');
+                notif.id = 'tempNotification';
+                notif.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:15px 25px;border-radius:10px;z-index:1000;font-weight:600;opacity:0;transition:0.3s';
+                document.body.appendChild(notif);
+            }
+            notif.innerHTML = `<span>🔔</span> ${msg}`;
+            notif.style.opacity = '1';
+            setTimeout(() => { notif.style.opacity = '0'; setTimeout(() => notif.remove(), 300); }, 3000);
+        }
+
+        function flashHeader() {
+            const header = document.querySelector('.header');
+            header.style.animation = 'none';
+            setTimeout(() => header.style.animation = 'flash 0.5s ease', 10);
+            if (!document.querySelector('#flashAnimation')) {
+                const style = document.createElement('style');
+                style.id = 'flashAnimation';
+                style.textContent = '@keyframes flash{0%{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}50%{background:linear-gradient(135deg,#22c55e 0%,#15803d 100%)}100%{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}}';
+                document.head.appendChild(style);
+            }
+        }
+
+        function truncate(txt, len) {
+            if (!txt||txt==='-') return '-';
+            return txt.length<=len?txt:txt.substring(0,len)+'...';
+        }
+
+        function goToPage(page) {
+            if (page >=1 && page <= totalPages) {
+                currentPage = page;
+                displayMergedData();
+            }
+        }
+
+        // ========== EVENT LISTENERS ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            checkLogin();
+        });
+
         document.getElementById('dateFilter').addEventListener('change', ()=>{
             if (document.getElementById('results').classList.contains('active')) { currentPage=1; displayMergedData(); }
         });
         document.getElementById('searchFilter').addEventListener('input', ()=>{
             if (document.getElementById('results').classList.contains('active')) { currentPage=1; displayMergedData(); }
         });
-        
+
         document.addEventListener('keydown', (e)=>{
             if (e.ctrlKey && e.key==='r') { e.preventDefault(); refreshData(); }
             if (e.ctrlKey && e.key==='s') { e.preventDefault(); toggleSound(); }
@@ -1230,9 +1508,9 @@
             if (e.key==='Home') { e.preventDefault(); goToPage(1); }
             if (e.key==='End') { e.preventDefault(); goToPage(totalPages); }
         });
-        
+
         window.onload = function() {
-            document.getElementById('dateFilter').value = new Date().toISOString().split('T')[0];
+            // Set default date filter nanti setelah login
         };
     </script>
 </body>
