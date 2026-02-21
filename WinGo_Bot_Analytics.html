@@ -536,15 +536,107 @@
             border: 1px solid #e5e7eb;
         }
         
-        /* Tombol logout */
+        /* Tombol logout dan nama user */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-name {
+            color: white;
+            font-weight: 600;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
         .logout-btn {
             background: #333;
-            margin-left: 10px;
             padding: 8px 16px;
             font-size: 0.9rem;
         }
         .logout-btn:hover {
             background: #222;
+        }
+        /* Online users indicator */
+        .online-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.15);
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            position: relative;
+        }
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #4ade80;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .online-count {
+            font-weight: 600;
+            color: white;
+        }
+        .online-tooltip {
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background: white;
+            color: #333;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 200px;
+            max-width: 300px;
+            display: none;
+            border: 1px solid #e5e7eb;
+        }
+        .online-tooltip.show {
+            display: block;
+        }
+        .online-tooltip h4 {
+            margin-bottom: 10px;
+            color: #dc2626;
+            font-size: 1rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .online-tooltip ul {
+            list-style: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .online-tooltip li {
+            padding: 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 0.9rem;
+        }
+        .online-tooltip li:last-child {
+            border-bottom: none;
+        }
+        .online-tooltip .user-avatar {
+            width: 24px;
+            height: 24px;
+            background: #dc2626;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
         }
         
         @media (min-width: 768px) {
@@ -592,10 +684,23 @@
     <!-- KONTEN DASHBOARD (disembunyikan sampai login sukses) -->
     <div id="dashboardContent" class="dashboard-content">
         <div class="container">
-            <!-- HEADER dengan tombol logout -->
+            <!-- HEADER dengan tombol logout, nama user, dan online users -->
             <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h1><span class="bot-icon">📊</span> WinGo Bot Analytics</h1>
-                <button class="btn logout-btn" onclick="logout()"><span>🚪</span> Keluar</button>
+                <div class="user-info">
+                    <span id="userDisplayName" class="user-name"></span>
+                    <!-- Online users indicator -->
+                    <div class="online-indicator" onclick="toggleOnlineTooltip()">
+                        <span class="online-dot"></span>
+                        <span class="online-count" id="onlineCount">0</span>
+                        <span>Online</span>
+                        <div class="online-tooltip" id="onlineTooltip">
+                            <h4>🟢 Online Sekarang</h4>
+                            <ul id="onlineUsersList"></ul>
+                        </div>
+                    </div>
+                    <button class="btn logout-btn" onclick="logout()"><span>🚪</span> Keluar</button>
+                </div>
             </div>
             
             <!-- PREDICTION BOX -->
@@ -891,6 +996,8 @@
 
         // ========== LOGIN STATE ==========
         let currentUid = null;
+        let currentUserData = null; // Menyimpan data user dari auth (nickName, lv, dll)
+        let presenceRef = null; // Referensi ke node online_users
 
         // ========== FUNGSI LOGIN ==========
         function checkLogin() {
@@ -899,14 +1006,11 @@
                 // Cek apakah UID masih ada di database auth
                 authDb.ref('uids/' + savedUid).once('value').then(snapshot => {
                     if (snapshot.exists()) {
-                        // Ada UID, cek apakah ada password
                         const userData = snapshot.val();
                         if (userData.password) {
-                            // Sudah punya password, tapi perlu verifikasi ulang? Kita simpan status login
-                            // Untuk keamanan, kita bisa minta login ulang jika password tidak tersimpan di localStorage
-                            // Di sini kita asumsikan jika localStorage ada, user sudah login
-                            // Tapi kita bisa tambahkan pengecekan session
+                            // Sudah punya password, simpan data user
                             currentUid = savedUid;
+                            currentUserData = userData;
                             showDashboard();
                         } else {
                             // UID ada tapi belum punya password, arahkan ke set password
@@ -943,8 +1047,21 @@
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('setPasswordPage').style.display = 'none';
             document.getElementById('dashboardContent').style.display = 'block';
+            // Tampilkan nama user
+            updateUserDisplay();
             // Inisialisasi dashboard
             initDashboard();
+            // Setup presence (online users)
+            setupPresence();
+        }
+
+        function updateUserDisplay() {
+            const displayNameEl = document.getElementById('userDisplayName');
+            if (currentUserData && currentUserData.nickName) {
+                displayNameEl.textContent = `👤 ${currentUserData.nickName}`;
+            } else {
+                displayNameEl.textContent = '';
+            }
         }
 
         function handleLogin() {
@@ -968,6 +1085,7 @@
                             // Login sukses
                             localStorage.setItem('wingo_uid', uid);
                             currentUid = uid;
+                            currentUserData = userData;
                             showDashboard();
                         } else {
                             errorEl.textContent = 'Password salah';
@@ -1025,11 +1143,88 @@
         }
 
         function logout() {
+            // Hapus node presence
+            if (presenceRef) {
+                presenceRef.remove()
+                    .then(() => console.log('Presence dihapus'))
+                    .catch(err => console.error('Gagal hapus presence', err));
+            }
             localStorage.removeItem('wingo_uid');
             currentUid = null;
+            currentUserData = null;
+            updateUserDisplay();
             showLogin();
             if (timerInterval) clearInterval(timerInterval);
         }
+
+        // ========== PRESENCE (ONLINE USERS) ==========
+        function setupPresence() {
+            if (!currentUid) return;
+
+            // Referensi ke node online user
+            presenceRef = authDb.ref('online_users/' + currentUid);
+
+            // Set nilai awal dengan timestamp dan nickName
+            presenceRef.set({
+                uid: currentUid,
+                nickName: currentUserData.nickName || 'User',
+                lastSeen: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            // Saat koneksi terputus, hapus node ini
+            presenceRef.onDisconnect().remove();
+
+            // Listener untuk mendeteksi perubahan koneksi
+            authDb.ref('.info/connected').on('value', (snap) => {
+                if (snap.val() === true) {
+                    // Terhubung, set ulang presence dan onDisconnect
+                    presenceRef.set({
+                        uid: currentUid,
+                        nickName: currentUserData.nickName || 'User',
+                        lastSeen: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    presenceRef.onDisconnect().remove();
+                }
+            });
+
+            // Mulai memantau daftar online users
+            monitorOnlineUsers();
+        }
+
+        function monitorOnlineUsers() {
+            authDb.ref('online_users').on('value', (snapshot) => {
+                const onlineUsers = snapshot.val() || {};
+                const onlineCount = Object.keys(onlineUsers).length;
+                document.getElementById('onlineCount').textContent = onlineCount;
+
+                // Buat daftar nama
+                const listEl = document.getElementById('onlineUsersList');
+                listEl.innerHTML = '';
+                Object.values(onlineUsers).forEach(user => {
+                    const li = document.createElement('li');
+                    const avatar = document.createElement('span');
+                    avatar.className = 'user-avatar';
+                    avatar.textContent = (user.nickName || 'U').charAt(0).toUpperCase();
+                    li.appendChild(avatar);
+                    li.appendChild(document.createTextNode(user.nickName || 'Unknown'));
+                    listEl.appendChild(li);
+                });
+            });
+        }
+
+        function toggleOnlineTooltip() {
+            const tooltip = document.getElementById('onlineTooltip');
+            tooltip.classList.toggle('show');
+        }
+
+        // Tutup tooltip jika klik di luar
+        document.addEventListener('click', function(event) {
+            const tooltip = document.getElementById('onlineTooltip');
+            const indicator = document.querySelector('.online-indicator');
+            if (!indicator.contains(event.target)) {
+                tooltip.classList.remove('show');
+            }
+        });
 
         // ========== DASHBOARD FUNCTIONS (sama seperti sebelumnya) ==========
         function initDashboard() {
