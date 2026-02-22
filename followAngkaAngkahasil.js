@@ -9,7 +9,7 @@
 
   // Multi-group configuration
   const TELEGRAM_GROUPS = {
-    primary: "-1003291560910", // Grup utama (selalu aktif)
+    primary: "-4534430485", // Grup utama (selalu aktif)
     secondary: [
       "-1001570553211",  // Grup backup 1
     ]
