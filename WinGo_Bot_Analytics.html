@@ -674,6 +674,12 @@
             .timer-row { font-size: 1.2rem; }
             #timerDisplay { font-size: 2.5rem; }
         }
+
+        /* Animasi fadeIn untuk popup */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -1060,6 +1066,10 @@
         let soundEnabled = true;
         let chart;
 
+        // ========== VARIABEL UNTUK WIN STREAK ==========
+        let lastNotifiedStreak = 0;
+        let victorySound = new Audio('https://splendid-queijadas-d948bb.netlify.app/Victory.mp3');
+
         // ========== LOGIN STATE ==========
         let currentUid = null;
         let currentUserData = null; // Menyimpan data user dari auth (nickName, lv, dll)
@@ -1342,7 +1352,7 @@
             }
         });
 
-        // ========== DASHBOARD FUNCTIONS (sama seperti sebelumnya) ==========
+        // ========== DASHBOARD FUNCTIONS ==========
         function initDashboard() {
             initChart();
             loadAllData();
@@ -1422,9 +1432,24 @@
                         if (soundEnabled) {
                             playNotificationSound();
                         }
+                        
+                        // ========== CEK WIN STREAK ==========
+                        if (latestResult.isWin) {
+                            const streak = latestResult.currentStreak || 0;
+                            if (streak >= 6 && streak > lastNotifiedStreak) {
+                                victorySound.currentTime = 0;
+                                victorySound.play().catch(e => console.log('Gagal mainkan sound victory', e));
+                                showWinStreakPopup(streak);
+                                lastNotifiedStreak = streak;
+                            }
+                        } else {
+                            // Jika kalah, reset streak notifikasi
+                            lastNotifiedStreak = 0;
+                        }
                     } else if (lastResultTimestamp === 0 && allResults.length > 0) {
                         setTimer(30);
                         lastResultTimestamp = latestResult.timestamp;
+                        // Saat pertama load, tidak trigger notifikasi streak
                     }
                 }
                 
@@ -1547,7 +1572,7 @@
             displayMergedData();
         }
 
-        // ========== FUNGSI TAMPILAN (sama seperti asli) ==========
+        // ========== FUNGSI TAMPILAN ==========
         function displayMergedData() {
             const tbody = document.getElementById('resultsBody');
             const loading = document.getElementById('loadingResults');
@@ -1797,6 +1822,32 @@
                 currentPage = page;
                 displayMergedData();
             }
+        }
+
+        // ========== FUNGSI POPUP WIN STREAK ==========
+        function showWinStreakPopup(streak) {
+            // Hapus popup sebelumnya jika ada
+            const existing = document.getElementById('winStreakPopup');
+            if (existing) existing.remove();
+            
+            const popup = document.createElement('div');
+            popup.id = 'winStreakPopup';
+            popup.innerHTML = `
+                <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:10000; animation:fadeIn 0.3s;">
+                    <div style="background:linear-gradient(135deg, #fbbf24, #f59e0b); padding:30px; border-radius:30px; text-align:center; box-shadow:0 0 50px gold; max-width:90%;">
+                        <h1 style="font-size:4rem; margin:0; color:#1e293b;">🔥 WIN STREAK ${streak}X 🔥</h1>
+                        <p style="font-size:1.5rem; color:#0f172a;">Selamat! Anda mendapatkan bonus!</p>
+                        <button onclick="this.parentElement.parentElement.remove()" style="margin-top:20px; padding:10px 30px; background:#0f172a; color:white; border:none; border-radius:50px; font-size:1.2rem; cursor:pointer;">Tutup</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+            
+            // Auto close setelah 5 detik
+            setTimeout(() => {
+                const p = document.getElementById('winStreakPopup');
+                if (p) p.remove();
+            }, 5000);
         }
 
         // ========== EVENT LISTENERS ==========
