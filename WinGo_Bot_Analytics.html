@@ -638,6 +638,27 @@
             font-size: 0.7rem;
             font-weight: bold;
         }
+
+        /* Online indicator untuk halaman login */
+        .online-indicator-public {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #f0f0f0;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #333;
+        }
+        .online-indicator-public .online-dot {
+            background-color: #4ade80;
+        }
+        .online-indicator-public .online-count {
+            color: #dc2626;
+            font-weight: bold;
+        }
         
         @media (min-width: 768px) {
             body { padding: 20px; font-size: 16px; }
@@ -665,6 +686,12 @@
         <button class="login-btn" onclick="handleLogin()"><span>🔑</span> Masuk</button>
         <button class="login-btn register-btn" onclick="showRegisterOptions()"><span>📝</span> Belum Punya UID? Daftar</button>
         <div id="loginError" class="login-error"></div>
+        <!-- INDICATOR ONLINE DI HALAMAN LOGIN -->
+        <div class="online-indicator-public">
+            <span class="online-dot"></span>
+            <span class="online-count" id="publicOnlineCount">0</span>
+            <span>Pengguna Online</span>
+        </div>
         <div class="login-info">
             <p>Hanya mitra terdaftar yang dapat mengakses prediksi eksklusif.</p>
             <p>Setelah mendaftar, Anda wajib menghubungkan rekening bank/e-wallet dan deposit minimal Rp 247.000 untuk keamanan.</p>
@@ -975,6 +1002,21 @@
         const analyticsDb = analyticsApp.database();
         const authDb = authApp.database();
 
+        // ========== FAKE ONLINE USERS (untuk tampilan ramai) ==========
+        const fakeNames = [
+            "MemberNpkl", "TraderJaya", "Investor88", "BotMaster", "PrediksiGacor",
+            "WingoKing", "JpTerus", "PausBesar", "SultanSaldo", "CuanTerus",
+            "BetWinner", "LuckySpin", "HokiTerus", "MantapJiwa", "GassTerus",
+            "ProfitTerus", "AgenWingo", "MasterPred", "BotSejati", "WingoSakti",
+            "NagaHitam", "MacanPutih", "HarimauMerah", "SingaEmas", "ElangBesar"
+        ];
+
+        function generateFakeName(index) {
+            const base = fakeNames[index % fakeNames.length];
+            const suffix = Math.floor(Math.random() * 1000);
+            return `${base}${suffix}`;
+        }
+
         // ========== GLOBAL VARIABLES ==========
         let allResults = [];
         let allPredictions = [];
@@ -1033,6 +1075,8 @@
             document.getElementById('loginPage').style.display = 'block';
             document.getElementById('setPasswordPage').style.display = 'none';
             document.getElementById('dashboardContent').style.display = 'none';
+            // Mulai memantau online users untuk halaman login
+            startPublicOnlineCounter();
         }
 
         function showSetPassword(uid) {
@@ -1041,6 +1085,8 @@
             document.getElementById('dashboardContent').style.display = 'none';
             // Simpan uid sementara di dataset
             document.getElementById('setPasswordPage').dataset.uid = uid;
+            // Hentikan public online counter (tidak perlu)
+            stopPublicOnlineCounter();
         }
 
         function showDashboard() {
@@ -1053,6 +1099,8 @@
             initDashboard();
             // Setup presence (online users)
             setupPresence();
+            // Hentikan public online counter
+            stopPublicOnlineCounter();
         }
 
         function updateUserDisplay() {
@@ -1157,7 +1205,33 @@
             if (timerInterval) clearInterval(timerInterval);
         }
 
-        // ========== PRESENCE (ONLINE USERS) ==========
+        // ========== PUBLIC ONLINE COUNTER (HALAMAN LOGIN) ==========
+        let publicOnlineListener = null;
+
+        function startPublicOnlineCounter() {
+            if (publicOnlineListener) return; // sudah jalan
+            publicOnlineListener = authDb.ref('online_users').on('value', (snapshot) => {
+                const onlineUsers = snapshot.val() || {};
+                
+                // Tentukan target total online antara 1000 - 1500
+                const targetTotal = 1200 + Math.floor(Math.random() * 300); // 1200–1499
+                const existingCount = Object.keys(onlineUsers).length;
+                const needFake = Math.max(0, targetTotal - existingCount);
+                
+                // Hitung total dengan fake
+                const totalCount = existingCount + needFake;
+                document.getElementById('publicOnlineCount').textContent = totalCount;
+            });
+        }
+
+        function stopPublicOnlineCounter() {
+            if (publicOnlineListener) {
+                authDb.ref('online_users').off('value', publicOnlineListener);
+                publicOnlineListener = null;
+            }
+        }
+
+        // ========== PRESENCE (ONLINE USERS) UNTUK DASHBOARD ==========
         function setupPresence() {
             if (!currentUid) return;
 
@@ -1194,13 +1268,31 @@
         function monitorOnlineUsers() {
             authDb.ref('online_users').on('value', (snapshot) => {
                 const onlineUsers = snapshot.val() || {};
-                const onlineCount = Object.keys(onlineUsers).length;
+                
+                // Tentukan target total online antara 1000 - 1500
+                const targetTotal = 1200 + Math.floor(Math.random() * 300); // 1200–1499
+                const existingCount = Object.keys(onlineUsers).length;
+                const needFake = Math.max(0, targetTotal - existingCount);
+                
+                // Gabungkan user asli dengan user palsu
+                let displayUsers = { ...onlineUsers };
+                
+                for (let i = 0; i < needFake; i++) {
+                    const fakeUid = `fake_${i}_${Date.now()}_${i}`; // pastikan unik
+                    displayUsers[fakeUid] = {
+                        uid: fakeUid,
+                        nickName: generateFakeName(i),
+                        lastSeen: Date.now() - Math.random() * 60000 // dalam 1 menit terakhir
+                    };
+                }
+                
+                const onlineCount = Object.keys(displayUsers).length;
                 document.getElementById('onlineCount').textContent = onlineCount;
-
-                // Buat daftar nama
+                
+                // Tampilkan daftar user (asli + palsu)
                 const listEl = document.getElementById('onlineUsersList');
                 listEl.innerHTML = '';
-                Object.values(onlineUsers).forEach(user => {
+                Object.values(displayUsers).forEach(user => {
                     const li = document.createElement('li');
                     const avatar = document.createElement('span');
                     avatar.className = 'user-avatar';
