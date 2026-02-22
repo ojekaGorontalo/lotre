@@ -2,7 +2,7 @@
 
   console.clear();
 
-  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (ZIG-ZAG BARU + STRICT TREND OVERRIDE)");
+  console.log("🤖 WinGo Smart Trading Bot - System v6.5 (ADAPTIVE ZIG-ZAG + STRICT TREND OVERRIDE)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -267,10 +267,11 @@
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
   function sendStartupMotivationMessage() {
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - ZIG-ZAG BARU + STRICT TREND OVERRIDE</b>\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v6.5 - ADAPTIVE ZIG-ZAG + STRICT TREND OVERRIDE</b>\n\n` +
                           `Sistem analisis menggunakan:\n\n` +
                           `🧮 <b>STRATEGI:</b>\n` +
-                          `• Zig-Zag (baru): angka terakhir + angka issue ke-5, hasil digit akhir menentukan KECIL (0-4) / BESAR (5-9)\n` +
+                          `• Mode A (default): angka terakhir + angka issue ke-5\n` +
+                          `• Mode B (cadangan): angka terakhir + angka issue ke-4 (aktif setelah 2 kekalahan)\n` +
                           `• Strict Trend Override: jika 4 dari 4 periode terakhir sama, trend super kuat diutamakan\n\n` +
                           `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
@@ -293,14 +294,14 @@
     return colourString.split(',')[0];
   }
 
-  /* ========= PREDIKSI: ZIG-ZAG BARU + STRICT TREND OVERRIDE ========= */
+  /* ========= PREDIKSI ADAPTIF ========= */
   function getPrediction() {
     if (historicalData.length === 0) {
       console.log("⚠️ Data historis kosong, default ke KECIL");
       return "KECIL";
     }
 
-    // Deteksi trend super kuat: 4 dari 4 periode terakhir sama
+    // 1. Strict Trend Override: jika 4 dari 4 periode terakhir sama
     if (historicalData.length >= 4) {
       const last4 = historicalData.slice(0, 4).map(d => d.result);
       const countBesar = last4.filter(r => r === "BESAR").length;
@@ -316,21 +317,38 @@
       }
     }
 
-    // Jika data kurang dari 5 periode, fallback ke KECIL
-    if (historicalData.length < 5) {
-      console.log("⚠️ Data historis kurang dari 5 periode, default ke KECIL");
-      return "KECIL";
+    // 2. Tentukan mode berdasarkan jumlah kekalahan beruntun
+    const consecutiveLosses = currentStreak < 0 ? Math.abs(currentStreak) : 0;
+    const useModeB = consecutiveLosses >= 2; // Mode B (issue ke-4) jika kalah 2 atau lebih
+
+    // Pastikan data cukup untuk mode yang dipilih
+    if (useModeB) {
+      if (historicalData.length < 4) {
+        console.log("⚠️ Data kurang dari 4 periode, fallback ke KECIL");
+        return "KECIL";
+      }
+      // Mode B: angka terakhir + angka issue ke-4 (index 3)
+      const lastNumber = historicalData[0].number;
+      const fourthNumber = historicalData[3].number;
+      const sum = lastNumber + fourthNumber;
+      const lastDigitSum = sum % 10;
+      const prediction = lastDigitSum <= 4 ? "KECIL" : "BESAR";
+      console.log(`🔮 MODE B (kalah ${consecutiveLosses}x): ${lastNumber} + ${fourthNumber} = ${sum} → digit akhir ${lastDigitSum} → ${prediction}`);
+      return prediction;
+    } else {
+      // Mode A: default, butuh minimal 5 data
+      if (historicalData.length < 5) {
+        console.log("⚠️ Data kurang dari 5 periode, fallback ke KECIL");
+        return "KECIL";
+      }
+      const lastNumber = historicalData[0].number;
+      const fifthNumber = historicalData[4].number;
+      const sum = lastNumber + fifthNumber;
+      const lastDigitSum = sum % 10;
+      const prediction = lastDigitSum <= 4 ? "KECIL" : "BESAR";
+      console.log(`🔮 MODE A (kalah ${consecutiveLosses}x): ${lastNumber} + ${fifthNumber} = ${sum} → digit akhir ${lastDigitSum} → ${prediction}`);
+      return prediction;
     }
-
-    // Logika Zig-Zag BARU: angka terakhir + angka issue ke-5
-    const lastNumber = historicalData[0].number;          // angka periode terbaru
-    const fifthNumber = historicalData[4].number;        // angka periode ke-5
-    const sum = lastNumber + fifthNumber;
-    const lastDigitSum = sum % 10;                         // digit terakhir hasil penjumlahan
-    const prediction = lastDigitSum <= 4 ? "KECIL" : "BESAR";
-
-    console.log(`🔮 ZIG-ZAG (baru): ${lastNumber} + ${fifthNumber} = ${sum} → digit akhir ${lastDigitSum} → ${prediction}`);
-    return prediction;
   }
 
   function analyzeTrendData(listData) {
@@ -352,6 +370,7 @@
       const recentNumbers = historicalData.slice(0, 5).map(d => d.number);
       console.log(`📊 5 DATA TERBARU: ${recentNumbers.join(', ')}`);
       console.log(`📋 Issue ke-1: ${historicalData[0].issue} → angka: ${historicalData[0].number}, warna: ${historicalData[0].colour}`);
+      console.log(`📋 Issue ke-4: ${historicalData[3].issue} → angka: ${historicalData[3].number}`);
       console.log(`📋 Issue ke-5: ${historicalData[4].issue} → angka: ${historicalData[4].number}`);
     }
   }
@@ -409,10 +428,13 @@
 
   function createPredictionMessage(nextIssueShort) {
     const betLabel = betLabels[currentBetIndex];
+    const consecutiveLosses = currentStreak < 0 ? Math.abs(currentStreak) : 0;
+    const mode = consecutiveLosses >= 2 ? "Mode B (issue-4)" : "Mode A (issue-5)";
 
-    let message = `<b>WINGO 30s ZIG-ZAG BARU + TREND OVERRIDE</b>\n`;
+    let message = `<b>WINGO 30s ADAPTIVE ZIG-ZAG</b>\n`;
     message += `<b>🆔 PERIODE ${nextIssueShort}</b>\n`;
     message += `<b>🎯 PREDIKSI: ${currentPrediction} ${betLabel}</b>\n`;
+    message += `<b>🧮 ${mode}</b>\n`;
     message += `─────────────────\n`;
     message += `<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n`;
     message += `<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n`;
@@ -814,10 +836,10 @@
     sendResetToFirebase(oldBalance, "manual_reset");
     console.log("🔄 Bot direset ke saldo 247.000 dan diaktifkan");
 
-    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (ZIG-ZAG BARU + TREND OVERRIDE)</b>\n\n` +
+    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (ADAPTIVE ZIG-ZAG)</b>\n\n` +
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1\n` +
-                      `🧮 Strategi: Zig-Zag baru (angka+angka issue ke-5) + Strict Trend Override (4/4)\n` +
+                      `🧮 Strategi: Adaptive Zig-Zag (Mode A: issue-5, Mode B: issue-4 setelah 2 kalah)\n` +
                       `📊 Martingale 7 Level\n\n` +
                       `<i>Bot berjalan otomatis.</i>`;
     sendTelegram(startupMsg);
@@ -839,10 +861,13 @@
   /* ========= STARTUP ========= */
   console.log(`
 
-🤖 WINGO SMART TRADING BOT v6.5 - ZIG-ZAG BARU + STRICT TREND OVERRIDE
+🤖 WINGO SMART TRADING BOT v6.5 - ADAPTIVE ZIG-ZAG + STRICT TREND OVERRIDE
 
 💰 Saldo awal: 247.000
-🧮 Strategi: Zig-Zag baru (angka terakhir + angka issue ke-5) + Strict Trend Override (4/4)
+🧮 Strategi: 
+   - Mode A (default): angka terakhir + angka issue ke-5
+   - Mode B (cadangan): angka terakhir + angka issue ke-4 (aktif setelah 2 kalah)
+   - Strict Trend Override (4/4)
 📊 Martingale 7 Level
 📡 Firebase aktif
 🔒 Sinkronisasi issue AKTIF
