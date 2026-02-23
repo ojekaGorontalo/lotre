@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WinGo Bot Analytics (Private)</title>
+    <title>55Five Prediksi WinGo Analytics (Private)</title>
     <!-- Firebase untuk analitik (wingo-bot-analytics) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -1083,6 +1083,14 @@
                 authDb.ref('uids/' + savedUid).once('value').then(snapshot => {
                     if (snapshot.exists()) {
                         const userData = snapshot.val();
+                        // Cek apakah akun aktif (default true jika tidak ada field)
+                        if (userData.active === false) {
+                            // Akun dinonaktifkan, hapus localStorage dan redirect ke login
+                            localStorage.removeItem('wingo_uid');
+                            showLogin();
+                            document.getElementById('loginError').textContent = 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.';
+                            return;
+                        }
                         if (userData.password) {
                             // Sudah punya password, simpan data user
                             currentUid = savedUid;
@@ -1161,6 +1169,11 @@
             authDb.ref('uids/' + uid).once('value').then(snapshot => {
                 if (snapshot.exists()) {
                     const userData = snapshot.val();
+                    // Cek apakah akun aktif
+                    if (userData.active === false) {
+                        errorEl.textContent = 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.';
+                        return;
+                    }
                     if (userData.password) {
                         // Cek password
                         if (userData.password === password) {
