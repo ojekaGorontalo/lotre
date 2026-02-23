@@ -1732,7 +1732,7 @@
             pageData.forEach(item => {
                 const waiting = item.isWaiting;
                 const statusClass = waiting ? 'result-waiting' : (item.isWin ? 'result-win' : 'result-lose');
-                const statusText = waiting ? 'MENUNGGU' : (item.isWin ? 'MENANG' : 'KALAH');
+                const statusText = waiting ? 'Wait' : (item.isWin ? 'Profit' : 'Los');
                 const profit = item.profitLoss || 0;
                 const time = new Date(item.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
                 html += `<tr>
