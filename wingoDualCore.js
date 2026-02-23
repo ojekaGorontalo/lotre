@@ -3,6 +3,9 @@
   console.clear();
   console.log("🤖 WinGo Smart Trading Bot - System v6.5 (TREND FOLLOWER ↔ SUM MODE dengan toggle 2 kalah)");
 
+  /* ========= KONSTANTA SALDO AWAL ========= */
+  const INITIAL_BALANCE = 2916000;  // Saldo awal baru: 2.916.000 (cukup untuk 8 level)
+
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
 
@@ -35,12 +38,12 @@
   };
 
   /* ========= SALDO VIRTUAL ========= */
-  let virtualBalance = 247000;  // SALDO AWAL: 247.000
+  let virtualBalance = INITIAL_BALANCE;
   let totalBets = 0;
   let totalWins = 0;
   let totalLosses = 0;
   let currentStreak = 0;
-  let profitLoss = 0;
+  let profitLoss = 0;  // akan dihitung sebagai virtualBalance - INITIAL_BALANCE
 
   let lastMotivationSentAtLoss = 0;
   let lastDonationMessageAtWin = 0;
@@ -197,7 +200,7 @@
   function sendResetToFirebase(oldBalance, reason) {
     const resetData = {
       oldBalance: oldBalance,
-      newBalance: 247000,
+      newBalance: INITIAL_BALANCE,
       reason: reason,
       resetTime: new Date().toISOString(),
       totalBetsBeforeReset: totalBets,
@@ -288,7 +291,7 @@
                           `6. Rp 216.000\n` +
                           `7. Rp 648.000\n` +
                           `8. Rp 1.944.000\n\n` +
-                          `📊 Total saldo: 247.000 (cukup untuk level 1-6, level 7-8 butuh saldo lebih, akan auto-reset jika tidak cukup)\n` +
+                          `📊 Total saldo: Rp ${INITIAL_BALANCE.toLocaleString()} (cukup untuk semua level hingga level 8)\n` +
                           `🔄 Auto-reset saat saldo habis\n\n` +
                           `⚠️ <b>HATI-HATI:</b> Trading punya risiko tinggi!`;
 
@@ -392,7 +395,7 @@
 
     return `🚫 <b>SALDO HABIS - RESET OTOMATIS</b>\n\n` +
            `💸 Saldo virtual sudah tidak mencukupi untuk taruhan berikutnya\n` +
-           `🔄 Saldo direset otomatis ke Rp 247.000\n\n` +
+           `🔄 Saldo direset otomatis ke Rp ${INITIAL_BALANCE.toLocaleString()}\n\n` +
            `📊 <b>STATISTIK SEBELUM RESET:</b>\n` +
            `├── 💰 Saldo: Rp ${virtualBalance.toLocaleString()}\n` +
            `├── 🎯 Total Taruhan: ${totalBets}\n` +
@@ -435,7 +438,7 @@
       const oldBalance = virtualBalance;
       sendResetToFirebase(oldBalance, "saldo_habis");
 
-      virtualBalance = 247000;
+      virtualBalance = INITIAL_BALANCE;
       currentBetIndex = 0;
       currentBetAmount = betSequence[0];
       totalBets = 0;
@@ -453,7 +456,7 @@
 
       const outOfBalanceMessage = createOutOfBalanceMessage();
       sendTelegram(outOfBalanceMessage);
-      console.log(`🔄 Saldo direset ke 247.000, kembali ke Level 1`);
+      console.log(`🔄 Saldo direset ke ${INITIAL_BALANCE.toLocaleString()}, kembali ke Level 1`);
     }
 
     virtualBalance -= currentBetAmount;
@@ -583,7 +586,7 @@
       }
     }
 
-    profitLoss = virtualBalance - 247000;
+    profitLoss = virtualBalance - INITIAL_BALANCE;
     isBetPlaced = false;
     predictedIssue = null;
     predictedAt = null;
@@ -803,7 +806,7 @@
   function resetBot() {
     const oldBalance = virtualBalance;
 
-    virtualBalance = 247000;
+    virtualBalance = INITIAL_BALANCE;
     currentBetIndex = 0;
     totalBets = 0;
     totalWins = 0;
@@ -832,10 +835,10 @@
     isBotActive = true;
 
     sendResetToFirebase(oldBalance, "manual_reset");
-    console.log("🔄 Bot direset ke saldo 247.000 dan diaktifkan");
+    console.log(`🔄 Bot direset ke saldo ${INITIAL_BALANCE.toLocaleString()} dan diaktifkan`);
 
     const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (TREND ↔ SUM toggle 2 kalah)</b>\n\n` +
-                      `💰 Saldo: Rp 247.000\n` +
+                      `💰 Saldo: Rp ${INITIAL_BALANCE.toLocaleString()}\n` +
                       `🎯 Mulai dari Level 1\n` +
                       `🧮 Strategi: Trend Follower (default), beralih ke Sum setelah 2 kalah, dan sebaliknya\n` +
                       `📊 Martingale 8 Level\n\n` +
@@ -861,7 +864,7 @@
 
 🤖 WINGO SMART TRADING BOT v6.5 - TREND FOLLOWER ↔ SUM MODE (toggle 2 kalah)
 
-💰 Saldo awal: 247.000
+💰 Saldo awal: ${INITIAL_BALANCE.toLocaleString()}
 🧮 Strategi: 
    - Mode Trend Follower (default): mengikuti hasil terakhir
    - Mode Sum: angka terbaru + angka ke-4
