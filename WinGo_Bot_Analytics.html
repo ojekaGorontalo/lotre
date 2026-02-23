@@ -191,6 +191,48 @@
             padding: 5px 15px;
             border-radius: 30px;
         }
+
+        /* ===== TIMER SELECTOR (HORIZONTAL) ===== */
+        .timer-selector {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: rgba(255,255,255,0.1);
+            padding: 8px;
+            border-radius: 30px;
+            margin: 10px 0;
+        }
+        .timer-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 20px;
+            transition: background 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .timer-item:active {
+            background: rgba(255,255,255,0.2);
+        }
+        .timer-item.active {
+            background: #dc2626;
+        }
+        /* Timer yang dinonaktifkan (data belum tersedia) */
+        .timer-item.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+        .timer-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+        .timer-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
         
         .prediction-title {
             text-align: center;
@@ -675,6 +717,16 @@
             #timerDisplay { font-size: 2.5rem; }
         }
 
+        /* ===== PERKECIL UKURAN WIN RATE UNTUK MOBILE ===== */
+        @media (max-width: 480px) {
+            .stat-card .value {
+                font-size: 1.2rem;
+            }
+            .summary-value {
+                font-size: 1.2rem;
+            }
+        }
+
         /* Animasi fadeIn untuk popup */
         @keyframes fadeIn {
             from { opacity: 0; }
@@ -766,6 +818,28 @@
                     <span class="timer-label">⏳ Next Result</span>
                     <span id="timerDisplay">30</span>
                 </div>
+
+                <!-- ===== TIMER SELECTOR HORIZONTAL ===== -->
+                <!-- Hanya mode 1 menit yang aktif, lainnya dinonaktifkan karena data belum tersedia -->
+                <div class="timer-selector">
+                    <div class="timer-item disabled" data-time="30s">
+                        <span class="timer-icon">⏱️</span>
+                        <span class="timer-label">30d</span>
+                    </div>
+                    <div class="timer-item active" data-time="1m">
+                        <span class="timer-icon">⏲️</span>
+                        <span class="timer-label">1m</span>
+                    </div>
+                    <div class="timer-item disabled" data-time="3m">
+                        <span class="timer-icon">⏳</span>
+                        <span class="timer-label">3m</span>
+                    </div>
+                    <div class="timer-item disabled" data-time="5m">
+                        <span class="timer-icon">⌛</span>
+                        <span class="timer-label">5m</span>
+                    </div>
+                </div>
+
                 <div class="prediction-title">📈 GRAFIK RESULT TERAKHIR</div>
                 <div class="chart-container">
                     <canvas id="predictionChart" height="140"></canvas>
@@ -997,6 +1071,11 @@
         <source src="https://raw.githubusercontent.com/ojekaGorontalo/lotre/main/sound%2030%20detik.mp3" type="audio/mpeg">
     </audio>
 
+    <!-- ===== AUDIO UNTUK TIMER 1 MENIT ===== -->
+    <audio id="sound1min" preload="auto">
+        <source src="https://splendid-queijadas-d948bb.netlify.app/1minute.mp3" type="audio/mpeg">
+    </audio>
+
     <!-- Chart.js library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -1065,6 +1144,15 @@
         let lastResultTimestamp = 0;
         let soundEnabled = true;
         let chart;
+
+        // ===== VARIABEL UNTUK MODE TIMER =====
+        let currentTimerMode = '1m'; // default 1 menit
+        const modeDurations = {
+            '30s': 30,
+            '1m': 60,
+            '3m': 180,
+            '5m': 300
+        };
 
         // ========== VARIABEL UNTUK WIN STREAK ==========
         let lastNotifiedStreak = 0;
@@ -1370,7 +1458,7 @@
             initChart();
             loadAllData();
             setInterval(loadAllData, 30000);
-            setTimer(30);
+            setTimer(modeDurations[currentTimerMode]); // set timer sesuai mode default (1m)
         }
 
         function setTimer(seconds) {
@@ -1425,6 +1513,28 @@
             });
         }
 
+        // Fungsi untuk menghentikan semua suara
+        function stopAllSounds() {
+            const notif = document.getElementById('notificationSound');
+            if (notif && !notif.paused) { notif.pause(); notif.currentTime = 0; }
+            const s1 = document.getElementById('sound1min');
+            if (s1 && !s1.paused) { s1.pause(); s1.currentTime = 0; }
+        }
+
+        // Fungsi memainkan suara sesuai mode saat ini
+        function playModeSound() {
+            if (!soundEnabled) return;
+            flashHeader(); // efek visual
+            if (currentTimerMode === '30s') {
+                const audio = document.getElementById('notificationSound');
+                if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+            } else if (currentTimerMode === '1m') {
+                const audio = document.getElementById('sound1min');
+                if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+            }
+            // untuk 3m dan 5m tidak ada suara, hanya flash header
+        }
+
         function loadAllData() {
             console.log('Memuat data...');
 
@@ -1440,11 +1550,12 @@
                 if (allResults.length > 0) {
                     const latestResult = allResults[0];
                     if (latestResult.timestamp > lastResultTimestamp) {
-                        setTimer(30);
+                        // Reset timer dengan durasi mode aktif
+                        setTimer(modeDurations[currentTimerMode]);
+                        // Mainkan suara sesuai mode
+                        playModeSound();
+                        
                         lastResultTimestamp = latestResult.timestamp;
-                        if (soundEnabled) {
-                            playNotificationSound();
-                        }
                         
                         // ========== CEK WIN STREAK ==========
                         if (latestResult.isWin) {
@@ -1460,7 +1571,7 @@
                             lastNotifiedStreak = 0;
                         }
                     } else if (lastResultTimestamp === 0 && allResults.length > 0) {
-                        setTimer(30);
+                        setTimer(modeDurations[currentTimerMode]);
                         lastResultTimestamp = latestResult.timestamp;
                         // Saat pertama load, tidak trigger notifikasi streak
                     }
@@ -1783,15 +1894,6 @@
             document.getElementById('connectionStatus').className = 'status-disconnected';
         }
 
-        function playNotificationSound() {
-            const audio = document.getElementById('notificationSound');
-            if (audio) {
-                audio.currentTime = 0;
-                audio.play().catch(() => showNotification("Data baru tersedia!"));
-                flashHeader();
-            }
-        }
-
         function toggleSound() {
             soundEnabled = !soundEnabled;
             const status = document.getElementById('soundStatus');
@@ -1866,6 +1968,10 @@
         // ========== EVENT LISTENERS ==========
         document.addEventListener('DOMContentLoaded', function() {
             checkLogin();
+
+            // ===== TIMER SELECTOR: hanya mode 1m yang aktif (disabled lainnya) =====
+            // Tidak perlu event listener karena disabled, tapi kita tetap set default
+            // Jika nanti ada data untuk mode lain, class disabled bisa dihapus
         });
 
         document.getElementById('dateFilter').addEventListener('change', ()=>{
