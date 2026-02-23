@@ -31,7 +31,7 @@
     maxDailyLoss: 1000000,
     minBalance: 1,
     profitTarget: 1000000,
-    maxBetLevel: 7
+    maxBetLevel: 8   // Diubah dari 7 ke 8 karena sekarang ada 8 level
   };
 
   /* ========= SALDO VIRTUAL ========= */
@@ -53,25 +53,27 @@
     profit: 0
   };
 
-  /* ========= STRATEGI MARTINGALE ========= */
+  /* ========= STRATEGI MARTINGALE (8 LEVEL) ========= */
   const betSequence = [
     1000,
     3000,
-    7000,
-    15000,
-    31000,
-    63000,
-    127000
+    8000,
+    24000,
+    72000,
+    216000,
+    648000,
+    1944000
   ];
 
   const betLabels = [
     "1K",
     "3K",
-    "7K",
-    "15K",
-    "31K",
-    "63K",
-    "127K"
+    "8K",
+    "24K",
+    "72K",
+    "216K",
+    "648K",
+    "1.94M"
   ];
 
   let currentBetIndex = 0;
@@ -277,15 +279,16 @@
                           `• Mode Sum: angka terbaru + angka ke-4, digit akhir menentukan KECIL/BESAR\n` +
                           `• Peralihan mode: setelah 2 kekalahan berturut-turut dalam mode saat ini, berganti ke mode lain\n` +
                           `• Setelah menang, kembali ke mode Trend Follower\n\n` +
-                          `💰 <b>SISTEM MARTINGALE 7 LEVEL:</b>\n` +
+                          `💰 <b>SISTEM MARTINGALE 8 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
                           `2. Rp 3.000\n` +
-                          `3. Rp 7.000\n` +
-                          `4. Rp 15.000\n` +
-                          `5. Rp 31.000\n` +
-                          `6. Rp 63.000\n` +
-                          `7. Rp 127.000\n\n` +
-                          `📊 Total saldo: 247.000 (cukup untuk semua level)\n` +
+                          `3. Rp 8.000\n` +
+                          `4. Rp 24.000\n` +
+                          `5. Rp 72.000\n` +
+                          `6. Rp 216.000\n` +
+                          `7. Rp 648.000\n` +
+                          `8. Rp 1.944.000\n\n` +
+                          `📊 Total saldo: 247.000 (cukup untuk level 1-6, level 7-8 butuh saldo lebih, akan auto-reset jika tidak cukup)\n` +
                           `🔄 Auto-reset saat saldo habis\n\n` +
                           `⚠️ <b>HATI-HATI:</b> Trading punya risiko tinggi!`;
 
@@ -835,7 +838,7 @@
                       `💰 Saldo: Rp 247.000\n` +
                       `🎯 Mulai dari Level 1\n` +
                       `🧮 Strategi: Trend Follower (default), beralih ke Sum setelah 2 kalah, dan sebaliknya\n` +
-                      `📊 Martingale 7 Level\n\n` +
+                      `📊 Martingale 8 Level\n\n` +
                       `<i>Bot berjalan otomatis.</i>`;
     sendTelegram(startupMsg);
   }
@@ -863,7 +866,7 @@
    - Mode Trend Follower (default): mengikuti hasil terakhir
    - Mode Sum: angka terbaru + angka ke-4
    - Ganti mode setelah 2 kalah berturut-turut dalam mode saat ini
-📊 Martingale 7 Level
+📊 Martingale 8 Level (1K, 3K, 8K, 24K, 72K, 216K, 648K, 1.94M)
 📡 Firebase aktif
 🔒 Sinkronisasi issue AKTIF
 
