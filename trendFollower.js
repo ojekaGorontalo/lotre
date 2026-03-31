@@ -1,7 +1,7 @@
-// trendfollower.js - Prediksi adaptif dengan perbandingan periode ke-5
+// trendfollower.js - Prediksi adaptif dengan sistem ensemble (EMA5, Delta, Frekuensi)
 (function () {
   console.clear();
-  console.log("🤖 WinGo Smart Trading Bot - System v7.2 (55five API + Adaptive Follower with 5th Period)");
+  console.log("🤖 WinGo Smart Trading Bot - System v8.0 (Ensemble Analysis + Adaptive Voting)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -70,32 +70,133 @@
   let currentGameData = null;
   let countdownInterval = null;
 
-  /* ========= SISTEM PREDIKSI BARU (Menggunakan periode ke-5) ========= */
-  let predictionRule = "normal"; // "normal" = ikuti hasil terakhir, "reverse" = lawan hasil terakhir
-  let lastResult = null; // hasil aktual terakhir ("KECIL"/"BESAR")
+  /* ========= SISTEM PREDIKSI ENSEMBLE BARU ========= */
+  // Menyimpan histori lengkap untuk analisis
+  let fullHistory = [];        // setiap elemen: { number, result, colour, premium, issue }
+  // Akurasi metode dalam 10-20 prediksi terakhir
+  let methodAccuracy = {
+    ema: { correct: 0, total: 0, score: 0 },
+    delta: { correct: 0, total: 0, score: 0 },
+    freq: { correct: 0, total: 0, score: 0 }
+  };
+  let lastPredictionMethods = { ema: null, delta: null, freq: null };
 
-  // Fungsi untuk menghitung prediksi dasar berdasarkan angka periode terbaru dan digit terakhir periode ke-5
-  function getBasePrediction(currentNumber, fifthIssueNumber) {
-    const lastDigit = parseInt(fifthIssueNumber.slice(-1), 10);
-    const sum = currentNumber + lastDigit;
-    const unit = sum % 10; // ambil angka satuan
-    return unit <= 4 ? "KECIL" : "BESAR";
+  /* ========= FUNGSI ANALISIS ENSEMBLE ========= */
+  // EMA5 (Exponential Moving Average) dari angka
+  function ema5(numbers) {
+    if (numbers.length === 0) return 5;
+    let ema = numbers[0];
+    const alpha = 2 / (5 + 1);
+    for (let i = 1; i < numbers.length; i++) {
+      ema = numbers[i] * alpha + ema * (1 - alpha);
+    }
+    return Math.round(ema);
   }
 
-  // Fungsi untuk mendapatkan prediksi yang akan digunakan untuk bet
+  // Prediksi berdasarkan EMA (KECIL/BESAR)
+  function getEMAPrediction() {
+    if (fullHistory.length < 5) return null;
+    const last5Numbers = fullHistory.slice(0, 5).map(h => h.number);
+    const predictedNumber = ema5(last5Numbers);
+    return predictedNumber <= 4 ? "KECIL" : "BESAR";
+  }
+
+  // Prediksi berdasarkan delta (selisih berurutan) paling sering muncul dalam 10 periode
+  function getDeltaPrediction() {
+    if (fullHistory.length < 5) return null;
+    const deltas = [];
+    for (let i = 0; i < fullHistory.length - 1; i++) {
+      let diff = fullHistory[i].number - fullHistory[i+1].number;
+      deltas.push(diff);
+    }
+    // Ambil 10 delta terakhir
+    const recentDeltas = deltas.slice(0, 10);
+    const freq = {};
+    recentDeltas.forEach(d => freq[d] = (freq[d] || 0) + 1);
+    let maxDelta = null, maxCount = 0;
+    for (let d in freq) {
+      if (freq[d] > maxCount) {
+        maxCount = freq[d];
+        maxDelta = parseInt(d);
+      }
+    }
+    if (maxDelta === null) return null;
+    const lastNumber = fullHistory[0].number;
+    let predictedNumber = lastNumber + maxDelta;
+    predictedNumber = ((predictedNumber % 10) + 10) % 10;
+    return predictedNumber <= 4 ? "KECIL" : "BESAR";
+  }
+
+  // Prediksi berdasarkan frekuensi angka (trend) dalam 20 periode terakhir
+  function getFrequencyPrediction() {
+    if (fullHistory.length < 5) return null;
+    const recent = fullHistory.slice(0, 20);
+    const freq = Array(10).fill(0);
+    recent.forEach(h => freq[h.number]++);
+    let maxFreq = -1, mostFrequentNumber = 0;
+    for (let i = 0; i < 10; i++) {
+      if (freq[i] > maxFreq) {
+        maxFreq = freq[i];
+        mostFrequentNumber = i;
+      }
+    }
+    return mostFrequentNumber <= 4 ? "KECIL" : "BESAR";
+  }
+
+  // Update akurasi metode setelah hasil aktual diketahui
+  function updateMethodAccuracy(actualResult) {
+    const methods = ['ema', 'delta', 'freq'];
+    methods.forEach(m => {
+      if (lastPredictionMethods[m] !== null) {
+        methodAccuracy[m].total++;
+        if (lastPredictionMethods[m] === actualResult) {
+          methodAccuracy[m].correct++;
+        }
+        methodAccuracy[m].score = methodAccuracy[m].correct / methodAccuracy[m].total;
+        // Batasi riwayat agar tetap responsif
+        if (methodAccuracy[m].total > 20) {
+          methodAccuracy[m].correct = Math.round(methodAccuracy[m].correct * 0.8);
+          methodAccuracy[m].total = Math.round(methodAccuracy[m].total * 0.8);
+        }
+      }
+    });
+  }
+
+  // Prediksi utama dengan ensemble voting
   function getPrediction() {
-    if (lastResult === null) {
-      console.log("⚠️ Belum ada data hasil, default KECIL");
-      return "KECIL";
+    const emaPred = getEMAPrediction();
+    const deltaPred = getDeltaPrediction();
+    const freqPred = getFrequencyPrediction();
+
+    lastPredictionMethods = { ema: emaPred, delta: deltaPred, freq: freqPred };
+
+    let votes = { KECIL: 0, BESAR: 0 };
+    if (emaPred) votes[emaPred]++;
+    if (deltaPred) votes[deltaPred]++;
+    if (freqPred) votes[freqPred]++;
+
+    if (votes.KECIL !== votes.BESAR) {
+      const winner = votes.KECIL > votes.BESAR ? "KECIL" : "BESAR";
+      console.log(`🗳️ Ensemble voting: ${winner} (KECIL:${votes.KECIL}, BESAR:${votes.BESAR})`);
+      return winner;
     }
-    if (predictionRule === "normal") {
-      return lastResult;
-    } else {
-      return lastResult === "KECIL" ? "BESAR" : "KECIL";
+
+    // Seri: pilih metode dengan akurasi tertinggi
+    let bestMethod = null;
+    let bestScore = -1;
+    if (emaPred && methodAccuracy.ema.score > bestScore) { bestMethod = emaPred; bestScore = methodAccuracy.ema.score; }
+    if (deltaPred && methodAccuracy.delta.score > bestScore) { bestMethod = deltaPred; bestScore = methodAccuracy.delta.score; }
+    if (freqPred && methodAccuracy.freq.score > bestScore) { bestMethod = freqPred; bestScore = methodAccuracy.freq.score; }
+    if (bestMethod) {
+      console.log(`⚖️ Voting seri, gunakan metode dengan akurasi tertinggi (${bestScore.toFixed(2)}): ${bestMethod}`);
+      return bestMethod;
     }
+
+    console.log("⚠️ Tidak ada prediksi, default KECIL");
+    return "KECIL";
   }
 
-  // Prediksi angka (0-9) menggunakan rata-rata 5 angka terakhir
+  // Prediksi angka (0-9) menggunakan rata-rata 5 angka terakhir (tetap)
   function predictNumber() {
     if (historicalData.length === 0) return 5;
     const lastNumbers = historicalData.slice(0, 5).map(d => d.number);
@@ -138,17 +239,15 @@
         betLevel: currentBetIndex + 1,
         balanceAfter: virtualBalance,
         profitLoss: profitLoss,
-        // ===== TAMBAHKAN FIELD AGREGAT =====
         totalBets: totalBets,
         totalWins: totalWins,
         totalLosses: totalLosses,
         currentStreak: currentStreak,
-        // ==================================
         gameType: gameType,
         timestamp: new Date().toISOString()
     };
     sendToFirebase("results", resultData);
-}
+  }
 
   function sendPredictionToFirebase() {
     if (!predictedIssue) {
@@ -233,9 +332,14 @@
     isSendingMessage = false;
     skipNextBet = false;
     skipReason = "";
-    // Reset sistem prediksi baru
-    predictionRule = "normal";
-    lastResult = null;
+    // Reset sistem ensemble
+    fullHistory = [];
+    methodAccuracy = {
+      ema: { correct: 0, total: 0, score: 0 },
+      delta: { correct: 0, total: 0, score: 0 },
+      freq: { correct: 0, total: 0, score: 0 }
+    };
+    lastPredictionMethods = { ema: null, delta: null, freq: null };
     dailyStats = {
       date: new Date().toDateString(),
       bets: 0,
@@ -245,7 +349,7 @@
     };
     isBotActive = true;
     sendResetToFirebase(oldBalance, "manual_reset");
-    sendTelegram("🔄 <b>BOT DIRESET (v7.2 - 55five API + 5th Period)</b>\n💰 Saldo: 247.000");
+    sendTelegram("🔄 <b>BOT DIRESET (v8.0 - Ensemble Analysis)</b>\n💰 Saldo: 247.000");
   }
 
   function sendResetToFirebase(oldBalance, reason) {
@@ -357,8 +461,13 @@
       historicalData = [];
       lastMotivationSentAtLoss = 0;
       lastDonationMessageAtWin = 0;
-      predictionRule = "normal";
-      lastResult = null;
+      fullHistory = [];
+      methodAccuracy = {
+        ema: { correct: 0, total: 0, score: 0 },
+        delta: { correct: 0, total: 0, score: 0 },
+        freq: { correct: 0, total: 0, score: 0 }
+      };
+      lastPredictionMethods = { ema: null, delta: null, freq: null };
       sendTelegram("🚫 <b>SALDO HABIS - RESET OTOMATIS</b>");
       console.log("🔄 Saldo direset ke 247.000");
       return false;
@@ -369,7 +478,7 @@
     dailyStats.bets++;
     dailyStats.profit -= currentBetAmount;
     isBetPlaced = true;
-    currentPrediction = getPrediction();
+    currentPrediction = getPrediction();  // menggunakan ensemble
     currentNumberPrediction = predictNumber();
     predictedAt = new Date();
     predictedIssue = nextIssueNumber;
@@ -463,25 +572,14 @@
       const isGame30s = (currentGameData && currentGameData.intervalM === 0.5);
 
       if (isGame30s) {
-        analyzeTrendData(list);
+        // Tambahkan hasil ke histori lengkap untuk analisis ensemble
+        fullHistory.unshift({ number: number, result: result, colour: item.colour, premium: item.premium, issue: issueNumber });
+        if (fullHistory.length > 100) fullHistory.pop();
 
-        // --- UPDATE ATURAN PREDIKSI BERDASARKAN PERIODE KE-5 ---
-        // Pastikan ada minimal 5 data dalam list
-        if (list.length >= 5) {
-          const fifthItem = list[4]; // indeks ke-4 = periode ke-5 dari atas
-          const basePred = getBasePrediction(number, fifthItem.issueNumber);
-          console.log(`🔍 Prediksi dasar: ${number} + digit terakhir issue ke-5 (${fifthItem.issueNumber.slice(-1)}) = ${(number + parseInt(fifthItem.issueNumber.slice(-1))) % 10} → ${basePred}`);
-          if (basePred !== result) {
-            predictionRule = predictionRule === "normal" ? "reverse" : "normal";
-            console.log(`🔄 Aturan berubah menjadi ${predictionRule} karena prediksi dasar ${basePred} tidak sesuai hasil ${result}`);
-          } else {
-            console.log(`✅ Aturan tetap ${predictionRule} karena prediksi dasar ${basePred} sesuai hasil ${result}`);
-          }
-        } else {
-          console.log(`⚠️ Data kurang dari 5 periode, tidak bisa menghitung prediksi dasar.`);
-        }
-        lastResult = result;
-        // -------------------------------------------------------------------------------
+        // Update akurasi metode prediksi
+        updateMethodAccuracy(result);
+
+        analyzeTrendData(list);
 
         if (isBetPlaced) {
           const apiData = {
@@ -498,7 +596,7 @@
           if (placeBet()) {
             const nextIssue = nextIssueNumber || issueNumber.slice(0, -3) + (parseInt(issueNumber.slice(-3)) + 1).toString().padStart(3,'0');
             const shortIssue = nextIssue.slice(-3);
-            const message = `<b>WINGO 30s PREDIKSI v7.2</b>\n<b>🆔 PERIODE ${shortIssue}</b>\n<b>🎯 PREDIKSI: ${currentPrediction} ${betLabels[currentBetIndex]}</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>\n─────────────────\n<b>📊 LEVEL: ${currentBetIndex+1}/${betSequence.length}</b>\n<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n<b>📈 P/L: ${profitLoss>=0?'🟢':'🔴'} ${profitLoss>=0?'+':''}${profitLoss.toLocaleString()}</b>`;
+            const message = `<b>WINGO 30s PREDIKSI v8.0</b>\n<b>🆔 PERIODE ${shortIssue}</b>\n<b>🎯 PREDIKSI: ${currentPrediction} ${betLabels[currentBetIndex]}</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>\n─────────────────\n<b>📊 LEVEL: ${currentBetIndex+1}/${betSequence.length}</b>\n<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n<b>📈 P/L: ${profitLoss>=0?'🟢':'🔴'} ${profitLoss>=0?'+':''}${profitLoss.toLocaleString()}</b>`;
             setTimeout(() => sendTelegram(message), 1500);
           }
           lastProcessedIssue = issueNumber;
@@ -613,9 +711,9 @@
 
   /* ========= STARTUP ========= */
   console.log(`
- 🤖 WINGO SMART TRADING BOT v7.2 - 55five API + Adaptive Follower (5th Period)
+ 🤖 WINGO SMART TRADING BOT v8.0 - Ensemble Analysis (EMA5 + Delta + Frequency)
  💰 Saldo awal: 247.000 (khusus 30 detik)
- 🧮 Strategi: Prediksi adaptif (angka terbaru + digit issue ke-5) + Martingale
+ 🧮 Strategi: Ensemble voting dengan akurasi dinamis + Martingale
  📡 Firebase aktif (menyimpan semua game + countdown real-time)
  ✅ Bot siap!
   `);
@@ -625,7 +723,7 @@
 
   setTimeout(() => {
     if (placeBet()) {
-      const message = `<b>WINGO 30s PREDIKSI v7.2</b>\n<b>🆔 PERIODE ???</b>\n<b>🎯 PREDIKSI: ${currentPrediction} 1K</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>`;
+      const message = `<b>WINGO 30s PREDIKSI v8.0</b>\n<b>🆔 PERIODE ???</b>\n<b>🎯 PREDIKSI: ${currentPrediction} 1K</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>`;
       sendTelegram(message);
     }
   }, 2000);
