@@ -2,618 +2,78 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>55Five Prediksi WinGo Analytics (Private)</title>
-    <!-- Firebase untuk analitik (wingo-bot-analytics) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>55Five Prediksi WinGo</title>
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* ===== CSS SAMA + TAMBAHAN UNTUK LOGIN ===== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            -webkit-tap-highlight-color: transparent;
         }
-        
         body {
             background: #f8f9fa;
-            min-height: 100vh;
-            padding: 12px;
-            font-size: 14px;
-            overflow-x: hidden;
+            padding-bottom: 70px;
         }
-        
         .container {
-            width: 100%;
-            max-width: 100%;
+            max-width: 600px;
             margin: 0 auto;
+            padding: 12px;
         }
-        
-        /* ===== HALAMAN LOGIN ===== */
-        .login-container {
-            max-width: 400px;
-            margin: 50px auto;
-            background: white;
-            border-radius: 20px;
-            padding: 30px 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        
-        .login-container h2 {
-            color: #dc2626;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        
-        .login-container p {
-            color: #666;
-            margin-bottom: 25px;
-            font-size: 0.9rem;
-        }
-        
-        .login-input {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 1rem;
-            margin-bottom: 15px;
-            transition: border 0.3s;
-        }
-        
-        .login-input:focus {
-            border-color: #dc2626;
-            outline: none;
-        }
-        
-        .login-btn {
-            width: 100%;
-            padding: 14px;
-            background: #dc2626;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1.1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: background 0.3s;
-            margin-bottom: 10px;
-        }
-        
-        .login-btn:hover {
-            background: #b91c1c;
-        }
-        
-        .register-btn {
-            background: #2563eb;
-        }
-        .register-btn:hover {
-            background: #1d4ed8;
-        }
-        
-        .login-error {
-            color: #dc2626;
-            margin-top: 15px;
-            font-size: 0.9rem;
-            min-height: 20px;
-        }
-        
-        .login-info {
-            margin-top: 20px;
-            font-size: 0.8rem;
-            color: #888;
-            border-top: 1px solid #eee;
-            padding-top: 15px;
-        }
-        
-        /* Form set password */
-        .set-password-container {
-            max-width: 400px;
-            margin: 50px auto;
-            background: white;
-            border-radius: 20px;
-            padding: 30px 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            text-align: center;
-            display: none;
-        }
-        
-        /* Konten dashboard disembunyikan awal */
-        .dashboard-content {
-            display: none;
-        }
-        
-        /* sisanya sama seperti style sebelumnya */
+        /* Header */
         .header {
-            text-align: center;
-            margin-bottom: 20px;
-            color: white;
-            padding: 20px 15px;
             background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-        }
-        
-        .header h1 {
-            font-size: 1.4rem;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        }
-        
-        .header p {
-            font-size: 0.9rem;
-            opacity: 0.95;
-        }
-        
-        .prediction-box {
-            background: #0f172a;
-            padding: 20px;
             border-radius: 16px;
-            margin-bottom: 20px;
-            box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
-            border: 1px solid rgba(255,255,255,0.08);
-            color: white;
-        }
-        
-        .timer-row {
+            padding: 10px 12px;
+            margin-bottom: 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .timer-label {
-            font-size: 1rem;
-            color: #94a3b8;
-        }
-        
-        #timerDisplay {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #f87171;
-            background: rgba(0,0,0,0.3);
-            padding: 5px 15px;
-            border-radius: 30px;
-        }
-
-        /* ===== TIMER SELECTOR (HORIZONTAL) ===== */
-        .timer-selector {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            background: rgba(255,255,255,0.1);
-            padding: 8px;
-            border-radius: 30px;
-            margin: 10px 0;
-        }
-        .timer-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 20px;
-            transition: background 0.2s;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .timer-item:active {
-            background: rgba(255,255,255,0.2);
-        }
-        .timer-item.active {
-            background: #dc2626;
-        }
-        /* Timer yang dinonaktifkan (data belum tersedia) */
-        .timer-item.disabled {
-            opacity: 0.5;
-            pointer-events: none;
-            cursor: not-allowed;
-        }
-        .timer-icon {
-            font-size: 20px;
-            margin-bottom: 2px;
-        }
-        .timer-label {
-            font-size: 12px;
-            font-weight: bold;
             color: white;
         }
-        
-        .prediction-title {
-            text-align: center;
-            margin-bottom: 15px;
+        .header h1 {
             font-size: 1.1rem;
-            color: #fca5a5;
-            letter-spacing: 1px;
+            font-weight: 600;
         }
-        
-        .chart-container {
-            margin: 15px 0;
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 10px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .final-prediction {
-            text-align: center;
-            margin-top: 15px;
-            padding: 12px;
-            font-size: 1.4rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, #dc2626, #991b1b);
-            border-radius: 40px;
-            color: white;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 18px 15px;
-            border-radius: 10px;
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e5e7eb;
-        }
-        
-        .stat-card h3 {
-            color: #555;
-            font-size: 0.8rem;
-            margin-bottom: 8px;
+        .user-info {
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        
-        .stat-card .value {
-            font-size: 1.6rem;
-            font-weight: bold;
-            color: #dc2626;
-        }
-        
-        .summary {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        
-        .summary-item {
-            background: white;
-            padding: 16px 12px;
-            border-radius: 10px;
-            text-align: center;
-            border: 1px solid #e5e7eb;
-        }
-        
-        .summary-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #dc2626;
-        }
-        
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-bottom: 20px;
-            padding: 18px;
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e5e7eb;
-        }
-        
-        .filters {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 100%;
-        }
-        
-        .filter-input {
-            padding: 12px 14px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            width: 100%;
-        }
-        
-        .btn {
-            padding: 14px;
-            background: #dc2626;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .btn:hover {
-            background: #b91c1c;
-        }
-        
-        .btn-telegram {
-            background: #0088cc;
-        }
-        .btn-telegram:hover {
-            background: #0077b5;
-        }
-        
-        #connectionStatus {
-            align-self: center;
-        }
-        
-        .status-connected {
-            background-color: #dcfce7;
-            color: #166534;
-            padding: 10px 15px;
-            border-radius: 20px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border: 1px solid #bbf7d0;
-        }
-        
-        .status-disconnected {
-            background-color: #fee2e2;
-            color: #991b1b;
-            padding: 10px 15px;
-            border-radius: 20px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border: 1px solid #fecaca;
-        }
-        
-        .pagination-controls {
-            background: white;
-            padding: 12px 15px;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-            margin-bottom: 15px;
-        }
-        
-        .pagination-btn {
-            padding: 8px 16px;
-            background: #f3f4f6;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        
-        .pagination-btn:hover:not(:disabled) {
-            background: #dc2626;
-            color: white;
-        }
-        
-        .pagination-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        #pageInfo {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #374151;
-            min-width: 90px;
-            text-align: center;
-        }
-        
-        .tabs-container {
-            width: 100%;
-            overflow-x: auto;
-            margin-bottom: 0;
-            border-radius: 12px 12px 0 0;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-bottom: none;
-        }
-        
-        .tabs {
-            display: flex;
-            min-width: max-content;
-        }
-        
-        .tab {
-            padding: 16px 20px;
-            cursor: pointer;
-            background: #f8f9fa;
-            border: none;
-            font-weight: 600;
-            color: #555;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 2px solid transparent;
-        }
-        
-        .tab.active {
-            background: white;
-            color: #dc2626;
-            border-bottom: 3px solid #dc2626;
-        }
-        
-        .tab-content {
-            display: none;
-            background: white;
-            border-radius: 0 0 12px 12px;
-            padding: 18px;
-            border: 1px solid #e5e7eb;
-            border-top: none;
-            margin-bottom: 20px;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        h2 {
-            color: #333;
-            margin-bottom: 18px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .table-container {
-            overflow-x: auto;
-            max-height: 500px;
-            overflow-y: auto;
-            border-radius: 8px;
-            border: 1px solid #eee;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 900px;
-        }
-        
-        th {
-            background: #dc2626;
-            color: white;
-            padding: 14px 10px;
-            position: sticky;
-            top: 0;
-        }
-        
-        td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        tr:hover {
-            background: #fef2f2;
-        }
-        
-        .result-win {
-            background-color: #dcfce7;
-            color: #166534;
-            padding: 6px 10px;
-            border-radius: 12px;
-            font-weight: 600;
-            border: 1px solid #bbf7d0;
-        }
-        
-        .result-lose {
-            background-color: #fee2e2;
-            color: #991b1b;
-            padding: 6px 10px;
-            border-radius: 12px;
-            font-weight: 600;
-            border: 1px solid #fecaca;
-        }
-        
-        .result-waiting {
-            background-color: #fff3cd;
-            color: #856404;
-            padding: 6px 10px;
-            border-radius: 12px;
-            font-weight: 600;
-            border: 1px solid #ffeeba;
-        }
-        
-        .colour-dots {
-            display: flex;
-            gap: 3px;
-        }
-        
-        .colour-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-        
-        .colour-red { background-color: #ff4444; }
-        .colour-green { background-color: #44ff44; }
-        .colour-violet { background-color: #aa44ff; }
-        
-        .loading {
-            text-align: center;
-            padding: 30px;
-            color: #666;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #777;
-        }
-        
-        .last-update {
-            text-align: center;
-            color: #666;
-            font-size: 0.85rem;
-            margin-top: 15px;
-            padding: 12px;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-        }
-        
-        /* Tombol logout dan nama user */
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
         .user-name {
-            color: white;
-            font-weight: 600;
             background: rgba(255,255,255,0.2);
-            padding: 5px 15px;
+            padding: 4px 8px;
             border-radius: 20px;
-            font-size: 0.9rem;
+            font-size: 0.65rem;
         }
         .logout-btn {
             background: #333;
-            padding: 8px 16px;
-            font-size: 0.9rem;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            cursor: pointer;
+            border: none;
+            color: white;
         }
-        .logout-btn:hover {
-            background: #222;
-        }
-        /* Online users indicator */
         .online-indicator {
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(255,255,255,0.15);
-            padding: 5px 15px;
+            gap: 4px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
             border-radius: 20px;
+            font-size: 0.65rem;
             cursor: pointer;
             position: relative;
         }
         .online-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             background-color: #4ade80;
             border-radius: 50%;
             animation: pulse 1.5s infinite;
@@ -623,65 +83,339 @@
             50% { opacity: 0.5; transform: scale(1.2); }
             100% { opacity: 1; transform: scale(1); }
         }
-        .online-count {
-            font-weight: 600;
-            color: white;
-        }
         .online-tooltip {
             position: absolute;
-            top: 40px;
+            top: 30px;
             right: 0;
             background: white;
             color: #333;
             border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            padding: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             z-index: 1000;
-            min-width: 200px;
-            max-width: 300px;
+            min-width: 160px;
             display: none;
-            border: 1px solid #e5e7eb;
+            font-size: 0.7rem;
         }
         .online-tooltip.show {
             display: block;
         }
-        .online-tooltip h4 {
-            margin-bottom: 10px;
-            color: #dc2626;
-            font-size: 1rem;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
+        /* Prediction Box */
+        .prediction-box {
+            background: #0f172a;
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 16px;
+            color: white;
         }
-        .online-tooltip ul {
-            list-style: none;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .online-tooltip li {
-            padding: 6px 0;
+        .timer-row {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid #f5f5f5;
+            margin-bottom: 6px;
+        }
+        .timer-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        #timerDisplay {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #f87171;
+        }
+        .timer-selector {
+            display: flex;
+            gap: 12px;
+            margin: 6px 0;
+            justify-content: center;
+        }
+        .timer-item {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+        .timer-item.active {
+            background: #dc2626;
+        }
+        .timer-item.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .prediction-title {
+            font-size: 0.8rem;
+            text-align: center;
+            margin: 6px 0;
+            color: #fca5a5;
+        }
+        .chart-container {
+            margin: 6px 0;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 5px;
+        }
+        canvas {
+            max-height: 90px;
+            width: 100%;
+        }
+        .final-prediction {
+            text-align: center;
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            border-radius: 40px;
+            padding: 6px;
             font-size: 0.9rem;
+            font-weight: bold;
+            margin-top: 6px;
         }
-        .online-tooltip li:last-child {
-            border-bottom: none;
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
         }
-        .online-tooltip .user-avatar {
-            width: 24px;
-            height: 24px;
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 8px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .stat-card h3 {
+            font-size: 0.65rem;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        .stat-card .value {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #dc2626;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .summary-item {
+            background: white;
+            border-radius: 10px;
+            padding: 6px;
+            text-align: center;
+        }
+        .summary-value {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #dc2626;
+        }
+        .summary-label {
+            font-size: 0.6rem;
+            color: #666;
+        }
+        /* Controls */
+        .controls {
+            background: white;
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .filter-input {
+            flex: 1;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.7rem;
+        }
+        .btn {
             background: #dc2626;
             color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 10px;
             font-size: 0.7rem;
+            cursor: pointer;
+        }
+        #connectionStatus {
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 6px 8px;
+            border-top: 1px solid #eee;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: none;
+            border: none;
+            font-size: 0.6rem;
+            color: #666;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 20px;
+        }
+        .nav-item.active {
+            color: #dc2626;
             font-weight: bold;
         }
-
-        /* Online indicator untuk halaman login */
+        .nav-icon {
+            font-size: 1rem;
+        }
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            background: white;
+            margin-top: 6px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.65rem;
+        }
+        th {
+            background: #dc2626;
+            color: white;
+            padding: 6px 4px;
+            font-weight: 600;
+        }
+        td {
+            padding: 6px 4px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .result-win {
+            background-color: #dcfce7;
+            color: #166534;
+            padding: 2px 6px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+        .result-lose {
+            background-color: #fee2e2;
+            color: #991b1b;
+            padding: 2px 6px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+        .result-waiting {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 2px 6px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+        .colour-dots {
+            display: flex;
+            gap: 2px;
+        }
+        .colour-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .colour-red { background: #ff4444; }
+        .colour-green { background: #44ff44; }
+        .colour-violet { background: #aa44ff; }
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 6px;
+            border-radius: 12px;
+            margin: 6px 0;
+        }
+        .pagination-btn {
+            background: #f0f0f0;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            cursor: pointer;
+        }
+        .pagination-btn:disabled {
+            opacity: 0.5;
+        }
+        #pageInfo {
+            font-size: 0.65rem;
+        }
+        .last-update {
+            text-align: center;
+            font-size: 0.55rem;
+            color: #888;
+            margin: 12px 0;
+        }
+        .loading, .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-size: 0.7rem;
+        }
+        /* Login pages */
+        .login-container, .set-password-container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .register-btn {
+            background: #2563eb;
+        }
+        .login-error {
+            color: red;
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
         .online-indicator-public {
             margin-top: 15px;
             display: flex;
@@ -689,399 +423,165 @@
             justify-content: center;
             gap: 8px;
             background: #f0f0f0;
-            padding: 8px 15px;
+            padding: 8px;
             border-radius: 20px;
-            font-size: 0.9rem;
-            color: #333;
-        }
-        .online-indicator-public .online-dot {
-            background-color: #4ade80;
-        }
-        .online-indicator-public .online-count {
-            color: #dc2626;
-            font-weight: bold;
-        }
-        
-        @media (min-width: 768px) {
-            body { padding: 20px; font-size: 16px; }
-            .container { max-width: 1400px; }
-            .stats-grid { grid-template-columns: repeat(4, 1fr); }
-            .summary { grid-template-columns: repeat(4, 1fr); }
-            .controls { flex-direction: row; }
-            .filters { flex-direction: row; width: auto; }
-            .filter-input { width: auto; min-width: 160px; }
-            .btn { width: auto; padding: 12px 20px; }
-            .tab { flex: 1; }
-            .prediction-box { padding: 25px; }
-            .timer-row { font-size: 1.2rem; }
-            #timerDisplay { font-size: 2.5rem; }
-        }
-
-        /* ===== PERKECIL UKURAN WIN RATE UNTUK MOBILE ===== */
-        @media (max-width: 480px) {
-            .stat-card .value {
-                font-size: 1.2rem;
-            }
-            .summary-value {
-                font-size: 1.2rem;
-            }
-        }
-
-        /* Animasi fadeIn untuk popup */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            font-size: 0.8rem;
         }
     </style>
 </head>
 <body>
-    <!-- HALAMAN LOGIN (awalnya tampil) -->
+    <!-- Login Page -->
     <div id="loginPage" class="login-container">
-        <h2><span>🔒</span> WinGo Bot Private</h2>
-        <p>Masukkan UID dan Password Anda</p>
-        <input type="text" id="uidInput" class="login-input" placeholder="UID" autocomplete="off">
-        <input type="password" id="passwordInput" class="login-input" placeholder="Password" autocomplete="off">
-        <button class="login-btn" onclick="handleLogin()"><span>🔑</span> Masuk</button>
-        <button class="login-btn register-btn" onclick="showRegisterOptions()"><span>📝</span> Belum Punya UID? Daftar</button>
+        <h2>🔒 WinGo Bot Private</h2>
+        <p>Masukkan UID dan Password</p>
+        <input type="text" id="uidInput" class="login-input" placeholder="UID">
+        <input type="password" id="passwordInput" class="login-input" placeholder="Password">
+        <button class="login-btn" onclick="handleLogin()">🔑 Masuk</button>
+        <button class="login-btn register-btn" onclick="showRegisterOptions()">📝 Daftar</button>
         <div id="loginError" class="login-error"></div>
-        <!-- INDICATOR ONLINE DI HALAMAN LOGIN -->
         <div class="online-indicator-public">
             <span class="online-dot"></span>
-            <span class="online-count" id="publicOnlineCount">0</span>
-            <span>Pengguna Online</span>
+            <span id="publicOnlineCount">0</span> Pengguna Online
         </div>
-
-        <!-- INFORMASI MEYAKINKAN UNTUK CALON USER -->
-        <div style="margin: 15px 0; padding: 15px; background: linear-gradient(145deg, #f6f9ff, #e3f0ff); border-radius: 16px; font-size: 0.95rem; text-align: left; border: 1px solid #b8d1f0; box-shadow: 0 4px 10px rgba(0,60,130,0.1);">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
-                <span style="background: #2563eb; color: white; border-radius: 30px; padding: 4px 14px; font-weight: bold; font-size: 0.8rem;">✓ TERBUKTI</span>
-                <span style="background: #16a34a; color: white; border-radius: 30px; padding: 4px 14px; font-weight: bold; font-size: 0.8rem;">✓ 1.200+ MEMBER</span>
-                <span style="background: #dc2626; color: white; border-radius: 30px; padding: 4px 14px; font-weight: bold; font-size: 0.8rem;">✓ AKURAT 87%</span>
-            </div>
-            <p style="margin: 10px 0; line-height: 1.6; color: #1e293b;">
-                <strong>📈 Prediksi 55 Five Wingo</strong> telah digunakan oleh lebih dari <strong>1.200 member aktif</strong> di seluruh Indonesia. Dengan sistem analitik canggih dan strategi <strong>Martingale 7 level</strong>, tingkat akurasi prediksi mencapai <strong>87%</strong> dalam sebulan terakhir — dibuktikan dengan profit konsisten dan manajemen risiko ketat.
-            </p>
-            <p style="margin: 10px 0; line-height: 1.6; color: #1e293b;">
-                ✅ Update real-time • Notifikasi hasil • Grafik pergerakan • Data reset & safety events • Laporan harian lengkap
-            </p>
-            <div style="background: white; border-radius: 12px; padding: 12px; margin: 12px 0; border-left: 4px solid #2563eb;">
-                <span style="color: #2563eb; font-weight: 600;">📬 Kontak Admin</span><br>
-                <span style="font-size: 1rem;">👤 <strong>@PredictorUser</strong> — siap membantu pendaftaran, deposit, dan konsultasi 24/7 via Telegram.</span><br>
-                <a href="https://t.me/PredictorUser" target="_blank" style="display: inline-block; margin-top: 8px; background: #2563eb; color: white; padding: 8px 16px; border-radius: 30px; text-decoration: none; font-size: 0.9rem;">💬 Chat Admin Sekarang</a>
-            </div>
-            <p style="margin: 8px 0 0 0; font-size: 0.9rem; color: #334155; text-align: center;">
-                ⚡ Bergabunglah dengan ribuan trader sukses dan raih keuntungan maksimal!
-            </p>
-        </div>
-
-        <div class="login-info">
-            <p>Hanya mitra terdaftar yang dapat mengakses prediksi eksklusif.</p>
-            <p>Setelah mendaftar, Anda wajib menghubungkan rekening bank/e-wallet dan deposit minimal Rp 247.000 untuk pertahanan.</p>
-        </div>
+        <div style="margin-top:20px; font-size:0.7rem; color:#888;">Hubungi admin untuk pendaftaran</div>
     </div>
 
-    <!-- HALAMAN SET PASSWORD (untuk user yang sudah punya UID tapi belum punya password) -->
-    <div id="setPasswordPage" class="set-password-container" style="display: none;">
-        <h2><span>🔐</span> Buat Password</h2>
+    <!-- Set Password Page -->
+    <div id="setPasswordPage" class="set-password-container" style="display:none;">
+        <h2>🔐 Buat Password</h2>
         <p>UID Anda sudah terdaftar. Buat password untuk mengakses dashboard.</p>
         <input type="password" id="newPassword" class="login-input" placeholder="Password baru">
         <input type="password" id="confirmPassword" class="login-input" placeholder="Konfirmasi Password">
-        <button class="login-btn" onclick="setPassword()"><span>💾</span> Simpan Password</button>
+        <button class="login-btn" onclick="setPassword()">💾 Simpan Password</button>
         <div id="setPasswordError" class="login-error"></div>
     </div>
 
-    <!-- KONTEN DASHBOARD (disembunyikan sampai login sukses) -->
-    <div id="dashboardContent" class="dashboard-content">
+    <!-- Dashboard -->
+    <div id="dashboardContent" style="display:none;">
         <div class="container">
-            <!-- HEADER dengan tombol logout, nama user, dan online users -->
-            <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h1><span class="bot-icon">📊</span> 55Five Prediksi WinGo Analytics</h1>
+            <!-- Header -->
+            <div class="header">
+                <h1>55Five Prediksi</h1>
                 <div class="user-info">
                     <span id="userDisplayName" class="user-name"></span>
-                    <!-- Online users indicator -->
                     <div class="online-indicator" onclick="toggleOnlineTooltip()">
                         <span class="online-dot"></span>
-                        <span class="online-count" id="onlineCount">0</span>
-                        <span>Online</span>
+                        <span id="onlineCount">0</span>
                         <div class="online-tooltip" id="onlineTooltip">
-                            <h4>🟢 Online Sekarang</h4>
+                            <h4>🟢 Online</h4>
                             <ul id="onlineUsersList"></ul>
                         </div>
                     </div>
-                    <button class="btn logout-btn" onclick="logout()"><span>🚪</span> Keluar</button>
+                    <button class="logout-btn" onclick="logout()">Keluar</button>
                 </div>
             </div>
-            
-            <!-- PREDICTION BOX -->
+
+            <!-- Prediction Box -->
             <div class="prediction-box">
                 <div class="timer-row">
                     <span class="timer-label">⏳ Next Result</span>
                     <span id="timerDisplay">30</span>
                 </div>
-
-                <!-- ===== TIMER SELECTOR HORIZONTAL ===== -->
-                <!-- Hanya mode 1 menit yang aktif, lainnya dinonaktifkan karena data belum tersedia -->
                 <div class="timer-selector">
-                    <div class="timer-item disabled" data-time="30s">
-                        <span class="timer-icon">⏱️</span>
-                        <span class="timer-label">30d</span>
-                    </div>
-                    <div class="timer-item active" data-time="1m">
-                        <span class="timer-icon">⏲️</span>
-                        <span class="timer-label">1m</span>
-                    </div>
-                    <div class="timer-item disabled" data-time="3m">
-                        <span class="timer-icon">⏳</span>
-                        <span class="timer-label">3m</span>
-                    </div>
-                    <div class="timer-item disabled" data-time="5m">
-                        <span class="timer-icon">⌛</span>
-                        <span class="timer-label">5m</span>
-                    </div>
+                    <div class="timer-item disabled" data-time="30s">30d</div>
+                    <div class="timer-item active" data-time="1m">1m</div>
+                    <div class="timer-item disabled" data-time="3m">3m</div>
+                    <div class="timer-item disabled" data-time="5m">5m</div>
                 </div>
-
                 <div class="prediction-title">📈 GRAFIK RESULT TERAKHIR</div>
                 <div class="chart-container">
-                    <canvas id="predictionChart" height="140"></canvas>
+                    <canvas id="predictionChart" height="90"></canvas>
                 </div>
-                <div class="final-prediction" id="hasilPrediksi">PREDIKSI: Menunggu data...</div>
+                <div class="final-prediction" id="hasilPrediksi">PREDIKSI: Menunggu...</div>
             </div>
-            
-            <!-- STATISTIK UTAMA -->
+
+            <!-- Stats Grid -->
             <div class="stats-grid">
-                <div class="stat-card">
-                    <h3><span>🎲</span> Total Taruhan</h3>
-                    <div class="value" id="totalBets">0</div>
-                    <div class="subtext">Sejak bot mulai</div>
-                </div>
-                <div class="stat-card">
-                    <h3><span>📈</span> Win Rate</h3>
-                    <div class="value" id="winRate">0%</div>
-                    <div class="subtext">Persentase kemenangan</div>
-                </div>
-                <div class="stat-card">
-                    <h3><span>🔄</span> Total Reset</h3>
-                    <div class="value" id="totalResets">0</div>
-                    <div class="subtext">Reset saldo</div>
-                </div>
-                <div class="stat-card">
-                    <h3><span>💰</span> Profit/Loss</h3>
-                    <div class="value" id="totalProfit">Rp 0</div>
-                    <div class="subtext">Total laba/rugi</div>
-                </div>
+                <div class="stat-card"><h3>🎲 Total Taruhan</h3><div class="value" id="totalBets">0</div></div>
+                <div class="stat-card"><h3>📈 Win Rate</h3><div class="value" id="winRate">0%</div></div>
+                <div class="stat-card"><h3>🔄 Total Reset</h3><div class="value" id="totalResets">0</div></div>
+                <div class="stat-card"><h3>💰 Profit/Loss</h3><div class="value" id="totalProfit">Rp 0</div></div>
             </div>
-            
-            <!-- SUMMARY -->
             <div class="summary">
-                <div class="summary-item">
-                    <div class="summary-value" id="totalWins">0</div>
-                    <div class="summary-label">Kemenangan</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-value" id="totalLosses">0</div>
-                    <div class="summary-label">Kekalahan</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-value" id="currentStreak">0</div>
-                    <div class="summary-label">Streak Saat Ini</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-value" id="avgBetAmount">Rp 0</div>
-                    <div class="summary-label">Rata-rata Taruhan</div>
-                </div>
+                <div class="summary-item"><div class="summary-value" id="totalWins">0</div><div class="summary-label">Menang</div></div>
+                <div class="summary-item"><div class="summary-value" id="totalLosses">0</div><div class="summary-label">Kalah</div></div>
+                <div class="summary-item"><div class="summary-value" id="currentStreak">0</div><div class="summary-label">Streak</div></div>
+                <div class="summary-item"><div class="summary-value" id="avgBetAmount">Rp 0</div><div class="summary-label">Rata Taruhan</div></div>
             </div>
-            
-            <!-- CONTROLS -->
+
+            <!-- Controls -->
             <div class="controls">
-                <div class="filters">
-                    <input type="date" id="dateFilter" class="filter-input">
-                    <input type="text" id="searchFilter" class="filter-input" placeholder="Cari...">
-                    <button class="btn" onclick="refreshData()"><span>🔄</span> Refresh Data</button>
-                    <button class="btn" onclick="toggleSound()"><span>🔊</span> <span id="soundStatus">Suara: ON</span></button>
-                </div>
-                <div>
-                    <span id="connectionStatus" class="status-connected"><span>✅</span> Terhubung</span>
-                </div>
+                <input type="date" id="dateFilter" class="filter-input">
+                <input type="text" id="searchFilter" class="filter-input" placeholder="Cari...">
+                <button class="btn" onclick="refreshData()">🔄 Refresh</button>
+                <button class="btn" onclick="toggleSound()">🔊 <span id="soundStatus">ON</span></button>
+                <span id="connectionStatus" class="status-connected">✅ Terhubung</span>
             </div>
-            
-            <!-- TABS -->
-            <div class="tabs-container">
-                <div class="tabs">
-                    <button class="tab active" onclick="openTab(event, 'results')"><span class="tab-icon">📋</span> Hasil & Prediksi</button>
-                    <button class="tab" onclick="openTab(event, 'resets')"><span class="tab-icon">🔄</span> Data Reset</button>
-                    <button class="tab" onclick="openTab(event, 'reports')"><span class="tab-icon">📊</span> Laporan Harian</button>
-                    <button class="tab" onclick="openTab(event, 'safety')"><span class="tab-icon">⚠️</span> Safety Events</button>
-                    <button class="tab" onclick="openTab(event, 'balance')"><span class="tab-icon">💰</span> Perubahan Saldo</button>
-                </div>
-            </div>
-            
-            <!-- TAB RESULTS -->
-            <div id="results" class="tab-content active">
-                <h2><span>🎯</span> Data Hasil & Prediksi (Menunggu) Saldo awal Rp 247.000</h2>
-                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="font-size: 0.9rem; color: #666;">Total: <span id="totalRecords">0</span> data</div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="pagination-btn" onclick="previousPage()" id="prevBtn" disabled>◀ Prev</button>
-                        <span id="pageInfo">Halaman 1</span>
-                        <button class="pagination-btn" onclick="nextPage()" id="nextBtn" disabled>Next ▶</button>
+
+            <!-- Tab Content: Results (active) -->
+            <div id="resultsTab" class="tab-content active">
+                <div class="pagination-controls">
+                    <span>Total: <span id="totalRecords">0</span></span>
+                    <div>
+                        <button class="pagination-btn" onclick="previousPage()" id="prevBtn" disabled>◀</button>
+                        <span id="pageInfo">1/1</span>
+                        <button class="pagination-btn" onclick="nextPage()" id="nextBtn" disabled>▶</button>
                     </div>
                 </div>
                 <div class="table-container">
                     <table id="resultsTable">
                         <thead>
-                            <tr>
-                                <th>Waktu</th>
-                                <th>Periode</th>
-                                <th>Angka</th>
-                                <th>Colour</th>
-                                <th>Hasil</th>
-                                <th>Prediksi</th>
-                                <th>Status</th>
-                                <th>Level</th>
-                                <th>Taruhan</th>
-                                <th>P/L</th>
-                                <th>Saldo</th>
-                            </tr>
+                            <tr><th>Periode</th><th>Prediksi</th><th>Taruhan</th><th>Hasil</th><th>Angka</th><th>Warna</th></tr>
                         </thead>
                         <tbody id="resultsBody"></tbody>
                     </table>
                 </div>
                 <div class="loading" id="loadingResults">Memuat data...</div>
-                <div class="empty-state" id="emptyResults" style="display: none;"><span>📭</span><p>Tidak ada data</p></div>
-            </div>
-            
-            <!-- TAB RESETS -->
-            <div id="resets" class="tab-content">
-                <h2><span>🔄</span> Data Reset Saldo</h2>
-                <div class="table-container">
-                    <table id="resetsTable">
-                        <thead>
-                            <tr>
-                                <th>Waktu</th>
-                                <th>Alasan</th>
-                                <th>Saldo Lama</th>
-                                <th>Saldo Baru</th>
-                                <th>Total Bet</th>
-                                <th>Level</th>
-                            </tr>
-                        </thead>
-                        <tbody id="resetsBody"></tbody>
-                    </table>
-                </div>
-                <div class="loading" id="loadingResets">Memuat data reset...</div>
-                <div class="empty-state" id="emptyResets" style="display: none;"><span>📭</span><p>Tidak ada data reset</p></div>
-            </div>
-            
-            <!-- TAB REPORTS -->
-            <div id="reports" class="tab-content">
-                <h2><span>📊</span> Laporan Harian</h2>
-                <div class="table-container">
-                    <table id="reportsTable">
-                        <thead>
-                            <tr>
-                                <th>Tanggal</th>
-                                <th>Total Taruhan</th>
-                                <th>Menang</th>
-                                <th>Kalah</th>
-                                <th>Win Rate</th>
-                                <th>Profit/Loss</th>
-                                <th>Saldo Akhir</th>
-                                <th>Level</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reportsBody"></tbody>
-                    </table>
-                </div>
-                <div class="loading" id="loadingReports">Memuat laporan harian...</div>
-                <div class="empty-state" id="emptyReports" style="display: none;"><span>📭</span><p>Tidak ada laporan</p></div>
-            </div>
-            
-            <!-- TAB SAFETY -->
-            <div id="safety" class="tab-content">
-                <h2><span>⚠️</span> Safety Events</h2>
-                <div class="table-container">
-                    <table id="safetyTable">
-                        <thead>
-                            <tr>
-                                <th>Waktu</th>
-                                <th>Event</th>
-                                <th>Detail</th>
-                                <th>Saldo</th>
-                                <th>Kalah Berturut</th>
-                                <th>Level</th>
-                            </tr>
-                        </thead>
-                        <tbody id="safetyBody"></tbody>
-                    </table>
-                </div>
-                <div class="loading" id="loadingSafety">Memuat safety events...</div>
-                <div class="empty-state" id="emptySafety" style="display: none;"><span>📭</span><p>Tidak ada safety events</p></div>
-            </div>
-            
-            <!-- TAB BALANCE -->
-            <div id="balance" class="tab-content">
-                <h2><span>💰</span> Perubahan Saldo</h2>
-                <div class="table-container">
-                    <table id="balanceTable">
-                        <thead>
-                            <tr>
-                                <th>Waktu</th>
-                                <th>Jenis</th>
-                                <th>Jumlah</th>
-                                <th>Saldo Baru</th>
-                                <th>Keterangan</th>
-                            </tr>
-                        </thead>
-                        <tbody id="balanceBody"></tbody>
-                    </table>
-                </div>
-                <div class="loading" id="loadingBalance">Memuat perubahan saldo...</div>
-                <div class="empty-state" id="emptyBalance" style="display: none;"><span>📭</span><p>Tidak ada perubahan saldo</p></div>
+                <div class="empty-state" id="emptyResults" style="display:none;">📭 Tidak ada data</div>
             </div>
 
-            <!-- TOMBOL GRUP TELEGRAM & INFO -->
-            <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
-                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;">
-                    <div>
-                        <a href="https://t.me/WingoPredictionHub" target="_blank" class="btn btn-telegram" style="text-decoration: none; display: inline-flex; gap: 10px; padding: 12px 24px;">
-                            <span>📱</span> Gabung Grup Telegram
-                        </a>
-                        <p style="margin-top: 8px; color: #555; font-size: 0.9rem;">Admin: @PredictorUser</p>
-                    </div>
-                    <div style="max-width: 500px;">
-                        <p style="color: #dc2626; font-weight: 600; margin-bottom: 5px;">⚠️ Informasi Prediksi:</p>
-                        <p style="color: #333; font-size: 0.95rem; line-height: 1.5;">
-                            Menggunakan sistem <strong>Martingale 7 level</strong> dengan manajemen risiko. 
-                            Hasil prediksi tidak 100% akurat. Keuntungan dan kerugian tergantung pada kondisi pasar. 
-                            Selalu gunakan uang dingin dan bijak dalam bertaruh. Jangan pernah bertaruh melebihi kemampuan Anda.
-                        </p>
-                    </div>
-                </div>
+            <div id="resetsTab" class="tab-content">
+                <div class="table-container"><table><thead><tr><th>Waktu</th><th>Alasan</th><th>Saldo Lama</th><th>Saldo Baru</th></tr></thead><tbody id="resetsBody"></tbody></table></div>
+                <div class="loading" id="loadingResets">Memuat...</div>
+                <div class="empty-state" id="emptyResets" style="display:none;">📭 Tidak ada data</div>
             </div>
-            
-            <!-- LAST UPDATE -->
-            <div class="last-update">
-                <strong>Terakhir diperbarui:</strong> <span id="lastUpdate">-</span>
+
+            <div id="reportsTab" class="tab-content">
+                <div class="table-container"><table><thead><tr><th>Tanggal</th><th>Taruhan</th><th>Menang</th><th>Kalah</th><th>Win Rate</th><th>Profit</th></tr></thead><tbody id="reportsBody"></tbody></table></div>
+                <div class="loading" id="loadingReports">Memuat...</div>
+                <div class="empty-state" id="emptyReports" style="display:none;">📭 Tidak ada data</div>
             </div>
+
+            <div id="safetyTab" class="tab-content">
+                <div class="table-container"><table><thead><tr><th>Waktu</th><th>Event</th><th>Detail</th></tr></thead><tbody id="safetyBody"></tbody></table></div>
+                <div class="loading" id="loadingSafety">Memuat...</div>
+                <div class="empty-state" id="emptySafety" style="display:none;">📭 Tidak ada data</div>
+            </div>
+
+            <div id="balanceTab" class="tab-content">
+                <div class="table-container"><table><thead><tr><th>Waktu</th><th>Jenis</th><th>Jumlah</th><th>Saldo Baru</th></tr></thead><tbody id="balanceBody"></tbody></table></div>
+                <div class="loading" id="loadingBalance">Memuat...</div>
+                <div class="empty-state" id="emptyBalance" style="display:none;">📭 Tidak ada data</div>
+            </div>
+
+            <div class="last-update">Terakhir diperbarui: <span id="lastUpdate">-</span></div>
         </div>
     </div>
 
-    <!-- Audio notifikasi -->
-    <audio id="notificationSound" preload="auto">
-        <source src="https://raw.githubusercontent.com/ojekaGorontalo/lotre/main/sound%2030%20detik.mp3" type="audio/mpeg">
-    </audio>
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav" id="bottomNav" style="display:none;">
+        <button class="nav-item active" data-tab="resultsTab"><span class="nav-icon">📋</span><span>Hasil</span></button>
+        <button class="nav-item" data-tab="resetsTab"><span class="nav-icon">🔄</span><span>Reset</span></button>
+        <button class="nav-item" data-tab="reportsTab"><span class="nav-icon">📊</span><span>Laporan</span></button>
+        <button class="nav-item" data-tab="safetyTab"><span class="nav-icon">⚠️</span><span>Safety</span></button>
+        <button class="nav-item" data-tab="balanceTab"><span class="nav-icon">💰</span><span>Saldo</span></button>
+    </div>
 
-    <!-- ===== AUDIO UNTUK TIMER 1 MENIT ===== -->
-    <audio id="sound1min" preload="auto">
-        <source src="https://splendid-queijadas-d948bb.netlify.app/1minute.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- Chart.js library -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <audio id="notificationSound" preload="auto"><source src="https://raw.githubusercontent.com/ojekaGorontalo/lotre/main/sound%2030%20detik.mp3" type="audio/mpeg"></audio>
+    <audio id="sound1min" preload="auto"><source src="https://splendid-queijadas-d948bb.netlify.app/1minute.mp3" type="audio/mpeg"></audio>
 
     <script>
-        // ========== FIREBASE INIT ==========
-        // Konfigurasi untuk database analitik (wingo-bot-analytics) - tempat data bot
+        // ========== FIREBASE CONFIG ==========
         const analyticsConfig = {
             apiKey: "AIzaSyCwepdohDnAFm7j9yGZ3Wan5etfMlYIY4w",
             authDomain: "wingo-bot-analytics.firebaseapp.com",
@@ -1091,8 +591,6 @@
             messagingSenderId: "46011860748",
             appId: "1:46011860748:web:f5d61b92de5201a6ed818e"
         };
-
-        // Konfigurasi untuk database UID (steady-fin) - tempat data user
         const authConfig = {
             apiKey: "AIzaSyDtZxsl5LZp3n1KZJfdVAdqQj22ZBPoQbU",
             authDomain: "steady-fin-368617.firebaseapp.com",
@@ -1100,445 +598,40 @@
             projectId: "steady-fin-368617",
             storageBucket: "steady-fin-368617.firebasestorage.app",
             messagingSenderId: "626971902484",
-            appId: "1:626971902484:web:98f7cdbd55c5990dfe9d01",
-            measurementId: "G-70D3LR995Y"
+            appId: "1:626971902484:web:98f7cdbd55c5990dfe9d01"
         };
-
-        // Inisialisasi kedua Firebase app
         const analyticsApp = firebase.initializeApp(analyticsConfig, 'analytics');
         const authApp = firebase.initializeApp(authConfig, 'auth');
-
         const analyticsDb = analyticsApp.database();
         const authDb = authApp.database();
 
-        // ========== FAKE ONLINE USERS (untuk tampilan ramai) ==========
-        const fakeNames = [
-            "MemberNpkl", "TraderJaya", "Investor88", "BotMaster", "PrediksiGacor",
-            "WingoKing", "JpTerus", "PausBesar", "SultanSaldo", "CuanTerus",
-            "BetWinner", "LuckySpin", "HokiTerus", "MantapJiwa", "GassTerus",
-            "ProfitTerus", "AgenWingo", "MasterPred", "BotSejati", "WingoSakti",
-            "NagaHitam", "MacanPutih", "HarimauMerah", "SingaEmas", "ElangBesar"
-        ];
-
-        function generateFakeName(index) {
-            const base = fakeNames[index % fakeNames.length];
-            const suffix = Math.floor(Math.random() * 1000);
-            return `${base}${suffix}`;
-        }
-
         // ========== GLOBAL VARIABLES ==========
-        let allResults = [];
-        let allPredictions = [];
-        let allResets = [];
-        let allReports = [];
-        let allSafetyEvents = [];
-        let allBalanceChanges = [];
+        let allResults = [], allPredictions = [], allResets = [], allReports = [], allSafetyEvents = [], allBalanceChanges = [];
         let mergedData = [];
-        let currentPage = 1;
-        const rowsPerPage = 10;
-        let totalFilteredResults = 0;
-        let totalPages = 1;
-        let timerSeconds = 30;
-        let timerInterval = null;
-        const timerDisplay = document.getElementById('timerDisplay');
-        let lastResultTimestamp = 0;
-        let soundEnabled = true;
+        let currentPage = 1, rowsPerPage = 10, totalFilteredResults = 0, totalPages = 1;
+        let timerSeconds = 60, timerInterval = null, lastResultTimestamp = 0;
+        let soundEnabled = true, currentTimerMode = '1m';
         let chart;
+        let currentUid = null, currentUserData = null, presenceRef = null;
 
-        // ===== VARIABEL UNTUK MODE TIMER =====
-        let currentTimerMode = '1m'; // default 1 menit
-        const modeDurations = {
-            '30s': 30,
-            '1m': 60,
-            '3m': 180,
-            '5m': 300
-        };
-
-        // ========== VARIABEL UNTUK WIN STREAK ==========
-        let lastNotifiedStreak = 0;
-        let victorySound = new Audio('https://splendid-queijadas-d948bb.netlify.app/Victory.mp3');
-
-        // ========== LOGIN STATE ==========
-        let currentUid = null;
-        let currentUserData = null; // Menyimpan data user dari auth (nickName, lv, dll)
-        let presenceRef = null; // Referensi ke node online_users
-
-        // ========== FUNGSI LOGIN ==========
-        function checkLogin() {
-            const savedUid = localStorage.getItem('wingo_uid');
-            if (savedUid) {
-                // Cek apakah UID masih ada di database auth
-                authDb.ref('uids/' + savedUid).once('value').then(snapshot => {
-                    if (snapshot.exists()) {
-                        const userData = snapshot.val();
-                        // Cek apakah akun aktif (default true jika tidak ada field)
-                        if (userData.active === false) {
-                            // Akun dinonaktifkan, hapus localStorage dan redirect ke login
-                            localStorage.removeItem('wingo_uid');
-                            showLogin();
-                            document.getElementById('loginError').textContent = 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.';
-                            return;
-                        }
-                        if (userData.password) {
-                            // Sudah punya password, simpan data user
-                            currentUid = savedUid;
-                            currentUserData = userData;
-                            showDashboard();
-                        } else {
-                            // UID ada tapi belum punya password, arahkan ke set password
-                            localStorage.removeItem('wingo_uid'); // Hapus karena belum login
-                            showSetPassword(savedUid);
-                        }
-                    } else {
-                        localStorage.removeItem('wingo_uid');
-                        showLogin();
-                    }
-                }).catch(() => {
-                    showLogin();
-                });
-            } else {
-                showLogin();
-            }
+        // Helper functions
+        function formatNumber(num) {
+            if (num === undefined || num === null) return '0';
+            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
         }
-
-        function showLogin() {
-            document.getElementById('loginPage').style.display = 'block';
-            document.getElementById('setPasswordPage').style.display = 'none';
-            document.getElementById('dashboardContent').style.display = 'none';
-            // Mulai memantau online users untuk halaman login
-            startPublicOnlineCounter();
-        }
-
-        function showSetPassword(uid) {
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('setPasswordPage').style.display = 'block';
-            document.getElementById('dashboardContent').style.display = 'none';
-            // Simpan uid sementara di dataset
-            document.getElementById('setPasswordPage').dataset.uid = uid;
-            // Hentikan public online counter (tidak perlu)
-            stopPublicOnlineCounter();
-        }
-
-        function showDashboard() {
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('setPasswordPage').style.display = 'none';
-            document.getElementById('dashboardContent').style.display = 'block';
-            // Tampilkan nama user
-            updateUserDisplay();
-            // Inisialisasi dashboard
-            initDashboard();
-            // Setup presence (online users)
-            setupPresence();
-            // Hentikan public online counter
-            stopPublicOnlineCounter();
-        }
-
-        function updateUserDisplay() {
-            const displayNameEl = document.getElementById('userDisplayName');
-            if (currentUserData && currentUserData.nickName) {
-                displayNameEl.textContent = `👤 ${currentUserData.nickName}`;
-            } else {
-                displayNameEl.textContent = '';
-            }
-        }
-
-        function handleLogin() {
-            const uid = document.getElementById('uidInput').value.trim();
-            const password = document.getElementById('passwordInput').value.trim();
-            const errorEl = document.getElementById('loginError');
-
-            if (!uid || !password) {
-                errorEl.textContent = 'UID dan password harus diisi';
-                return;
-            }
-
-            errorEl.textContent = 'Memeriksa...';
-
-            authDb.ref('uids/' + uid).once('value').then(snapshot => {
-                if (snapshot.exists()) {
-                    const userData = snapshot.val();
-                    // Cek apakah akun aktif
-                    if (userData.active === false) {
-                        errorEl.textContent = 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.';
-                        return;
-                    }
-                    if (userData.password) {
-                        // Cek password
-                        if (userData.password === password) {
-                            // Login sukses
-                            localStorage.setItem('wingo_uid', uid);
-                            currentUid = uid;
-                            currentUserData = userData;
-                            showDashboard();
-                        } else {
-                            errorEl.textContent = 'Password salah';
-                        }
-                    } else {
-                        // UID ada tapi belum punya password, arahkan ke set password
-                        errorEl.textContent = 'UID ini belum memiliki password. Silakan buat password.';
-                        showSetPassword(uid);
-                    }
-                } else {
-                    errorEl.textContent = 'UID tidak terdaftar. Silakan daftar terlebih dahulu.';
-                }
-            }).catch(err => {
-                console.error(err);
-                errorEl.textContent = 'Gagal menghubungi database';
+        function renderColourDots(colourStr) {
+            if (!colourStr) return '-';
+            const colours = colourStr.split(',').map(c => c.trim().toLowerCase());
+            let html = '<div class="colour-dots">';
+            colours.forEach(c => {
+                let cls = 'colour-' + (['red','green','violet'].includes(c) ? c : 'blue');
+                html += `<div class="colour-dot ${cls}" title="${c}"></div>`;
             });
+            return html + '</div>';
         }
 
-        function setPassword() {
-            const newPass = document.getElementById('newPassword').value.trim();
-            const confirmPass = document.getElementById('confirmPassword').value.trim();
-            const errorEl = document.getElementById('setPasswordError');
-            const uid = document.getElementById('setPasswordPage').dataset.uid;
-
-            if (!newPass || !confirmPass) {
-                errorEl.textContent = 'Password tidak boleh kosong';
-                return;
-            }
-            if (newPass !== confirmPass) {
-                errorEl.textContent = 'Password tidak cocok';
-                return;
-            }
-
-            errorEl.textContent = 'Menyimpan...';
-
-            // Simpan password ke database auth
-            authDb.ref('uids/' + uid).update({ password: newPass })
-                .then(() => {
-                    errorEl.textContent = 'Password berhasil disimpan! Silakan login.';
-                    setTimeout(() => {
-                        showLogin();
-                    }, 2000);
-                })
-                .catch(err => {
-                    console.error(err);
-                    errorEl.textContent = 'Gagal menyimpan password';
-                });
-        }
-
-        function showRegisterOptions() {
-            const msg = "Untuk mendapatkan akses prediksi, Anda harus terdaftar sebagai mitra kami. Silakan daftar melalui salah satu link berikut:\n\n1. https://www.lixnobe.com/#/register?invitationCode=DtX6m351494\n2. https://www.qumbrot.com/#/register?invitationCode=DtX6m351494\n\nSetelah mendaftar, Anda wajib:\n- Menghubungkan rekening bank/e-wallet\n- Deposit minimal Rp 247.000 untuk pertahanan\n\nSetelah itu, UID Anda akan otomatis terdaftar di sistem kami.";
-            alert(msg);
-            // Bisa juga buka tab baru
-            window.open('https://www.lixnobe.com/#/register?invitationCode=DtX6m351494', '_blank');
-        }
-
-        function logout() {
-            // Hapus node presence
-            if (presenceRef) {
-                presenceRef.remove()
-                    .then(() => console.log('Presence dihapus'))
-                    .catch(err => console.error('Gagal hapus presence', err));
-            }
-            localStorage.removeItem('wingo_uid');
-            currentUid = null;
-            currentUserData = null;
-            updateUserDisplay();
-            showLogin();
-            if (timerInterval) clearInterval(timerInterval);
-        }
-
-        // ========== PUBLIC ONLINE COUNTER (HALAMAN LOGIN) ==========
-        let publicOnlineListener = null;
-
-        function startPublicOnlineCounter() {
-            if (publicOnlineListener) return; // sudah jalan
-            publicOnlineListener = authDb.ref('online_users').on('value', (snapshot) => {
-                const onlineUsers = snapshot.val() || {};
-                
-                // Tentukan target total online antara 1000 - 1500
-                const targetTotal = 1200 + Math.floor(Math.random() * 300); // 1200–1499
-                const existingCount = Object.keys(onlineUsers).length;
-                const needFake = Math.max(0, targetTotal - existingCount);
-                
-                // Hitung total dengan fake
-                const totalCount = existingCount + needFake;
-                document.getElementById('publicOnlineCount').textContent = totalCount;
-            });
-        }
-
-        function stopPublicOnlineCounter() {
-            if (publicOnlineListener) {
-                authDb.ref('online_users').off('value', publicOnlineListener);
-                publicOnlineListener = null;
-            }
-        }
-
-        // ========== PRESENCE (ONLINE USERS) UNTUK DASHBOARD ==========
-        function setupPresence() {
-            if (!currentUid) return;
-
-            // Referensi ke node online user
-            presenceRef = authDb.ref('online_users/' + currentUid);
-
-            // Set nilai awal dengan timestamp dan nickName
-            presenceRef.set({
-                uid: currentUid,
-                nickName: currentUserData.nickName || 'User',
-                lastSeen: firebase.database.ServerValue.TIMESTAMP
-            });
-
-            // Saat koneksi terputus, hapus node ini
-            presenceRef.onDisconnect().remove();
-
-            // Listener untuk mendeteksi perubahan koneksi
-            authDb.ref('.info/connected').on('value', (snap) => {
-                if (snap.val() === true) {
-                    // Terhubung, set ulang presence dan onDisconnect
-                    presenceRef.set({
-                        uid: currentUid,
-                        nickName: currentUserData.nickName || 'User',
-                        lastSeen: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    presenceRef.onDisconnect().remove();
-                }
-            });
-
-            // Mulai memantau daftar online users
-            monitorOnlineUsers();
-        }
-
-        function monitorOnlineUsers() {
-            authDb.ref('online_users').on('value', (snapshot) => {
-                const onlineUsers = snapshot.val() || {};
-                
-                // Tentukan target total online antara 1000 - 1500
-                const targetTotal = 1200 + Math.floor(Math.random() * 300); // 1200–1499
-                const existingCount = Object.keys(onlineUsers).length;
-                const needFake = Math.max(0, targetTotal - existingCount);
-                
-                // Gabungkan user asli dengan user palsu
-                let displayUsers = { ...onlineUsers };
-                
-                for (let i = 0; i < needFake; i++) {
-                    const fakeUid = `fake_${i}_${Date.now()}_${i}`; // pastikan unik
-                    displayUsers[fakeUid] = {
-                        uid: fakeUid,
-                        nickName: generateFakeName(i),
-                        lastSeen: Date.now() - Math.random() * 60000 // dalam 1 menit terakhir
-                    };
-                }
-                
-                const onlineCount = Object.keys(displayUsers).length;
-                document.getElementById('onlineCount').textContent = onlineCount;
-                
-                // Tampilkan daftar user (asli + palsu)
-                const listEl = document.getElementById('onlineUsersList');
-                listEl.innerHTML = '';
-                Object.values(displayUsers).forEach(user => {
-                    const li = document.createElement('li');
-                    const avatar = document.createElement('span');
-                    avatar.className = 'user-avatar';
-                    avatar.textContent = (user.nickName || 'U').charAt(0).toUpperCase();
-                    li.appendChild(avatar);
-                    li.appendChild(document.createTextNode(user.nickName || 'Unknown'));
-                    listEl.appendChild(li);
-                });
-            });
-        }
-
-        function toggleOnlineTooltip() {
-            const tooltip = document.getElementById('onlineTooltip');
-            tooltip.classList.toggle('show');
-        }
-
-        // Tutup tooltip jika klik di luar
-        document.addEventListener('click', function(event) {
-            const tooltip = document.getElementById('onlineTooltip');
-            const indicator = document.querySelector('.online-indicator');
-            if (!indicator.contains(event.target)) {
-                tooltip.classList.remove('show');
-            }
-        });
-
-        // ========== DASHBOARD FUNCTIONS ==========
-        function initDashboard() {
-            initChart();
-            loadAllData();
-            setInterval(loadAllData, 30000);
-            setTimer(modeDurations[currentTimerMode]); // set timer sesuai mode default (1m)
-        }
-
-        function setTimer(seconds) {
-            if (timerInterval) clearInterval(timerInterval);
-            timerSeconds = seconds;
-            timerDisplay.textContent = timerSeconds;
-            timerInterval = setInterval(() => {
-                timerSeconds--;
-                if (timerSeconds < 0) timerSeconds = 0;
-                timerDisplay.textContent = timerSeconds;
-            }, 1000);
-        }
-
-        function initChart() {
-            const ctx = document.getElementById('predictionChart').getContext('2d');
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Angka',
-                        data: [],
-                        tension: 0.35,
-                        fill: true,
-                        backgroundColor: 'rgba(220, 38, 38, 0.2)',
-                        borderColor: '#f87171',
-                        pointBackgroundColor: '#fca5a5',
-                        pointBorderColor: '#fff',
-                        pointRadius: 4,
-                        pointHoverRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: { enabled: true }
-                    },
-                    scales: {
-                        y: {
-                            min: 0,
-                            max: 9,
-                            ticks: { stepSize: 1, color: '#94a3b8' },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
-                        },
-                        x: {
-                            ticks: { color: '#94a3b8', maxRotation: 0, autoSkip: true }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Fungsi untuk menghentikan semua suara
-        function stopAllSounds() {
-            const notif = document.getElementById('notificationSound');
-            if (notif && !notif.paused) { notif.pause(); notif.currentTime = 0; }
-            const s1 = document.getElementById('sound1min');
-            if (s1 && !s1.paused) { s1.pause(); s1.currentTime = 0; }
-        }
-
-        // Fungsi memainkan suara sesuai mode saat ini
-        function playModeSound() {
-            if (!soundEnabled) return;
-            flashHeader(); // efek visual
-            if (currentTimerMode === '30s') {
-                const audio = document.getElementById('notificationSound');
-                if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
-            } else if (currentTimerMode === '1m') {
-                const audio = document.getElementById('sound1min');
-                if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
-            }
-            // untuk 3m dan 5m tidak ada suara, hanya flash header
-        }
-
+        // ========== FIREBASE DATA LOAD ==========
         function loadAllData() {
-            console.log('Memuat data...');
-
-            // Gunakan analyticsDb untuk semua data bot
             analyticsDb.ref('results').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
                 allResults = [];
                 snapshot.forEach((child) => {
@@ -1546,42 +639,21 @@
                     data.id = child.key;
                     allResults.unshift(data);
                 });
-                
-                if (allResults.length > 0) {
-                    const latestResult = allResults[0];
-                    if (latestResult.timestamp > lastResultTimestamp) {
-                        // Reset timer dengan durasi mode aktif
-                        setTimer(modeDurations[currentTimerMode]);
-                        // Mainkan suara sesuai mode
-                        playModeSound();
-                        
-                        lastResultTimestamp = latestResult.timestamp;
-                        
-                        // ========== CEK WIN STREAK ==========
-                        if (latestResult.isWin) {
-                            const streak = latestResult.currentStreak || 0;
-                            if (streak >= 6 && streak > lastNotifiedStreak) {
-                                victorySound.currentTime = 0;
-                                victorySound.play().catch(e => console.log('Gagal mainkan sound victory', e));
-                                showWinStreakPopup(streak);
-                                lastNotifiedStreak = streak;
-                            }
-                        } else {
-                            // Jika kalah, reset streak notifikasi
-                            lastNotifiedStreak = 0;
-                        }
-                    } else if (lastResultTimestamp === 0 && allResults.length > 0) {
-                        setTimer(modeDurations[currentTimerMode]);
-                        lastResultTimestamp = latestResult.timestamp;
-                        // Saat pertama load, tidak trigger notifikasi streak
+                if (allResults.length > 0 && allResults[0].timestamp > lastResultTimestamp) {
+                    setTimer(modeDurations[currentTimerMode]);
+                    playModeSound();
+                    lastResultTimestamp = allResults[0].timestamp;
+                    if (allResults[0].isWin && (allResults[0].currentStreak || 0) >= 6) {
+                        showWinStreakPopup(allResults[0].currentStreak);
                     }
+                } else if (lastResultTimestamp === 0 && allResults.length > 0) {
+                    setTimer(modeDurations[currentTimerMode]);
+                    lastResultTimestamp = allResults[0].timestamp;
                 }
-                
                 updateChartFromResults();
                 mergeDataAndDisplay();
                 updateStats();
             }, showConnectionError);
-            
             analyticsDb.ref('predictions').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
                 allPredictions = [];
                 snapshot.forEach((child) => {
@@ -1592,100 +664,63 @@
                 updatePredictionFromData();
                 mergeDataAndDisplay();
             }, showConnectionError);
-            
             analyticsDb.ref('resets').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
                 allResets = [];
-                snapshot.forEach((child) => {
-                    const data = child.val();
-                    data.id = child.key;
-                    allResets.unshift(data);
-                });
+                snapshot.forEach((child) => allResets.unshift(child.val()));
                 displayResets();
                 updateStats();
             }, showConnectionError);
-            
             analyticsDb.ref('daily_reports').orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => {
                 allReports = [];
-                snapshot.forEach((child) => {
-                    const data = child.val();
-                    data.id = child.key;
-                    allReports.unshift(data);
-                });
+                snapshot.forEach((child) => allReports.unshift(child.val()));
                 displayReports();
             }, showConnectionError);
-            
             analyticsDb.ref('safety_events').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
                 allSafetyEvents = [];
-                snapshot.forEach((child) => {
-                    const data = child.val();
-                    data.id = child.key;
-                    allSafetyEvents.unshift(data);
-                });
+                snapshot.forEach((child) => allSafetyEvents.unshift(child.val()));
                 displaySafetyEvents();
             }, showConnectionError);
-            
             analyticsDb.ref('balance_changes').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
                 allBalanceChanges = [];
-                snapshot.forEach((child) => {
-                    const data = child.val();
-                    data.id = child.key;
-                    allBalanceChanges.unshift(data);
-                });
+                snapshot.forEach((child) => allBalanceChanges.unshift(child.val()));
                 displayBalanceChanges();
             }, showConnectionError);
-            
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
             document.getElementById('connectionStatus').innerHTML = '<span>✅</span> Terhubung';
             document.getElementById('connectionStatus').className = 'status-connected';
         }
 
-        // ===== PERBAIKAN: PREDIKSI DIAMBIL DARI FIREBASE =====
         function updatePredictionFromData() {
-            const hasilPrediksi = document.getElementById('hasilPrediksi');
-            if (allPredictions.length > 0) {
-                const latestPred = allPredictions[0];
-                const predText = latestPred.prediction; // "BESAR" atau "KECIL"
-                const predNumber = latestPred.predictedNumber; // angka 0-9 dari bot
-                if (predNumber !== undefined && predNumber !== null) {
-                    hasilPrediksi.textContent = `PREDIKSI: ${predText} | ANGKA: ${predNumber}`;
+            const el = document.getElementById('hasilPrediksi');
+            if (allPredictions.length) {
+                const p = allPredictions[0];
+                if (p.predictedNumber !== undefined && p.predictedNumber !== null) {
+                    el.textContent = `PREDIKSI: ${p.prediction} | ANGKA: ${p.predictedNumber}`;
                 } else {
-                    hasilPrediksi.textContent = `PREDIKSI: ${predText}`;
+                    el.textContent = `PREDIKSI: ${p.prediction}`;
                 }
             } else {
-                hasilPrediksi.textContent = 'PREDIKSI: Menunggu data...';
+                el.textContent = 'PREDIKSI: Menunggu data...';
             }
         }
-
         function updateChartFromResults() {
-            if (!chart || allResults.length === 0) return;
+            if (!chart || !allResults.length) return;
             const latest = allResults.slice(0, 20).reverse();
             chart.data.labels = latest.map(r => r.issue?.slice(-3) || '');
             chart.data.datasets[0].data = latest.map(r => r.number ?? 0);
             chart.update();
         }
-
         function mergeDataAndDisplay() {
             const resultMap = new Map();
             allResults.forEach(r => { if (r.issue) resultMap.set(r.issue, r); });
-            const merged = [];
-            allResults.forEach(r => merged.push({ ...r, isWaiting: false }));
+            const merged = allResults.map(r => ({ ...r, isWaiting: false }));
             allPredictions.forEach(p => {
                 if (!resultMap.has(p.issue)) {
                     merged.push({
-                        issue: p.issue,
-                        timestamp: p.timestamp,
-                        prediction: p.prediction,
-                        betAmount: p.betAmount,
-                        betLevel: p.betLevel,
-                        virtualBalance: p.balanceAfterBet,
-                        profitLoss: p.profitLoss,
-                        currentStreak: p.currentStreak,
-                        reverseMode: p.reverseMode,
-                        number: null,
-                        colour: null,
-                        result: null,
-                        isWin: null,
-                        isWaiting: true
+                        issue: p.issue, timestamp: p.timestamp, prediction: p.prediction,
+                        predictedNumber: p.predictedNumber, betAmount: p.betAmount, betLevel: p.betLevel,
+                        virtualBalance: p.balanceAfterBet, profitLoss: p.profitLoss, currentStreak: p.currentStreak,
+                        number: null, colour: null, result: null, isWin: null, isWaiting: true
                     });
                 }
             });
@@ -1693,25 +728,15 @@
             mergedData = merged;
             displayMergedData();
         }
-
-        // ========== FUNGSI TAMPILAN ==========
         function displayMergedData() {
             const tbody = document.getElementById('resultsBody');
             const loading = document.getElementById('loadingResults');
             const empty = document.getElementById('emptyResults');
-            if (mergedData.length === 0) {
-                loading.style.display = 'none';
-                empty.style.display = 'block';
-                tbody.innerHTML = '';
-                totalFilteredResults = 0;
-                updatePaginationInfo();
-                return;
-            }
             const search = document.getElementById('searchFilter').value.toLowerCase();
             const date = document.getElementById('dateFilter').value;
             const filtered = mergedData.filter(item => {
                 if (date && new Date(item.timestamp).toISOString().split('T')[0] !== date) return false;
-                if (search && !`${item.result||''} ${item.prediction||''} ${item.issue||''} ${item.colour||''}`.toLowerCase().includes(search)) return false;
+                if (search && !`${item.result||''} ${item.prediction||''} ${item.issue||''}`.toLowerCase().includes(search)) return false;
                 return true;
             });
             totalFilteredResults = filtered.length;
@@ -1730,21 +755,14 @@
             pageData.forEach(item => {
                 const waiting = item.isWaiting;
                 const statusClass = waiting ? 'result-waiting' : (item.isWin ? 'result-win' : 'result-lose');
-                const statusText = waiting ? 'Wait' : (item.isWin ? 'Profit' : 'Los');
-                const profit = item.profitLoss || 0;
-                const time = new Date(item.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+                const statusText = waiting ? 'Wait' : (item.isWin ? 'Win' : 'Loss');
                 html += `<tr>
-                    <td>${time}</td>
-                    <td>${item.issue||'-'}</td>
-                    <td><strong>${item.number!==null?item.number:'-'}</strong></td>
-                    <td>${renderColourDots(item.colour)}</td>
-                    <td>${item.result||'-'}</td>
-                    <td>${item.prediction||'-'}</td>
+                    <td>${item.issue?.slice(-6) || '-'}</td>
+                    <td>${item.prediction || '-'}</td>
+                    <td>Rp ${formatNumber(item.betAmount || 0)}</td>
                     <td><span class="${statusClass}">${statusText}</span></td>
-                    <td>${item.betLevel||'-'}</td>
-                    <td>Rp ${formatNumber(item.betAmount||0)}</td>
-                    <td>${profit>=0?'+':''}Rp ${formatNumber(profit)}</td>
-                    <td>Rp ${formatNumber(item.virtualBalance||0)}</td>
+                    <td><strong>${item.number !== null ? item.number : '-'}</strong></td>
+                    <td>${renderColourDots(item.colour)}</td>
                 </tr>`;
             });
             tbody.innerHTML = html;
@@ -1752,167 +770,100 @@
             empty.style.display = 'none';
             updatePaginationInfo();
         }
-
-        function renderColourDots(colourStr) {
-            if (!colourStr) return '-';
-            const colours = colourStr.split(',').map(c => c.trim().toLowerCase());
-            let html = '<div class="colour-dots">';
-            colours.forEach(c => {
-                let cls = 'colour-' + (['red','green','violet'].includes(c) ? c : 'blue');
-                html += `<div class="colour-dot ${cls}" title="${c}"></div>`;
-            });
-            return html + '</div>';
-        }
-
-        function formatNumber(num) {
-            if (num===undefined||num===null) return '0';
-            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-        }
-
         function updatePaginationInfo() {
-            document.getElementById('pageInfo').textContent = `Halaman ${currentPage} dari ${totalPages}`;
+            document.getElementById('pageInfo').textContent = `${currentPage}/${totalPages}`;
             document.getElementById('totalRecords').textContent = totalFilteredResults;
             document.getElementById('prevBtn').disabled = currentPage === 1;
             document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
+        function nextPage() { if (currentPage < totalPages) { currentPage++; displayMergedData(); } }
+        function previousPage() { if (currentPage > 1) { currentPage--; displayMergedData(); } }
 
-        function nextPage() {
-            if (currentPage < totalPages) { currentPage++; displayMergedData(); }
-        }
-        function previousPage() {
-            if (currentPage > 1) { currentPage--; displayMergedData(); }
-        }
-
+        // Other display functions
         function displayResets() {
             const tbody = document.getElementById('resetsBody');
-            if (allResets.length === 0) { document.getElementById('loadingResets').style.display='none'; document.getElementById('emptyResets').style.display='block'; tbody.innerHTML=''; return; }
+            if (!allResets.length) { document.getElementById('loadingResets').style.display='none'; document.getElementById('emptyResets').style.display='block'; tbody.innerHTML=''; return; }
             let html = '';
             allResets.forEach(r => {
-                const t = new Date(r.timestamp||r.resetTime).toLocaleString('id-ID');
-                html += `<tr><td>${t}</td><td>${r.reason||'-'}</td><td>Rp ${formatNumber(r.oldBalance||0)}</td><td>Rp ${formatNumber(r.newBalance||0)}</td><td>${r.totalBetsBeforeReset||0}</td><td>${r.currentBetIndex+1||1}</td></tr>`;
+                html += `<tr><td>${new Date(r.timestamp || r.resetTime).toLocaleString()}</td><td>${r.reason || '-'}</td><td>Rp ${formatNumber(r.oldBalance)}</td><td>Rp ${formatNumber(r.newBalance)}</td></tr>`;
             });
             tbody.innerHTML = html;
-            document.getElementById('loadingResets').style.display='none';
-            document.getElementById('emptyResets').style.display='none';
+            document.getElementById('loadingResets').style.display = 'none';
+            document.getElementById('emptyResets').style.display = 'none';
         }
-
         function displayReports() {
             const tbody = document.getElementById('reportsBody');
-            if (allReports.length === 0) { document.getElementById('loadingReports').style.display='none'; document.getElementById('emptyReports').style.display='block'; tbody.innerHTML=''; return; }
+            if (!allReports.length) { document.getElementById('loadingReports').style.display='none'; document.getElementById('emptyReports').style.display='block'; tbody.innerHTML=''; return; }
             let html = '';
             allReports.forEach(r => {
-                const d = r.date ? new Date(r.date).toLocaleDateString('id-ID') : new Date(r.timestamp).toLocaleDateString('id-ID');
-                const total = r.totalBets||0;
-                const wins = r.totalWins||0;
-                const losses = r.totalLosses||0;
-                const wr = r.winRate || (total>0?Math.round((wins/total)*100):0);
-                const pl = r.profitLoss||0;
-                const bal = r.virtualBalance||0;
-                const lvl = r.currentBetLevel||1;
-                html += `<tr><td>${d}</td><td>${total}</td><td>${wins}</td><td>${losses}</td><td>${wr}%</td><td>${pl>=0?'+':''}Rp ${formatNumber(pl)}</td><td>Rp ${formatNumber(bal)}</td><td>${lvl}</td></tr>`;
+                const dateStr = r.date ? new Date(r.date).toLocaleDateString() : new Date(r.timestamp).toLocaleDateString();
+                html += `<tr><td>${dateStr}</td><td>${r.totalBets||0}</td><td>${r.totalWins||0}</td><td>${r.totalLosses||0}</td><td>${r.winRate || (r.totalBets?Math.round((r.totalWins/r.totalBets)*100):0)}%</td><td>${(r.profitLoss||0)>=0?'+':''}Rp ${formatNumber(r.profitLoss)}</td></tr>`;
             });
             tbody.innerHTML = html;
-            document.getElementById('loadingReports').style.display='none';
-            document.getElementById('emptyReports').style.display='none';
+            document.getElementById('loadingReports').style.display = 'none';
+            document.getElementById('emptyReports').style.display = 'none';
         }
-
         function displaySafetyEvents() {
             const tbody = document.getElementById('safetyBody');
-            if (allSafetyEvents.length === 0) { document.getElementById('loadingSafety').style.display='none'; document.getElementById('emptySafety').style.display='block'; tbody.innerHTML=''; return; }
+            if (!allSafetyEvents.length) { document.getElementById('loadingSafety').style.display='none'; document.getElementById('emptySafety').style.display='block'; tbody.innerHTML=''; return; }
             let html = '';
             allSafetyEvents.forEach(e => {
-                const t = new Date(e.timestamp).toLocaleString('id-ID');
-                const detail = e.details ? JSON.stringify(e.details) : '-';
-                html += `<tr><td>${t}</td><td>${e.event||'-'}</td><td title="${detail}">${truncate(detail,50)}</td><td>Rp ${formatNumber(e.virtualBalance||0)}</td><td>${e.losingStreak||0}</td><td>${e.currentBetLevel||1}</td></tr>`;
+                html += `<tr><td>${new Date(e.timestamp).toLocaleString()}</td><td>${e.event||'-'}</td><td>${e.details ? JSON.stringify(e.details).substring(0,40) : '-'}</td></tr>`;
             });
             tbody.innerHTML = html;
-            document.getElementById('loadingSafety').style.display='none';
-            document.getElementById('emptySafety').style.display='none';
+            document.getElementById('loadingSafety').style.display = 'none';
+            document.getElementById('emptySafety').style.display = 'none';
         }
-
         function displayBalanceChanges() {
             const tbody = document.getElementById('balanceBody');
-            if (allBalanceChanges.length === 0) { document.getElementById('loadingBalance').style.display='none'; document.getElementById('emptyBalance').style.display='block'; tbody.innerHTML=''; return; }
+            if (!allBalanceChanges.length) { document.getElementById('loadingBalance').style.display='none'; document.getElementById('emptyBalance').style.display='block'; tbody.innerHTML=''; return; }
             let html = '';
             allBalanceChanges.forEach(b => {
-                const t = new Date(b.timestamp).toLocaleString('id-ID');
                 let type = b.type==='manual_add_balance'?'Tambah Manual':b.type==='reset'?'Reset':b.type==='bet'?'Taruhan':b.type==='win'?'Menang':b.type==='loss'?'Kalah':'Lainnya';
-                html += `<tr><td>${t}</td><td>${type}</td><td>Rp ${formatNumber(b.amount||0)}</td><td>Rp ${formatNumber(b.newBalance||0)}</td><td>${b.reason||'-'}</td></tr>`;
+                html += `<tr><td>${new Date(b.timestamp).toLocaleString()}</td><td>${type}</td><td>Rp ${formatNumber(b.amount)}</td><td>Rp ${formatNumber(b.newBalance)}</td></tr>`;
             });
             tbody.innerHTML = html;
-            document.getElementById('loadingBalance').style.display='none';
-            document.getElementById('emptyBalance').style.display='none';
+            document.getElementById('loadingBalance').style.display = 'none';
+            document.getElementById('emptyBalance').style.display = 'none';
         }
-
         function updateStats() {
-            if (allResults.length === 0) {
-                document.getElementById('totalBets').textContent = '0';
-                document.getElementById('totalWins').textContent = '0';
-                document.getElementById('totalLosses').textContent = '0';
-                document.getElementById('winRate').textContent = '0%';
-                document.getElementById('totalResets').textContent = allResets.length;
-                document.getElementById('totalProfit').textContent = 'Rp 0';
-                document.getElementById('currentStreak').textContent = '0';
-                document.getElementById('avgBetAmount').textContent = 'Rp 0';
-                return;
+            if (allResults.length) {
+                const latest = allResults[0];
+                document.getElementById('totalBets').textContent = latest.totalBets || 0;
+                document.getElementById('totalWins').textContent = latest.totalWins || 0;
+                document.getElementById('totalLosses').textContent = latest.totalLosses || 0;
+                const wr = latest.totalBets ? Math.round((latest.totalWins / latest.totalBets) * 100) : 0;
+                document.getElementById('winRate').textContent = wr + '%';
+                document.getElementById('totalProfit').textContent = 'Rp ' + formatNumber(latest.profitLoss || 0);
+                document.getElementById('currentStreak').textContent = latest.currentStreak || 0;
+                const totalBetAmount = allResults.reduce((s,r) => s + (r.betAmount||0), 0);
+                const avg = allResults.length ? Math.round(totalBetAmount / allResults.length) : 0;
+                document.getElementById('avgBetAmount').textContent = 'Rp ' + formatNumber(avg);
             }
-            const latest = allResults[0];
-            document.getElementById('totalBets').textContent = latest.totalBets||0;
-            document.getElementById('totalWins').textContent = latest.totalWins||0;
-            document.getElementById('totalLosses').textContent = latest.totalLosses||0;
-            const wr = latest.totalBets>0?Math.round((latest.totalWins/latest.totalBets)*100):0;
-            document.getElementById('winRate').textContent = wr+'%';
             document.getElementById('totalResets').textContent = allResets.length;
-            document.getElementById('totalProfit').textContent = 'Rp '+formatNumber(latest.profitLoss||0);
-            document.getElementById('currentStreak').textContent = latest.currentStreak||0;
-            const totalBetAmount = allResults.reduce((s,r)=>s+(r.betAmount||0),0);
-            const avg = allResults.length>0?Math.round(totalBetAmount/allResults.length):0;
-            document.getElementById('avgBetAmount').textContent = 'Rp '+formatNumber(avg);
         }
 
-        function openTab(evt, tabName) {
-            document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-            document.getElementById(tabName).classList.add('active');
-            evt.currentTarget.classList.add('active');
-            if (tabName==='results') { currentPage=1; displayMergedData(); }
+        // Timer & Sound
+        const modeDurations = { '30s':30, '1m':60, '3m':180, '5m':300 };
+        function setTimer(sec) {
+            if (timerInterval) clearInterval(timerInterval);
+            timerSeconds = sec;
+            document.getElementById('timerDisplay').textContent = timerSeconds;
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                if (timerSeconds < 0) timerSeconds = 0;
+                document.getElementById('timerDisplay').textContent = timerSeconds;
+            }, 1000);
         }
-
-        function refreshData() {
-            currentPage=1;
-            document.getElementById('connectionStatus').innerHTML = '<span>⏳</span> Memuat ulang...';
-            document.getElementById('connectionStatus').className = 'status-disconnected';
-            document.querySelectorAll('.loading').forEach(l=>l.style.display='block');
-            document.querySelectorAll('.empty-state').forEach(e=>e.style.display='none');
-            setTimeout(loadAllData,500);
-        }
-
-        function showConnectionError() {
-            document.getElementById('connectionStatus').innerHTML = '<span>❌</span> Gagal menghubungi database';
-            document.getElementById('connectionStatus').className = 'status-disconnected';
-        }
-
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            const status = document.getElementById('soundStatus');
-            status.textContent = soundEnabled ? 'Suara: ON' : 'Suara: OFF';
-            document.querySelector('.btn[onclick="toggleSound()"]').style.background = soundEnabled ? '#dc2626' : '#666';
-            showNotification(`Suara ${soundEnabled ? 'diaktifkan' : 'dimatikan'}`);
-        }
-
-        function showNotification(msg) {
-            let notif = document.getElementById('tempNotification');
-            if (!notif) {
-                notif = document.createElement('div');
-                notif.id = 'tempNotification';
-                notif.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:15px 25px;border-radius:10px;z-index:1000;font-weight:600;opacity:0;transition:0.3s';
-                document.body.appendChild(notif);
+        function playModeSound() {
+            if (!soundEnabled) return;
+            flashHeader();
+            if (currentTimerMode === '30s') {
+                document.getElementById('notificationSound').play().catch(()=>{});
+            } else if (currentTimerMode === '1m') {
+                document.getElementById('sound1min').play().catch(()=>{});
             }
-            notif.innerHTML = `<span>🔔</span> ${msg}`;
-            notif.style.opacity = '1';
-            setTimeout(() => { notif.style.opacity = '0'; setTimeout(() => notif.remove(), 300); }, 3000);
         }
-
         function flashHeader() {
             const header = document.querySelector('.header');
             header.style.animation = 'none';
@@ -1924,73 +875,244 @@
                 document.head.appendChild(style);
             }
         }
-
-        function truncate(txt, len) {
-            if (!txt||txt==='-') return '-';
-            return txt.length<=len?txt:txt.substring(0,len)+'...';
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundStatus').textContent = soundEnabled ? 'ON' : 'OFF';
         }
-
-        function goToPage(page) {
-            if (page >=1 && page <= totalPages) {
-                currentPage = page;
-                displayMergedData();
-            }
-        }
-
-        // ========== FUNGSI POPUP WIN STREAK ==========
         function showWinStreakPopup(streak) {
-            // Hapus popup sebelumnya jika ada
             const existing = document.getElementById('winStreakPopup');
             if (existing) existing.remove();
-            
             const popup = document.createElement('div');
             popup.id = 'winStreakPopup';
-            popup.innerHTML = `
-                <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:10000; animation:fadeIn 0.3s;">
-                    <div style="background:linear-gradient(135deg, #fbbf24, #f59e0b); padding:30px; border-radius:30px; text-align:center; box-shadow:0 0 50px gold; max-width:90%;">
-                        <h1 style="font-size:4rem; margin:0; color:#1e293b;">🔥 WIN STREAK ${streak}X 🔥</h1>
-                        <p style="font-size:1.5rem; color:#0f172a;">Selamat! Anda mendapatkan bonus!</p>
-                        <button onclick="this.parentElement.parentElement.remove()" style="margin-top:20px; padding:10px 30px; background:#0f172a; color:white; border:none; border-radius:50px; font-size:1.2rem; cursor:pointer;">Tutup</button>
-                    </div>
-                </div>
-            `;
+            popup.innerHTML = `<div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:10000;"><div style="background:linear-gradient(135deg,#fbbf24,#f59e0b); padding:20px; border-radius:30px; text-align:center;"><h1 style="font-size:2rem;">🔥 WIN STREAK ${streak}X 🔥</h1><p style="margin:10px 0;">Selamat!</p><button onclick="this.parentElement.parentElement.remove()" style="padding:8px 20px; background:#0f172a; color:white; border:none; border-radius:30px;">Tutup</button></div></div>`;
             document.body.appendChild(popup);
-            
-            // Auto close setelah 5 detik
-            setTimeout(() => {
-                const p = document.getElementById('winStreakPopup');
-                if (p) p.remove();
-            }, 5000);
+            setTimeout(() => popup.remove(), 5000);
+        }
+        function refreshData() {
+            currentPage = 1;
+            document.getElementById('connectionStatus').innerHTML = '<span>⏳</span> Memuat...';
+            document.getElementById('connectionStatus').className = 'status-disconnected';
+            loadAllData();
+        }
+        function showConnectionError() {
+            document.getElementById('connectionStatus').innerHTML = '<span>❌</span> Gagal koneksi';
+            document.getElementById('connectionStatus').className = 'status-disconnected';
         }
 
-        // ========== EVENT LISTENERS ==========
-        document.addEventListener('DOMContentLoaded', function() {
-            checkLogin();
+        // ========== LOGIN & AUTH ==========
+        const fakeNames = ["MemberNpkl","TraderJaya","Investor88","BotMaster","PrediksiGacor","WingoKing","JpTerus","PausBesar","SultanSaldo","CuanTerus"];
+        function generateFakeName(i) { return fakeNames[i%fakeNames.length] + Math.floor(Math.random()*1000); }
+        function checkLogin() {
+            const savedUid = localStorage.getItem('wingo_uid');
+            if (savedUid) {
+                authDb.ref('uids/' + savedUid).once('value').then(snapshot => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        if (userData.active === false) {
+                            localStorage.removeItem('wingo_uid');
+                            showLogin();
+                            document.getElementById('loginError').textContent = 'Akun dinonaktifkan. Hubungi admin.';
+                            return;
+                        }
+                        if (userData.password) {
+                            currentUid = savedUid;
+                            currentUserData = userData;
+                            showDashboard();
+                        } else {
+                            localStorage.removeItem('wingo_uid');
+                            showSetPassword(savedUid);
+                        }
+                    } else {
+                        localStorage.removeItem('wingo_uid');
+                        showLogin();
+                    }
+                }).catch(() => showLogin());
+            } else {
+                showLogin();
+            }
+        }
+        function showLogin() {
+            document.getElementById('loginPage').style.display = 'block';
+            document.getElementById('setPasswordPage').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'none';
+            document.getElementById('bottomNav').style.display = 'none';
+            startPublicOnlineCounter();
+        }
+        function showSetPassword(uid) {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('setPasswordPage').style.display = 'block';
+            document.getElementById('dashboardContent').style.display = 'none';
+            document.getElementById('setPasswordPage').dataset.uid = uid;
+            stopPublicOnlineCounter();
+        }
+        function showDashboard() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('setPasswordPage').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'block';
+            document.getElementById('bottomNav').style.display = 'flex';
+            updateUserDisplay();
+            initDashboard();
+            setupPresence();
+            stopPublicOnlineCounter();
+        }
+        function updateUserDisplay() {
+            const nameEl = document.getElementById('userDisplayName');
+            if (currentUserData && currentUserData.nickName) nameEl.textContent = `👤 ${currentUserData.nickName}`;
+            else nameEl.textContent = '';
+        }
+        function handleLogin() {
+            const uid = document.getElementById('uidInput').value.trim();
+            const pwd = document.getElementById('passwordInput').value.trim();
+            const errorEl = document.getElementById('loginError');
+            if (!uid || !pwd) { errorEl.textContent = 'UID dan password harus diisi'; return; }
+            errorEl.textContent = 'Memeriksa...';
+            authDb.ref('uids/' + uid).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    if (userData.active === false) { errorEl.textContent = 'Akun dinonaktifkan.'; return; }
+                    if (userData.password === pwd) {
+                        localStorage.setItem('wingo_uid', uid);
+                        currentUid = uid;
+                        currentUserData = userData;
+                        showDashboard();
+                    } else {
+                        errorEl.textContent = 'Password salah';
+                    }
+                } else {
+                    errorEl.textContent = 'UID tidak terdaftar';
+                }
+            }).catch(() => errorEl.textContent = 'Gagal menghubungi database');
+        }
+        function setPassword() {
+            const newPass = document.getElementById('newPassword').value.trim();
+            const confirmPass = document.getElementById('confirmPassword').value.trim();
+            const errorEl = document.getElementById('setPasswordError');
+            const uid = document.getElementById('setPasswordPage').dataset.uid;
+            if (!newPass || !confirmPass) { errorEl.textContent = 'Password tidak boleh kosong'; return; }
+            if (newPass !== confirmPass) { errorEl.textContent = 'Password tidak cocok'; return; }
+            errorEl.textContent = 'Menyimpan...';
+            authDb.ref('uids/' + uid).update({ password: newPass }).then(() => {
+                errorEl.textContent = 'Password berhasil disimpan! Silakan login.';
+                setTimeout(() => showLogin(), 2000);
+            }).catch(() => errorEl.textContent = 'Gagal menyimpan password');
+        }
+        function showRegisterOptions() {
+            alert("Untuk mendapatkan akses, hubungi admin via Telegram @PredictorUser");
+            window.open('https://www.lixnobe.com/#/register?invitationCode=DtX6m351494', '_blank');
+        }
+        function logout() {
+            if (presenceRef) presenceRef.remove().catch(()=>{});
+            localStorage.removeItem('wingo_uid');
+            currentUid = null;
+            currentUserData = null;
+            if (timerInterval) clearInterval(timerInterval);
+            showLogin();
+        }
 
-            // ===== TIMER SELECTOR: hanya mode 1m yang aktif (disabled lainnya) =====
-            // Tidak perlu event listener karena disabled, tapi kita tetap set default
-            // Jika nanti ada data untuk mode lain, class disabled bisa dihapus
+        // ========== ONLINE PRESENCE ==========
+        let publicOnlineListener = null;
+        function startPublicOnlineCounter() {
+            if (publicOnlineListener) return;
+            publicOnlineListener = authDb.ref('online_users').on('value', (snapshot) => {
+                const onlineUsers = snapshot.val() || {};
+                const targetTotal = 1200 + Math.floor(Math.random() * 300);
+                const needFake = Math.max(0, targetTotal - Object.keys(onlineUsers).length);
+                document.getElementById('publicOnlineCount').textContent = Object.keys(onlineUsers).length + needFake;
+            });
+        }
+        function stopPublicOnlineCounter() {
+            if (publicOnlineListener) { authDb.ref('online_users').off('value', publicOnlineListener); publicOnlineListener = null; }
+        }
+        function setupPresence() {
+            if (!currentUid) return;
+            presenceRef = authDb.ref('online_users/' + currentUid);
+            presenceRef.set({ uid: currentUid, nickName: currentUserData.nickName || 'User', lastSeen: firebase.database.ServerValue.TIMESTAMP });
+            presenceRef.onDisconnect().remove();
+            authDb.ref('.info/connected').on('value', (snap) => {
+                if (snap.val() === true) {
+                    presenceRef.set({ uid: currentUid, nickName: currentUserData.nickName || 'User', lastSeen: firebase.database.ServerValue.TIMESTAMP });
+                    presenceRef.onDisconnect().remove();
+                }
+            });
+            monitorOnlineUsers();
+        }
+        function monitorOnlineUsers() {
+            authDb.ref('online_users').on('value', (snapshot) => {
+                const onlineUsers = snapshot.val() || {};
+                const targetTotal = 1200 + Math.floor(Math.random() * 300);
+                const needFake = Math.max(0, targetTotal - Object.keys(onlineUsers).length);
+                let displayUsers = { ...onlineUsers };
+                for (let i = 0; i < needFake; i++) {
+                    const fakeUid = `fake_${i}_${Date.now()}`;
+                    displayUsers[fakeUid] = { nickName: generateFakeName(i), lastSeen: Date.now() - Math.random()*60000 };
+                }
+                document.getElementById('onlineCount').textContent = Object.keys(displayUsers).length;
+                const listEl = document.getElementById('onlineUsersList');
+                listEl.innerHTML = '';
+                Object.values(displayUsers).forEach(user => {
+                    const li = document.createElement('li');
+                    const avatar = document.createElement('span');
+                    avatar.className = 'user-avatar';
+                    avatar.textContent = (user.nickName || 'U').charAt(0).toUpperCase();
+                    li.appendChild(avatar);
+                    li.appendChild(document.createTextNode(user.nickName || 'Unknown'));
+                    listEl.appendChild(li);
+                });
+            });
+        }
+        function toggleOnlineTooltip() {
+            document.getElementById('onlineTooltip').classList.toggle('show');
+        }
+        document.addEventListener('click', function(e) {
+            const tooltip = document.getElementById('onlineTooltip');
+            const indicator = document.querySelector('.online-indicator');
+            if (!indicator.contains(e.target)) tooltip.classList.remove('show');
         });
 
-        document.getElementById('dateFilter').addEventListener('change', ()=>{
-            if (document.getElementById('results').classList.contains('active')) { currentPage=1; displayMergedData(); }
-        });
-        document.getElementById('searchFilter').addEventListener('input', ()=>{
-            if (document.getElementById('results').classList.contains('active')) { currentPage=1; displayMergedData(); }
-        });
+        // ========== DASHBOARD INIT ==========
+        function initDashboard() {
+            initChart();
+            loadAllData();
+            setInterval(loadAllData, 30000);
+            setTimer(60);
+            // bottom nav click
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.dataset.tab;
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    document.getElementById(tabId).classList.add('active');
+                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                    btn.classList.add('active');
+                    if (tabId === 'resultsTab') displayMergedData();
+                });
+            });
+        }
+        function initChart() {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Angka', data: [], tension: 0.3, fill: true, backgroundColor: 'rgba(220,38,38,0.2)', borderColor: '#f87171', pointRadius: 3 }] },
+                options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 9, ticks: { stepSize: 1 } } } }
+            });
+        }
 
-        document.addEventListener('keydown', (e)=>{
-            if (e.ctrlKey && e.key==='r') { e.preventDefault(); refreshData(); }
-            if (e.ctrlKey && e.key==='s') { e.preventDefault(); toggleSound(); }
-            if (e.key==='ArrowLeft' && !e.ctrlKey) { e.preventDefault(); previousPage(); }
-            if (e.key==='ArrowRight' && !e.ctrlKey) { e.preventDefault(); nextPage(); }
-            if (e.key==='Home') { e.preventDefault(); goToPage(1); }
-            if (e.key==='End') { e.preventDefault(); goToPage(totalPages); }
-        });
+        // Event listeners for filters
+        document.getElementById('dateFilter').addEventListener('change', () => { if (document.getElementById('resultsTab').classList.contains('active')) { currentPage = 1; displayMergedData(); } });
+        document.getElementById('searchFilter').addEventListener('input', () => { if (document.getElementById('resultsTab').classList.contains('active')) { currentPage = 1; displayMergedData(); } });
 
-        window.onload = function() {
-            // Set default date filter nanti setelah login
-        };
+        // Expose globals for onclick
+        window.handleLogin = handleLogin;
+        window.setPassword = setPassword;
+        window.showRegisterOptions = showRegisterOptions;
+        window.logout = logout;
+        window.refreshData = refreshData;
+        window.toggleSound = toggleSound;
+        window.nextPage = nextPage;
+        window.previousPage = previousPage;
+        window.toggleOnlineTooltip = toggleOnlineTooltip;
+
+        // Start
+        checkLogin();
     </script>
 </body>
 </html>
