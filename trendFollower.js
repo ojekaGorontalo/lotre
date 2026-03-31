@@ -126,23 +126,29 @@
 
   function sendResultToFirebase(apiResultData, prediction, isWin, predictedNumber, gameType = 30) {
     const resultData = {
-      issue: apiResultData.issueNumber,
-      number: parseInt(apiResultData.number),
-      colour: apiResultData.colour,
-      premium: apiResultData.premium,
-      result: parseInt(apiResultData.number) <= 4 ? "KECIL" : "BESAR",
-      prediction: prediction,
-      predictedNumber: predictedNumber,
-      isWin: isWin,
-      betAmount: currentBetAmount,
-      betLevel: currentBetIndex + 1,
-      balanceAfter: virtualBalance,
-      profitLoss: profitLoss,
-      gameType: gameType,
-      timestamp: new Date().toISOString()
+        issue: apiResultData.issueNumber,
+        number: parseInt(apiResultData.number),
+        colour: apiResultData.colour,
+        premium: apiResultData.premium,
+        result: parseInt(apiResultData.number) <= 4 ? "KECIL" : "BESAR",
+        prediction: prediction,
+        predictedNumber: predictedNumber,
+        isWin: isWin,
+        betAmount: currentBetAmount,
+        betLevel: currentBetIndex + 1,
+        balanceAfter: virtualBalance,
+        profitLoss: profitLoss,
+        // ===== TAMBAHKAN FIELD AGREGAT =====
+        totalBets: totalBets,
+        totalWins: totalWins,
+        totalLosses: totalLosses,
+        currentStreak: currentStreak,
+        // ==================================
+        gameType: gameType,
+        timestamp: new Date().toISOString()
     };
     sendToFirebase("results", resultData);
-  }
+}
 
   function sendPredictionToFirebase() {
     if (!predictedIssue) {
