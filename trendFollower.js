@@ -69,6 +69,9 @@
     let currentGameData = null;
     let countdownInterval = null;
 
+    /* ========= MODE PREDIKSI (BARU) ========= */
+    let predictionMode = "trend_follower"; // "trend_follower" atau "zigzag"
+
     /* ========= FUNGSI PREDIKSI ANGKA (0-9) ========= */
     function predictNumber() {
         if (historicalData.length === 0) return 5;
@@ -103,45 +106,25 @@
         return true;
     }
 
-    /* ========= PREDIKSI UTAMA (DENGAN PRIORITAS ZIG-ZAK) ========= */
+    /* ========= PREDIKSI UTAMA (DENGAN MODE BARU) ========= */
     function getPrediction() {
         if (historicalData.length === 0) {
             console.log("⚠️ Data kosong, default KECIL");
             return "KECIL";
         }
-        if (isStrongAlternating(5)) {
+
+        if (predictionMode === "zigzag") {
+            // Mode zig-zag: prediksi kebalikan dari hasil terakhir
             const lastResult = historicalData[0].result;
-            const nextPred = lastResult === "BESAR" ? "KECIL" : "BESAR";
-            console.log(`🎯 ZIG-ZAK ADAPTIF: prediksi kebalikan dari ${lastResult} -> ${nextPred}`);
-            return nextPred;
+            const opposite = lastResult === "BESAR" ? "KECIL" : "BESAR";
+            console.log(`🎯 MODE ZIGZAG: prediksi kebalikan dari ${lastResult} -> ${opposite}`);
+            return opposite;
+        } else {
+            // Mode trend follower: ikuti hasil terakhir (trend)
+            const lastResult = historicalData[0].result;
+            console.log(`📈 TREND FOLLOWER: mengikuti ${lastResult}`);
+            return lastResult;
         }
-        const altPattern = detectAlternatingPattern();
-        if (altPattern) {
-            console.log(`🎯 PREDIKSI BERDASARKAN POLA ALTERNASI: ${altPattern}`);
-            return altPattern;
-        }
-        if (historicalData.length >= 3) {
-            const last3 = historicalData.slice(0, 3).map(h => h.result);
-            if (last3[0] === last3[1] && last3[1] === last3[2]) {
-                const opposite = last3[0] === "BESAR" ? "KECIL" : "BESAR";
-                console.log(`🔄 JENUH (3x ${last3[0]}), prediksi ${opposite}`);
-                return opposite;
-            }
-        }
-        let besar = 0, kecil = 0;
-        const limit = Math.min(10, historicalData.length);
-        for (let i = 0; i < limit; i++) {
-            if (historicalData[i].result === "BESAR") besar++;
-            else kecil++;
-        }
-        if (Math.abs(besar - kecil) >= 2) {
-            const pred = besar > kecil ? "BESAR" : "KECIL";
-            console.log(`📊 PROBABILITAS (${limit} data): BESAR ${besar}, KECIL ${kecil} -> ${pred}`);
-            return pred;
-        }
-        const lastResult = historicalData[0].result;
-        console.log(`📈 TREND FOLLOWER (default): ${lastResult}`);
-        return lastResult;
     }
 
     /* ========= FUNGSI FIREBASE ========= */
@@ -271,6 +254,7 @@
         isSendingMessage = false;
         skipNextBet = false;
         skipReason = "";
+        predictionMode = "trend_follower"; // reset mode
         dailyStats = {
             date: new Date().toDateString(),
             bets: 0,
@@ -388,6 +372,7 @@
             historicalData = [];
             lastMotivationSentAtLoss = 0;
             lastDonationMessageAtWin = 0;
+            predictionMode = "trend_follower";
             sendTelegram("🚫 <b>SALDO HABIS - RESET OTOMATIS</b>");
             console.log("🔄 Saldo direset ke 247.000");
             return false;
@@ -460,6 +445,18 @@
         isBetPlaced = false;
         predictedIssue = null;
         predictedAt = null;
+
+        // ===== UPDATE MODE PREDIKSI BERDASARKAN STREAK =====
+        if (predictionMode === "trend_follower" && currentStreak <= -4) {
+            predictionMode = "zigzag";
+            console.log("🔄 MODE BERUBAH: trend_follower -> zigzag (kalah 4x berturut-turut)");
+            sendTelegram(`🔄 MODE BERUBAH: trend_follower → zigzag (kalah 4x beruntun)`);
+        } else if (predictionMode === "zigzag" && isWin) {
+            predictionMode = "trend_follower";
+            console.log("🔄 MODE BERUBAH: zigzag -> trend_follower (menang)");
+            sendTelegram(`🔄 MODE BERUBAH: zigzag → trend_follower (menang)`);
+        }
+
         return isWin;
     }
 
