@@ -844,7 +844,7 @@
                 <div class="chart-container">
                     <canvas id="predictionChart" height="140"></canvas>
                 </div>
-                <div class="final-prediction" id="hasilPrediksi">PREDIKSI ANGKA ...</div>
+                <div class="final-prediction" id="hasilPrediksi">PREDIKSI: Menunggu data...</div>
             </div>
             
             <!-- STATISTIK UTAMA -->
@@ -917,7 +917,7 @@
             
             <!-- TAB RESULTS -->
             <div id="results" class="tab-content active">
-                <h2><span>🎯</span> Data Hasil & Prediksi (Menunggu) Saldo awal Rp 2.916.000</h2>
+                <h2><span>🎯</span> Data Hasil & Prediksi (Menunggu) Saldo awal Rp 247.000</h2>
                 <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="font-size: 0.9rem; color: #666;">Total: <span id="totalRecords">0</span> data</div>
                     <div style="display: flex; gap: 10px; align-items: center;">
@@ -1639,22 +1639,20 @@
             document.getElementById('connectionStatus').className = 'status-connected';
         }
 
+        // ===== PERBAIKAN: PREDIKSI DIAMBIL DARI FIREBASE =====
         function updatePredictionFromData() {
             const hasilPrediksi = document.getElementById('hasilPrediksi');
             if (allPredictions.length > 0) {
                 const latestPred = allPredictions[0];
-                const predText = latestPred.prediction;
-                let angka;
-                if (predText && predText.toUpperCase() === 'BESAR') {
-                    angka = Math.floor(Math.random() * 5) + 5;
-                } else if (predText && predText.toUpperCase() === 'KECIL') {
-                    angka = Math.floor(Math.random() * 5);
+                const predText = latestPred.prediction; // "BESAR" atau "KECIL"
+                const predNumber = latestPred.predictedNumber; // angka 0-9 dari bot
+                if (predNumber !== undefined && predNumber !== null) {
+                    hasilPrediksi.textContent = `PREDIKSI: ${predText} | ANGKA: ${predNumber}`;
                 } else {
-                    angka = Math.floor(Math.random() * 10);
+                    hasilPrediksi.textContent = `PREDIKSI: ${predText}`;
                 }
-                hasilPrediksi.textContent = `PREDIKSI ANGKA ${angka}`;
             } else {
-                hasilPrediksi.textContent = 'PREDIKSI ANGKA ...';
+                hasilPrediksi.textContent = 'PREDIKSI: Menunggu data...';
             }
         }
 
