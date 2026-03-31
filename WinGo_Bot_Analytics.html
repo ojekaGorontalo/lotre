@@ -191,6 +191,31 @@
             font-weight: bold;
             color: #dc2626;
         }
+        /* New balance cards */
+        .balance-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .balance-card {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-radius: 12px;
+            padding: 8px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .balance-card h3 {
+            font-size: 0.7rem;
+            color: #cbd5e1;
+            margin-bottom: 4px;
+        }
+        .balance-card .value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #facc15;
+        }
         .summary {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -498,7 +523,19 @@
                 <div class="final-prediction" id="hasilPrediksi">PREDIKSI: Menunggu...</div>
             </div>
 
-            <!-- Stats Grid -->
+            <!-- NEW: Balance Cards -->
+            <div class="balance-row">
+                <div class="balance-card">
+                    <h3>💰 Saldo Awal</h3>
+                    <div class="value" id="initialBalance">Rp 247.000</div>
+                </div>
+                <div class="balance-card">
+                    <h3>💵 Saldo Total</h3>
+                    <div class="value" id="totalBalance">Rp 0</div>
+                </div>
+            </div>
+
+            <!-- Stats Grid (existing) -->
             <div class="stats-grid">
                 <div class="stat-card"><h3>🎲 Total Taruhan</h3><div class="value" id="totalBets">0</div></div>
                 <div class="stat-card"><h3>📈 Win Rate</h3><div class="value" id="winRate">0%</div></div>
@@ -534,7 +571,15 @@
                 <div class="table-container">
                     <table id="resultsTable">
                         <thead>
-                            <tr><th>Periode</th><th>Prediksi</th><th>Taruhan</th><th>Hasil</th><th>Angka</th><th>Warna</th></tr>
+                            <tr>
+                                <th>Periode</th>
+                                <th>Angka</th>
+                                <th>Prediksi</th>
+                                <th>Warna</th>
+                                <th>Hasil</th>
+                                <th>Taruhan</th>
+                                <th>Status</th>
+                            </tr>
                         </thead>
                         <tbody id="resultsBody"></tbody>
                     </table>
@@ -550,7 +595,7 @@
             </div>
 
             <div id="reportsTab" class="tab-content">
-                <div class="table-container"></table><thead><tr><th>Tanggal</th><th>Taruhan</th><th>Menang</th><th>Kalah</th><th>Win Rate</th><th>Profit</th></tr></thead><tbody id="reportsBody"></tbody></table></div>
+                <div class="table-container"><table><thead><tr><th>Tanggal</th><th>Taruhan</th><th>Menang</th><th>Kalah</th><th>Win Rate</th><th>Profit</th></tr></thead><tbody id="reportsBody"></tbody></table></div>
                 <div class="loading" id="loadingReports">Memuat...</div>
                 <div class="empty-state" id="emptyReports" style="display:none;">📭 Tidak ada data</div>
             </div>
@@ -623,6 +668,8 @@
         let currentUid = null, currentUserData = null, presenceRef = null;
         let countdownRef = null, gameIssueRef = null;
         let currentRemainingSeconds = 0;
+        let localCountdownInterval = null;
+        let lastGameIssueEndTime = null;
 
         // Helper functions
         function formatNumber(num) {
@@ -638,6 +685,16 @@
                 html += `<div class="colour-dot ${cls}" title="${c}"></div>`;
             });
             return html + '</div>';
+        }
+
+        // Update total balance from latest prediction
+        function updateBalanceDisplay() {
+            if (allPredictions.length > 0 && allPredictions[0].balanceAfterBet !== undefined) {
+                const latestBalance = allPredictions[0].balanceAfterBet;
+                document.getElementById('totalBalance').innerHTML = `Rp ${formatNumber(latestBalance)}`;
+            } else {
+                document.getElementById('totalBalance').innerHTML = 'Rp 0';
+            }
         }
 
         // ========== TIMER & MODE ==========
@@ -658,18 +715,53 @@
                 });
                 console.log(`Mode berubah menjadi: ${mode}`);
             }
+            // Simpan endTime untuk fallback countdown
+            if (gameIssue.endTime) {
+                lastGameIssueEndTime = gameIssue.endTime;
+                // Jika countdown/live tidak aktif, mulai countdown lokal
+                if (!countdownRef || !countdownRef.listenerCount) {
+                    startLocalCountdown(lastGameIssueEndTime);
+                }
+            }
+        }
+
+        function startLocalCountdown(endTimeStr) {
+            if (localCountdownInterval) clearInterval(localCountdownInterval);
+            const endTime = new Date(endTimeStr.replace(' ', 'T')).getTime();
+            function update() {
+                const now = Date.now();
+                const remainingMs = endTime - now;
+                if (remainingMs <= 0) {
+                    if (localCountdownInterval) clearInterval(localCountdownInterval);
+                    localCountdownInterval = null;
+                    document.getElementById('timerDisplay').textContent = "0";
+                    return;
+                }
+                const remainingSeconds = Math.floor(remainingMs / 1000);
+                document.getElementById('timerDisplay').textContent = remainingSeconds;
+            }
+            update();
+            localCountdownInterval = setInterval(update, 1000);
         }
 
         function playNotificationSound() {
             if (!soundEnabled) return;
             flashHeader();
+            let audio = null;
             if (currentGameMode === '30s') {
-                document.getElementById('sound30s').play().catch(e => console.log('Audio 30s error:', e));
+                audio = document.getElementById('sound30s');
             } else if (currentGameMode === '1m') {
-                document.getElementById('sound1m').play().catch(e => console.log('Audio 1m error:', e));
+                audio = document.getElementById('sound1m');
             } else {
                 // Untuk 3m dan 5m tidak ada suara khusus, bisa diam atau pakai 1m
-                // document.getElementById('sound1m').play().catch(e=>{});
+                // audio = document.getElementById('sound1m');
+                return;
+            }
+            if (audio) {
+                // Reset audio agar bisa diputar ulang meskipun sedang diputar
+                audio.pause();
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log('Audio play error:', e));
             }
         }
 
@@ -694,9 +786,19 @@
                 if (data && typeof data.remainingSeconds === 'number') {
                     currentRemainingSeconds = data.remainingSeconds;
                     document.getElementById('timerDisplay').textContent = currentRemainingSeconds;
+                    // Jika ada data countdown, hentikan local countdown
+                    if (localCountdownInterval) {
+                        clearInterval(localCountdownInterval);
+                        localCountdownInterval = null;
+                    }
                 } else {
-                    document.getElementById('timerDisplay').textContent = '--';
+                    // Jika tidak ada data countdown, gunakan fallback dari game issue
+                    if (lastGameIssueEndTime && !localCountdownInterval) {
+                        startLocalCountdown(lastGameIssueEndTime);
+                    }
                 }
+            }, (error) => {
+                console.warn("Countdown listener error:", error);
             });
         }
 
@@ -740,6 +842,8 @@
                 });
                 updatePredictionFromData();
                 mergeDataAndDisplay();
+                updateBalanceDisplay();  // update total balance card
+                updateStats();
             }, showConnectionError);
             analyticsDb.ref('resets').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
                 allResets = [];
@@ -833,13 +937,17 @@
                 const waiting = item.isWaiting;
                 const statusClass = waiting ? 'result-waiting' : (item.isWin ? 'result-win' : 'result-lose');
                 const statusText = waiting ? 'Wait' : (item.isWin ? 'Win' : 'Loss');
+                // Hasil besar/kecil dari data result
+                const hasil = item.result ? item.result : (item.number !== null ? (item.number <= 4 ? 'KECIL' : 'BESAR') : '-');
+                const taruhan = item.betAmount !== undefined ? `Rp ${formatNumber(item.betAmount)}` : '-';
                 html += `<tr>
                     <td>${item.issue?.slice(-6) || '-'}</td>
-                    <td>${item.prediction || '-'}</td>
-                    <td>Rp ${formatNumber(item.betAmount || 0)}</td>
-                    <td><span class="${statusClass}">${statusText}</span></td>
                     <td><strong>${item.number !== null ? item.number : '-'}</strong></td>
+                    <td>${item.prediction || '-'}</td>
                     <td>${renderColourDots(item.colour)}</td>
+                    <td>${hasil}</td>
+                    <td>${taruhan}</td>
+                    <td><span class="${statusClass}">${statusText}</span></td>
                 </tr>`;
             });
             tbody.innerHTML = html;
@@ -1043,6 +1151,7 @@
             currentUserData = null;
             if (countdownRef) countdownRef.off();
             if (gameIssueRef) gameIssueRef.off();
+            if (localCountdownInterval) clearInterval(localCountdownInterval);
             showLogin();
         }
 
