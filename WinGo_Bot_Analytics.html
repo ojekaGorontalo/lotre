@@ -134,14 +134,13 @@
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 0.7rem;
-            cursor: pointer;
+            cursor: default;
+            opacity: 0.7;
         }
         .timer-item.active {
             background: #dc2626;
-        }
-        .timer-item.disabled {
-            opacity: 0.5;
-            pointer-events: none;
+            opacity: 1;
+            font-weight: bold;
         }
         .prediction-title {
             font-size: 0.8rem;
@@ -310,6 +309,7 @@
         td {
             padding: 6px 4px;
             border-bottom: 1px solid #f0f0f0;
+            font-weight: bold;
         }
         .result-win {
             background-color: #dcfce7;
@@ -317,6 +317,7 @@
             padding: 2px 6px;
             border-radius: 12px;
             display: inline-block;
+            font-weight: bold;
         }
         .result-lose {
             background-color: #fee2e2;
@@ -324,6 +325,7 @@
             padding: 2px 6px;
             border-radius: 12px;
             display: inline-block;
+            font-weight: bold;
         }
         .result-waiting {
             background-color: #fff3cd;
@@ -331,6 +333,7 @@
             padding: 2px 6px;
             border-radius: 12px;
             display: inline-block;
+            font-weight: bold;
         }
         .colour-dots {
             display: flex;
@@ -480,13 +483,13 @@
             <div class="prediction-box">
                 <div class="timer-row">
                     <span class="timer-label">⏳ Next Result</span>
-                    <span id="timerDisplay">30</span>
+                    <span id="timerDisplay">--</span>
                 </div>
                 <div class="timer-selector">
-                    <div class="timer-item disabled" data-time="30s">30d</div>
-                    <div class="timer-item active" data-time="1m">1m</div>
-                    <div class="timer-item disabled" data-time="3m">3m</div>
-                    <div class="timer-item disabled" data-time="5m">5m</div>
+                    <div class="timer-item" data-mode="30s">30d</div>
+                    <div class="timer-item" data-mode="1m">1m</div>
+                    <div class="timer-item" data-mode="3m">3m</div>
+                    <div class="timer-item" data-mode="5m">5m</div>
                 </div>
                 <div class="prediction-title">📈 GRAFIK RESULT TERAKHIR</div>
                 <div class="chart-container">
@@ -547,7 +550,7 @@
             </div>
 
             <div id="reportsTab" class="tab-content">
-                <div class="table-container"><table><thead><tr><th>Tanggal</th><th>Taruhan</th><th>Menang</th><th>Kalah</th><th>Win Rate</th><th>Profit</th></tr></thead><tbody id="reportsBody"></tbody></table></div>
+                <div class="table-container"></table><thead><tr><th>Tanggal</th><th>Taruhan</th><th>Menang</th><th>Kalah</th><th>Win Rate</th><th>Profit</th></tr></thead><tbody id="reportsBody"></tbody></table></div>
                 <div class="loading" id="loadingReports">Memuat...</div>
                 <div class="empty-state" id="emptyReports" style="display:none;">📭 Tidak ada data</div>
             </div>
@@ -577,8 +580,12 @@
         <button class="nav-item" data-tab="balanceTab"><span class="nav-icon">💰</span><span>Saldo</span></button>
     </div>
 
-    <audio id="notificationSound" preload="auto"><source src="https://raw.githubusercontent.com/ojekaGorontalo/lotre/main/sound%2030%20detik.mp3" type="audio/mpeg"></audio>
-    <audio id="sound1min" preload="auto"><source src="https://splendid-queijadas-d948bb.netlify.app/1minute.mp3" type="audio/mpeg"></audio>
+    <audio id="sound30s" preload="auto">
+        <source src="https://splendid-queijadas-d948bb.netlify.app/sound%2030%20detik.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sound1m" preload="auto">
+        <source src="https://splendid-queijadas-d948bb.netlify.app/1minute.mp3" type="audio/mpeg">
+    </audio>
 
     <script>
         // ========== FIREBASE CONFIG ==========
@@ -609,10 +616,13 @@
         let allResults = [], allPredictions = [], allResets = [], allReports = [], allSafetyEvents = [], allBalanceChanges = [];
         let mergedData = [];
         let currentPage = 1, rowsPerPage = 10, totalFilteredResults = 0, totalPages = 1;
-        let timerSeconds = 60, timerInterval = null, lastResultTimestamp = 0;
-        let soundEnabled = true, currentTimerMode = '1m';
+        let soundEnabled = true;
+        let currentGameMode = '1m'; // '30s', '1m', '3m', '5m'
+        let lastResultTimestamp = 0;
         let chart;
         let currentUid = null, currentUserData = null, presenceRef = null;
+        let countdownRef = null, gameIssueRef = null;
+        let currentRemainingSeconds = 0;
 
         // Helper functions
         function formatNumber(num) {
@@ -630,6 +640,79 @@
             return html + '</div>';
         }
 
+        // ========== TIMER & MODE ==========
+        function updateModeFromGameIssue(gameIssue) {
+            if (!gameIssue) return;
+            let mode = '1m';
+            const interval = gameIssue.intervalM;
+            if (interval === 0.5) mode = '30s';
+            else if (interval === 1) mode = '1m';
+            else if (interval === 3) mode = '3m';
+            else if (interval === 5) mode = '5m';
+            if (currentGameMode !== mode) {
+                currentGameMode = mode;
+                // update UI selector
+                document.querySelectorAll('.timer-item').forEach(el => {
+                    el.classList.remove('active');
+                    if (el.dataset.mode === mode) el.classList.add('active');
+                });
+                console.log(`Mode berubah menjadi: ${mode}`);
+            }
+        }
+
+        function playNotificationSound() {
+            if (!soundEnabled) return;
+            flashHeader();
+            if (currentGameMode === '30s') {
+                document.getElementById('sound30s').play().catch(e => console.log('Audio 30s error:', e));
+            } else if (currentGameMode === '1m') {
+                document.getElementById('sound1m').play().catch(e => console.log('Audio 1m error:', e));
+            } else {
+                // Untuk 3m dan 5m tidak ada suara khusus, bisa diam atau pakai 1m
+                // document.getElementById('sound1m').play().catch(e=>{});
+            }
+        }
+
+        function flashHeader() {
+            const header = document.querySelector('.header');
+            header.style.animation = 'none';
+            setTimeout(() => header.style.animation = 'flash 0.5s ease', 10);
+            if (!document.querySelector('#flashAnimation')) {
+                const style = document.createElement('style');
+                style.id = 'flashAnimation';
+                style.textContent = '@keyframes flash{0%{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}50%{background:linear-gradient(135deg,#22c55e 0%,#15803d 100%)}100%{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}}';
+                document.head.appendChild(style);
+            }
+        }
+
+        // Timer dari Firebase countdown/live
+        function setupCountdownListener() {
+            if (countdownRef) countdownRef.off();
+            countdownRef = analyticsDb.ref('countdown/live');
+            countdownRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && typeof data.remainingSeconds === 'number') {
+                    currentRemainingSeconds = data.remainingSeconds;
+                    document.getElementById('timerDisplay').textContent = currentRemainingSeconds;
+                } else {
+                    document.getElementById('timerDisplay').textContent = '--';
+                }
+            });
+        }
+
+        // Ambil game_issue terbaru untuk menentukan mode
+        function setupGameIssueListener() {
+            if (gameIssueRef) gameIssueRef.off();
+            gameIssueRef = analyticsDb.ref('game_issues').orderByChild('timestamp').limitToLast(1);
+            gameIssueRef.on('value', (snapshot) => {
+                let latest = null;
+                snapshot.forEach(child => { latest = child.val(); });
+                if (latest) {
+                    updateModeFromGameIssue(latest);
+                }
+            });
+        }
+
         // ========== FIREBASE DATA LOAD ==========
         function loadAllData() {
             analyticsDb.ref('results').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
@@ -639,15 +722,9 @@
                     data.id = child.key;
                     allResults.unshift(data);
                 });
-                if (allResults.length > 0 && allResults[0].timestamp > lastResultTimestamp) {
-                    setTimer(modeDurations[currentTimerMode]);
-                    playModeSound();
-                    lastResultTimestamp = allResults[0].timestamp;
-                    if (allResults[0].isWin && (allResults[0].currentStreak || 0) >= 6) {
-                        showWinStreakPopup(allResults[0].currentStreak);
-                    }
-                } else if (lastResultTimestamp === 0 && allResults.length > 0) {
-                    setTimer(modeDurations[currentTimerMode]);
+                if (allResults.length > 0 && allResults[0].timestamp !== lastResultTimestamp) {
+                    // Result baru muncul
+                    playNotificationSound();
                     lastResultTimestamp = allResults[0].timestamp;
                 }
                 updateChartFromResults();
@@ -843,50 +920,9 @@
             document.getElementById('totalResets').textContent = allResets.length;
         }
 
-        // Timer & Sound
-        const modeDurations = { '30s':30, '1m':60, '3m':180, '5m':300 };
-        function setTimer(sec) {
-            if (timerInterval) clearInterval(timerInterval);
-            timerSeconds = sec;
-            document.getElementById('timerDisplay').textContent = timerSeconds;
-            timerInterval = setInterval(() => {
-                timerSeconds--;
-                if (timerSeconds < 0) timerSeconds = 0;
-                document.getElementById('timerDisplay').textContent = timerSeconds;
-            }, 1000);
-        }
-        function playModeSound() {
-            if (!soundEnabled) return;
-            flashHeader();
-            if (currentTimerMode === '30s') {
-                document.getElementById('notificationSound').play().catch(()=>{});
-            } else if (currentTimerMode === '1m') {
-                document.getElementById('sound1min').play().catch(()=>{});
-            }
-        }
-        function flashHeader() {
-            const header = document.querySelector('.header');
-            header.style.animation = 'none';
-            setTimeout(() => header.style.animation = 'flash 0.5s ease', 10);
-            if (!document.querySelector('#flashAnimation')) {
-                const style = document.createElement('style');
-                style.id = 'flashAnimation';
-                style.textContent = '@keyframes flash{0%{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}50%{background:linear-gradient(135deg,#22c55e 0%,#15803d 100%)}100%{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}}';
-                document.head.appendChild(style);
-            }
-        }
         function toggleSound() {
             soundEnabled = !soundEnabled;
             document.getElementById('soundStatus').textContent = soundEnabled ? 'ON' : 'OFF';
-        }
-        function showWinStreakPopup(streak) {
-            const existing = document.getElementById('winStreakPopup');
-            if (existing) existing.remove();
-            const popup = document.createElement('div');
-            popup.id = 'winStreakPopup';
-            popup.innerHTML = `<div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:10000;"><div style="background:linear-gradient(135deg,#fbbf24,#f59e0b); padding:20px; border-radius:30px; text-align:center;"><h1 style="font-size:2rem;">🔥 WIN STREAK ${streak}X 🔥</h1><p style="margin:10px 0;">Selamat!</p><button onclick="this.parentElement.parentElement.remove()" style="padding:8px 20px; background:#0f172a; color:white; border:none; border-radius:30px;">Tutup</button></div></div>`;
-            document.body.appendChild(popup);
-            setTimeout(() => popup.remove(), 5000);
         }
         function refreshData() {
             currentPage = 1;
@@ -1005,7 +1041,8 @@
             localStorage.removeItem('wingo_uid');
             currentUid = null;
             currentUserData = null;
-            if (timerInterval) clearInterval(timerInterval);
+            if (countdownRef) countdownRef.off();
+            if (gameIssueRef) gameIssueRef.off();
             showLogin();
         }
 
@@ -1072,20 +1109,12 @@
         // ========== DASHBOARD INIT ==========
         function initDashboard() {
             initChart();
+            setupCountdownListener();
+            setupGameIssueListener();
             loadAllData();
-            setInterval(loadAllData, 30000);
-            setTimer(60);
-            // bottom nav click
-            document.querySelectorAll('.nav-item').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const tabId = btn.dataset.tab;
-                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                    document.getElementById(tabId).classList.add('active');
-                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-                    btn.classList.add('active');
-                    if (tabId === 'resultsTab') displayMergedData();
-                });
-            });
+            setInterval(() => {
+                loadAllData(); // refresh berkala
+            }, 30000);
         }
         function initChart() {
             const ctx = document.getElementById('predictionChart').getContext('2d');
