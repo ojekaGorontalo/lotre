@@ -1,7 +1,7 @@
-// trendfollower.js - Prediksi adaptif dengan mode NORMAL/REVERSE
+// trendfollower.js - Prediksi sederhana Trend Follower + Anti Streak
 (function () {
   console.clear();
-  console.log("🤖 WinGo Smart Trading Bot - System v9.0 (Mode Adaptive)");
+  console.log("🤖 WinGo Smart Trading Bot - System v10.0 (Trend Follower + Anti Streak)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -31,7 +31,7 @@
   let totalBets = 0;
   let totalWins = 0;
   let totalLosses = 0;
-  let currentStreak = 0;
+  let currentStreak = 0;          // positif = menang beruntun, negatif = kalah beruntun
   let profitLoss = 0;
   let lastMotivationSentAtLoss = 0;
   let lastDonationMessageAtWin = 0;
@@ -60,7 +60,7 @@
   let predictedAt = null;
 
   /* ========= HISTORIS (UNTUK PREDIKSI ANGKA) ========= */
-  let historicalData = [];
+  let historicalData = [];   // menyimpan data hasil periode sebelumnya (terbaru di index 0)
 
   /* ========= SKIP BET (TIDAK DIGUNAKAN) ========= */
   let skipNextBet = false;
@@ -69,125 +69,6 @@
   /* ========= DATA PERMAINAN UNTUK COUNTDOWN ========= */
   let currentGameData = null;
   let countdownInterval = null;
-
-  /* ========= STATE UNTUK MODE ADAPTIF ========= */
-  let lastPrediction = null; // "KECIL" atau "BESAR"
-  let mode = "NORMAL"; // "NORMAL" atau "REVERSE"
-
-  /* ========= DATA LIST TERBARU DARI API ========= */
-  let latestDataList = null; // untuk prediksi
-
-  /* ========= FUNGSI PREDIKSI BARU ========= */
-  function numberToSize(num) {
-    return num >= 0 && num <= 4 ? "KECIL" : "BESAR";
-  }
-
-  function getLastDigitOfIssue(issueNumber) {
-    const lastChar = issueNumber.slice(-1);
-    return parseInt(lastChar, 10);
-  }
-
-  function computeRawPrediction(list) {
-    if (!Array.isArray(list) || list.length < 6) {
-      console.error("[ERROR] Data tidak cukup: minimal 6 item diperlukan");
-      return null;
-    }
-
-    const latestNumber = parseInt(list[0].number, 10);
-    const issue5 = list[5].issueNumber;
-    const lastDigitIssue5 = getLastDigitOfIssue(issue5);
-
-    const predictedValue = (latestNumber + lastDigitIssue5) % 10;
-    const rawPrediction = numberToSize(predictedValue);
-
-    console.log("=== Perhitungan Prediksi Dasar ===");
-    console.log(`  - Nomor terbaru (list[0]): ${latestNumber}`);
-    console.log(`  - Issue ke-5 (list[5]): ${issue5}`);
-    console.log(`  - Digit terakhir issue ke-5: ${lastDigitIssue5}`);
-    console.log(`  - Nilai hasil rumus: ${predictedValue}`);
-    console.log(`  - Prediksi dasar: ${rawPrediction}`);
-    console.log("==================================\n");
-
-    return rawPrediction;
-  }
-
-  function applyMode(rawPrediction) {
-    if (!rawPrediction) return null;
-
-    let finalPrediction = rawPrediction;
-    if (mode === "REVERSE") {
-      finalPrediction = rawPrediction === "KECIL" ? "BESAR" : "KECIL";
-      console.log(`[MODE REVERSE] Dibalik: ${rawPrediction} → ${finalPrediction}`);
-    } else {
-      console.log(`[MODE NORMAL] Tetap: ${rawPrediction}`);
-    }
-    return finalPrediction;
-  }
-
-  /**
-   * Prediksi utama: selalu mengembalikan prediksi dan menyimpan ke lastPrediction.
-   * Jika data tidak cukup, gunakan fallback "KECIL" (atau bisa disesuaikan).
-   */
-  function getPrediction() {
-    let raw = null;
-    let final = null;
-
-    if (latestDataList && latestDataList.length >= 6) {
-      raw = computeRawPrediction(latestDataList);
-    }
-
-    if (raw) {
-      final = applyMode(raw);
-    } else {
-      // Fallback saat data tidak cukup
-      console.warn("⚠️ Data tidak cukup untuk prediksi rumus, gunakan default KECIL");
-      final = "KECIL";
-      // Terapkan mode juga pada fallback? Tidak perlu karena mode NORMAL/REVERSE harus tetap berlaku.
-      // Namun jika mode REVERSE, fallback "KECIL" harus dibalik menjadi "BESAR".
-      if (mode === "REVERSE") {
-        final = "BESAR";
-        console.log(`[MODE REVERSE] Fallback dibalik: KECIL → BESAR`);
-      } else {
-        console.log(`[MODE NORMAL] Fallback tetap: KECIL`);
-      }
-    }
-
-    // Simpan prediksi akhir untuk perbandingan nanti
-    lastPrediction = final;
-    console.log(`🎯 Prediksi akhir: ${final} | Mode: ${mode}`);
-    return final;
-  }
-
-  /**
-   * Memperbarui mode berdasarkan hasil aktual.
-   * Jika prediksi sebelumnya salah, mode berganti (NORMAL ↔ REVERSE).
-   * Jika benar, mode tetap.
-   */
-  function updateMode(actualResult) {
-    console.log("\n--- UPDATE MODE ---");
-    console.log(`Hasil aktual: ${actualResult}`);
-    console.log(`Prediksi terakhir: ${lastPrediction}`);
-    console.log(`Mode sebelum update: ${mode}`);
-
-    if (lastPrediction === null) {
-      console.log("Tidak ada prediksi sebelumnya. Mode tetap.");
-      console.log(`Mode setelah update: ${mode}\n`);
-      return;
-    }
-
-    const isCorrect = lastPrediction === actualResult;
-    const status = isCorrect ? "MENANG" : "KALAH";
-
-    if (isCorrect) {
-      console.log(`Status: ${status} → Mode tetap ${mode}`);
-    } else {
-      // Switch mode karena prediksi salah
-      mode = mode === "NORMAL" ? "REVERSE" : "NORMAL";
-      console.log(`Status: ${status} → Berganti mode menjadi ${mode}`);
-    }
-
-    console.log(`Mode setelah update: ${mode}\n`);
-  }
 
   /* ========= FUNGSI PREDIKSI ANGKA (TETAP) ========= */
   function predictNumber() {
@@ -200,6 +81,31 @@
       `🔢 Prediksi angka (rata-rata ${lastNumbers.length} terakhir: ${lastNumbers.join(",")}) -> ${predicted}`
     );
     return predicted;
+  }
+
+  /* ========= PREDIKSI TREND FOLLOWER DENGAN ANTI STREAK ========= */
+  function getPrediction() {
+    // Jika belum ada data historis, default KECIL
+    if (historicalData.length === 0) {
+      console.log("⚠️ Belum ada data historis, prediksi default KECIL");
+      return "KECIL";
+    }
+
+    // Ambil hasil terakhir (trend)
+    const lastResult = historicalData[0].result; // "KECIL" atau "BESAR"
+    let prediction = lastResult;
+
+    // Cek apakah kekalahan beruntun sudah mencapai 6 atau lebih
+    const consecutiveLosses = currentStreak < 0 ? Math.abs(currentStreak) : 0;
+    if (consecutiveLosses >= 6) {
+      // Anti-streak: prediksi kebalikan dari trend
+      prediction = lastResult === "KECIL" ? "BESAR" : "KECIL";
+      console.log(`⚠️ Kekalahan beruntun ${consecutiveLosses} → Gunakan ANTI-TREND: ${prediction}`);
+    } else {
+      console.log(`📈 Trend follower: ikuti hasil terakhir (${lastResult}) → prediksi ${prediction}`);
+    }
+
+    return prediction;
   }
 
   /* ========= FUNGSI FIREBASE (tidak diubah) ========= */
@@ -330,10 +236,6 @@
     isSendingMessage = false;
     skipNextBet = false;
     skipReason = "";
-    // Reset mode state
-    lastPrediction = null;
-    mode = "NORMAL";
-    latestDataList = null;
     dailyStats = {
       date: new Date().toDateString(),
       bets: 0,
@@ -343,7 +245,7 @@
     };
     isBotActive = true;
     sendResetToFirebase(oldBalance, "manual_reset");
-    sendTelegram("🔄 <b>BOT DIRESET (v9.0 - Mode Adaptive)</b>\n💰 Saldo: 247.000");
+    sendTelegram("🔄 <b>BOT DIRESET (v10.0 - Trend Follower + Anti Streak)</b>\n💰 Saldo: 247.000");
   }
 
   function sendResetToFirebase(oldBalance, reason) {
@@ -423,6 +325,7 @@
       result: parseInt(item.number) <= 4 ? "KECIL" : "BESAR",
       colour: item.colour,
     }));
+    // Masukkan hasil terbaru ke awal array (index 0)
     historicalData = [...results, ...historicalData].slice(0, 20);
     if (historicalData.length >= 5) {
       const recentNumbers = historicalData.slice(0, 5).map((d) => d.number);
@@ -455,9 +358,6 @@
       historicalData = [];
       lastMotivationSentAtLoss = 0;
       lastDonationMessageAtWin = 0;
-      lastPrediction = null;
-      mode = "NORMAL";
-      latestDataList = null;
       sendTelegram("🚫 <b>SALDO HABIS - RESET OTOMATIS</b>");
       console.log("🔄 Saldo direset ke 247.000");
       return false;
@@ -469,7 +369,7 @@
     dailyStats.profit -= currentBetAmount;
     isBetPlaced = true;
 
-    // Hitung prediksi dengan logika baru (pastikan lastPrediction terisi)
+    // Hitung prediksi dengan logika Trend Follower + Anti Streak
     currentPrediction = getPrediction();
     currentNumberPrediction = predictNumber();
     predictedAt = new Date();
@@ -536,9 +436,6 @@
       }
     }
 
-    // Update mode berdasarkan hasil aktual
-    updateMode(result);
-
     profitLoss = virtualBalance - 247000;
     isBetPlaced = false;
     predictedIssue = null;
@@ -560,9 +457,6 @@
         return;
       }
 
-      // Simpan data list terbaru untuk prediksi
-      latestDataList = list;
-
       const item = list[0]; // periode terbaru
       if (!item.issueNumber || !item.number) {
         isProcessing = false;
@@ -583,6 +477,7 @@
 
       const isGame30s = currentGameData && currentGameData.intervalM === 0.5;
       if (isGame30s) {
+        // Simpan data historis terlebih dahulu sebelum memproses hasil taruhan
         analyzeTrendData(list);
 
         if (isBetPlaced) {
@@ -602,7 +497,7 @@
               nextIssueNumber ||
               issueNumber.slice(0, -3) + (parseInt(issueNumber.slice(-3)) + 1).toString().padStart(3, "0");
             const shortIssue = nextIssue.slice(-3);
-            const message = `<b>WINGO 30s PREDIKSI v9.0</b>\n<b>🆔 PERIODE ${shortIssue}</b>\n<b>🎯 PREDIKSI: ${currentPrediction} ${betLabels[currentBetIndex]}</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>\n─────────────────\n<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n<b>📈 P/L: ${profitLoss >= 0 ? "🟢" : "🔴"} ${profitLoss >= 0 ? "+" : ""}${profitLoss.toLocaleString()}</b>`;
+            const message = `<b>WINGO 30s PREDIKSI v10.0</b>\n<b>🆔 PERIODE ${shortIssue}</b>\n<b>🎯 PREDIKSI: ${currentPrediction} ${betLabels[currentBetIndex]}</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>\n─────────────────\n<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n<b>📈 P/L: ${profitLoss >= 0 ? "🟢" : "🔴"} ${profitLoss >= 0 ? "+" : ""}${profitLoss.toLocaleString()}</b>`;
             setTimeout(() => sendTelegram(message), 1500);
           }
           lastProcessedIssue = issueNumber;
@@ -723,10 +618,10 @@
 
   /* ========= STARTUP ========= */
   console.log(`
- 🤖 WINGO SMART TRADING BOT v9.0 - Mode Adaptive (NORMAL/REVERSE)
+ 🤖 WINGO SMART TRADING BOT v10.0 - Trend Follower + Anti Streak
  💰 Saldo awal: 247.000 (khusus 30 detik)
- 🧮 Prediksi: (nomor terbaru + digit terakhir issue ke-5) % 10
- 🔄 Mode berganti otomatis saat prediksi salah
+ 🧮 Prediksi: Ikuti hasil terakhir (trend)
+ 🛡️ Anti Streak: Jika kalah >=6 kali, prediksi dibalik
  📡 Firebase aktif (menyimpan semua game + countdown real-time)
  ✅ Bot siap!
   `);
@@ -736,7 +631,7 @@
 
   setTimeout(() => {
     if (placeBet()) {
-      const message = `<b>WINGO 30s PREDIKSI v9.0</b>\n<b>🆔 PERIODE ???</b>\n<b>🎯 PREDIKSI: ${currentPrediction} 1K</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>`;
+      const message = `<b>WINGO 30s PREDIKSI v10.0</b>\n<b>🆔 PERIODE ???</b>\n<b>🎯 PREDIKSI: ${currentPrediction} 1K</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>`;
       sendTelegram(message);
     }
   }, 2000);
@@ -757,7 +652,7 @@
     stats: () => {
       const winRate = totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0;
       console.log(
-        `💰 Saldo: ${virtualBalance.toLocaleString()}\n📈 P/L: ${profitLoss}\n🎯 Bet: ${totalBets} (W:${totalWins}/L:${totalLosses})\n📊 Win Rate: ${winRate}%\n🔥 Streak: ${currentStreak}\n📊 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})\n🔄 Mode: ${mode}`
+        `💰 Saldo: ${virtualBalance.toLocaleString()}\n📈 P/L: ${profitLoss}\n🎯 Bet: ${totalBets} (W:${totalWins}/L:${totalLosses})\n📊 Win Rate: ${winRate}%\n🔥 Streak: ${currentStreak}\n📊 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`
       );
     },
   };
