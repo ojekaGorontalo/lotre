@@ -78,25 +78,15 @@
   let latestDataList = null; // untuk prediksi
 
   /* ========= FUNGSI PREDIKSI BARU ========= */
-  /**
-   * Mengonversi angka 0-9 menjadi "KECIL" (0-4) atau "BESAR" (5-9)
-   */
   function numberToSize(num) {
     return num >= 0 && num <= 4 ? "KECIL" : "BESAR";
   }
 
-  /**
-   * Mengambil digit terakhir dari issueNumber
-   */
   function getLastDigitOfIssue(issueNumber) {
     const lastChar = issueNumber.slice(-1);
     return parseInt(lastChar, 10);
   }
 
-  /**
-   * Menghitung prediksi dasar berdasarkan rumus:
-   * (number terbaru + digit terakhir issue ke-5) % 10
-   */
   function computeRawPrediction(list) {
     if (!Array.isArray(list) || list.length < 6) {
       console.error("[ERROR] Data tidak cukup: minimal 6 item diperlukan");
@@ -121,9 +111,6 @@
     return rawPrediction;
   }
 
-  /**
-   * Menerapkan mode saat ini pada prediksi dasar
-   */
   function applyMode(rawPrediction) {
     if (!rawPrediction) return null;
 
@@ -138,21 +125,34 @@
   }
 
   /**
-   * Prediksi utama dengan logika baru (mode adaptif)
+   * Prediksi utama: selalu mengembalikan prediksi dan menyimpan ke lastPrediction.
+   * Jika data tidak cukup, gunakan fallback "KECIL" (atau bisa disesuaikan).
    */
   function getPrediction() {
-    if (!latestDataList || latestDataList.length < 6) {
-      console.warn("⚠️ Data tidak cukup untuk prediksi (min 6), gunakan default KECIL");
-      return "KECIL";
+    let raw = null;
+    let final = null;
+
+    if (latestDataList && latestDataList.length >= 6) {
+      raw = computeRawPrediction(latestDataList);
     }
 
-    const raw = computeRawPrediction(latestDataList);
-    if (!raw) {
-      console.warn("⚠️ Gagal menghitung prediksi, gunakan default KECIL");
-      return "KECIL";
+    if (raw) {
+      final = applyMode(raw);
+    } else {
+      // Fallback saat data tidak cukup
+      console.warn("⚠️ Data tidak cukup untuk prediksi rumus, gunakan default KECIL");
+      final = "KECIL";
+      // Terapkan mode juga pada fallback? Tidak perlu karena mode NORMAL/REVERSE harus tetap berlaku.
+      // Namun jika mode REVERSE, fallback "KECIL" harus dibalik menjadi "BESAR".
+      if (mode === "REVERSE") {
+        final = "BESAR";
+        console.log(`[MODE REVERSE] Fallback dibalik: KECIL → BESAR`);
+      } else {
+        console.log(`[MODE NORMAL] Fallback tetap: KECIL`);
+      }
     }
 
-    const final = applyMode(raw);
+    // Simpan prediksi akhir untuk perbandingan nanti
     lastPrediction = final;
     console.log(`🎯 Prediksi akhir: ${final} | Mode: ${mode}`);
     return final;
@@ -160,7 +160,8 @@
 
   /**
    * Memperbarui mode berdasarkan hasil aktual.
-   * Jika prediksi sebelumnya salah, mode akan berganti (NORMAL ↔ REVERSE).
+   * Jika prediksi sebelumnya salah, mode berganti (NORMAL ↔ REVERSE).
+   * Jika benar, mode tetap.
    */
   function updateMode(actualResult) {
     console.log("\n--- UPDATE MODE ---");
@@ -201,7 +202,7 @@
     return predicted;
   }
 
-  /* ========= FUNGSI FIREBASE ========= */
+  /* ========= FUNGSI FIREBASE (tidak diubah) ========= */
   async function sendToFirebase(path, data) {
     try {
       const timestamp = Date.now();
@@ -333,7 +334,6 @@
     lastPrediction = null;
     mode = "NORMAL";
     latestDataList = null;
-
     dailyStats = {
       date: new Date().toDateString(),
       bets: 0,
@@ -342,7 +342,6 @@
       profit: 0,
     };
     isBotActive = true;
-
     sendResetToFirebase(oldBalance, "manual_reset");
     sendTelegram("🔄 <b>BOT DIRESET (v9.0 - Mode Adaptive)</b>\n💰 Saldo: 247.000");
   }
@@ -470,7 +469,7 @@
     dailyStats.profit -= currentBetAmount;
     isBetPlaced = true;
 
-    // Hitung prediksi dengan logika baru
+    // Hitung prediksi dengan logika baru (pastikan lastPrediction terisi)
     currentPrediction = getPrediction();
     currentNumberPrediction = predictNumber();
     predictedAt = new Date();
