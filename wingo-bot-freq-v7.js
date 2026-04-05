@@ -305,14 +305,14 @@
   /* ========= PREDIKSI BERDASARKAN FREKUENSI 10 PERIODE + DETEKSI STREAK ========= */
   function getPredictionFromFrequency() {
     // ========= DETEKSI STREAK PANJANG (4x SAMA) =========
-    if (historicalData.length >= 4) {
-      const last4 = historicalData.slice(0, 4).map(d => d.result);
-      const allSame = last4.every(r => r === last4[0]);
-      if (allSame) {
-        console.log(`⚠️ Terdeteksi streak ${last4[0]} sebanyak 4x, ikuti trend!`);
-        return last4[0]; // "BESAR" atau "KECIL"
-      }
-    }
+    if (historicalData.length >= 3) {
+  const last3 = historicalData.slice(0, 3).map(d => d.result);
+  const allSame = last3.every(r => r === last3[0]);
+  if (allSame) {
+    console.log(`⚠️ Terdeteksi streak ${last3[0]} sebanyak 3x, ikuti trend!`);
+    return last3[0];
+  }
+}
 
     // ========= FALLBACK JIKA DATA KURANG =========
     // Jika data historis kurang dari 5, fallback ke hasil terakhir (trend sederhana)
