@@ -112,35 +112,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 6px;
+            margin-bottom: 12px;
         }
         .timer-label {
-            font-size: 0.75rem;
+            font-size: 0.85rem;
             color: #94a3b8;
         }
         #timerDisplay {
-            font-size: 1.4rem;
+            font-size: 2rem;
             font-weight: 700;
             color: #f87171;
-        }
-        .timer-selector {
-            display: flex;
-            gap: 12px;
-            margin: 6px 0;
-            justify-content: center;
-        }
-        .timer-item {
-            background: rgba(255,255,255,0.1);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            cursor: default;
-            opacity: 0.7;
-        }
-        .timer-item.active {
-            background: #dc2626;
-            opacity: 1;
-            font-weight: bold;
         }
         .prediction-title {
             font-size: 0.8rem;
@@ -298,6 +279,7 @@
             cursor: pointer;
             padding: 4px;
             border-radius: 20px;
+            transition: all 0.2s;
         }
         .nav-item.active {
             color: #dc2626;
@@ -455,6 +437,14 @@
             border-radius: 20px;
             font-size: 0.8rem;
         }
+        @keyframes flash {
+            0% { background: linear-gradient(135deg,#dc2626 0%,#991b1b 100%); }
+            50% { background: linear-gradient(135deg,#22c55e 0%,#15803d 100%); }
+            100% { background: linear-gradient(135deg,#dc2626 0%,#991b1b 100%); }
+        }
+        .header {
+            transition: background 0.3s;
+        }
     </style>
 </head>
 <body>
@@ -507,14 +497,8 @@
             <!-- Prediction Box -->
             <div class="prediction-box">
                 <div class="timer-row">
-                    <span class="timer-label">⏳ Next Result</span>
-                    <span id="timerDisplay">--</span>
-                </div>
-                <div class="timer-selector">
-                    <div class="timer-item" data-mode="30s">30d</div>
-                    <div class="timer-item" data-mode="1m">1m</div>
-                    <div class="timer-item" data-mode="3m">3m</div>
-                    <div class="timer-item" data-mode="5m">5m</div>
+                    <span class="timer-label">⏳ Next Result (30 detik)</span>
+                    <span id="timerDisplay">30</span>
                 </div>
                 <div class="prediction-title">📈 GRAFIK RESULT TERAKHIR</div>
                 <div class="chart-container">
@@ -571,15 +555,7 @@
                 <div class="table-container">
                     <table id="resultsTable">
                         <thead>
-                            <tr>
-                                <th>Periode</th>
-                                <th>Angka</th>
-                                <th>Prediksi</th>
-                                <th>Warna</th>
-                                <th>Hasil</th>
-                                <th>Taruhan</th>
-                                <th>Status</th>
-                            </tr>
+                            <tr><th>Periode</th><th>Angka</th><th>Prediksi</th><th>Warna</th><th>Hasil</th><th>Taruhan</th><th>Status</th></tr>
                         </thead>
                         <tbody id="resultsBody"></tbody>
                     </table>
@@ -595,7 +571,7 @@
             </div>
 
             <div id="reportsTab" class="tab-content">
-                <div class="table-container"><table><thead><tr><th>Tanggal</th><th>Taruhan</th><th>Menang</th><th>Kalah</th><th>Win Rate</th><th>Profit</th></tr></thead><tbody id="reportsBody"></tbody></table></div>
+                <div class="table-container"><tr><thead><tr><th>Tanggal</th><th>Taruhan</th><th>Menang</th><th>Kalah</th><th>Win Rate</th><th>Profit</th></tr></thead><tbody id="reportsBody"></tbody></table></div>
                 <div class="loading" id="loadingReports">Memuat...</div>
                 <div class="empty-state" id="emptyReports" style="display:none;">📭 Tidak ada data</div>
             </div>
@@ -628,9 +604,6 @@
     <audio id="sound30s" preload="auto">
         <source src="https://splendid-queijadas-d948bb.netlify.app/sound%2030%20detik.mp3" type="audio/mpeg">
     </audio>
-    <audio id="sound1m" preload="auto">
-        <source src="https://splendid-queijadas-d948bb.netlify.app/1minute.mp3" type="audio/mpeg">
-    </audio>
 
     <script>
         // ========== FIREBASE CONFIG ==========
@@ -662,14 +635,13 @@
         let mergedData = [];
         let currentPage = 1, rowsPerPage = 10, totalFilteredResults = 0, totalPages = 1;
         let soundEnabled = true;
-        let currentGameMode = '1m'; // '30s', '1m', '3m', '5m'
         let lastResultTimestamp = 0;
         let chart;
         let currentUid = null, currentUserData = null, presenceRef = null;
-        let countdownRef = null, gameIssueRef = null;
-        let currentRemainingSeconds = 0;
-        let localCountdownInterval = null;
-        let lastGameIssueEndTime = null;
+        
+        // TIMER LOKAL HARDCODE 30 DETIK
+        let countdownSeconds = 30;
+        let countdownInterval = null;
 
         // Helper functions
         function formatNumber(num) {
@@ -687,7 +659,7 @@
             return html + '</div>';
         }
 
-        // Update total balance from latest prediction
+        // Update total balance dari prediksi terbaru
         function updateBalanceDisplay() {
             if (allPredictions.length > 0 && allPredictions[0].balanceAfterBet !== undefined) {
                 const latestBalance = allPredictions[0].balanceAfterBet;
@@ -697,68 +669,35 @@
             }
         }
 
-        // ========== TIMER & MODE ==========
-        function updateModeFromGameIssue(gameIssue) {
-            if (!gameIssue) return;
-            let mode = '1m';
-            const interval = gameIssue.intervalM;
-            if (interval === 0.5) mode = '30s';
-            else if (interval === 1) mode = '1m';
-            else if (interval === 3) mode = '3m';
-            else if (interval === 5) mode = '5m';
-            if (currentGameMode !== mode) {
-                currentGameMode = mode;
-                // update UI selector
-                document.querySelectorAll('.timer-item').forEach(el => {
-                    el.classList.remove('active');
-                    if (el.dataset.mode === mode) el.classList.add('active');
-                });
-                console.log(`Mode berubah menjadi: ${mode}`);
-            }
-            // Simpan endTime untuk fallback countdown
-            if (gameIssue.endTime) {
-                lastGameIssueEndTime = gameIssue.endTime;
-                // Jika countdown/live tidak aktif, mulai countdown lokal
-                if (!countdownRef || !countdownRef.listenerCount) {
-                    startLocalCountdown(lastGameIssueEndTime);
+        // ========== COUNTDOWN HARDCODE ==========
+        function startCountdown(initialSeconds = 30) {
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownSeconds = initialSeconds;
+            document.getElementById('timerDisplay').textContent = countdownSeconds;
+            
+            countdownInterval = setInterval(() => {
+                if (countdownSeconds > 0) {
+                    countdownSeconds--;
+                    document.getElementById('timerDisplay').textContent = countdownSeconds;
+                } else {
+                    if (countdownInterval) {
+                        clearInterval(countdownInterval);
+                        countdownInterval = null;
+                    }
                 }
-            }
+            }, 1000);
+        }
+        
+        function resetCountdown() {
+            startCountdown(30);
         }
 
-        function startLocalCountdown(endTimeStr) {
-            if (localCountdownInterval) clearInterval(localCountdownInterval);
-            const endTime = new Date(endTimeStr.replace(' ', 'T')).getTime();
-            function update() {
-                const now = Date.now();
-                const remainingMs = endTime - now;
-                if (remainingMs <= 0) {
-                    if (localCountdownInterval) clearInterval(localCountdownInterval);
-                    localCountdownInterval = null;
-                    document.getElementById('timerDisplay').textContent = "0";
-                    return;
-                }
-                const remainingSeconds = Math.floor(remainingMs / 1000);
-                document.getElementById('timerDisplay').textContent = remainingSeconds;
-            }
-            update();
-            localCountdownInterval = setInterval(update, 1000);
-        }
-
+        // ========== NOTIFIKASI SUARA ==========
         function playNotificationSound() {
             if (!soundEnabled) return;
             flashHeader();
-            let audio = null;
-            if (currentGameMode === '30s') {
-                audio = document.getElementById('sound30s');
-            } else if (currentGameMode === '1m') {
-                audio = document.getElementById('sound1m');
-            } else {
-                // Untuk 3m dan 5m tidak ada suara khusus, bisa diam atau pakai 1m
-                // audio = document.getElementById('sound1m');
-                return;
-            }
+            const audio = document.getElementById('sound30s');
             if (audio) {
-                // Reset audio agar bisa diputar ulang meskipun sedang diputar
                 audio.pause();
                 audio.currentTime = 0;
                 audio.play().catch(e => console.log('Audio play error:', e));
@@ -769,65 +708,25 @@
             const header = document.querySelector('.header');
             header.style.animation = 'none';
             setTimeout(() => header.style.animation = 'flash 0.5s ease', 10);
-            if (!document.querySelector('#flashAnimation')) {
-                const style = document.createElement('style');
-                style.id = 'flashAnimation';
-                style.textContent = '@keyframes flash{0%{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}50%{background:linear-gradient(135deg,#22c55e 0%,#15803d 100%)}100%{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}}';
-                document.head.appendChild(style);
-            }
-        }
-
-        // Timer dari Firebase countdown/live
-        function setupCountdownListener() {
-            if (countdownRef) countdownRef.off();
-            countdownRef = analyticsDb.ref('countdown/live');
-            countdownRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data && typeof data.remainingSeconds === 'number') {
-                    currentRemainingSeconds = data.remainingSeconds;
-                    document.getElementById('timerDisplay').textContent = currentRemainingSeconds;
-                    // Jika ada data countdown, hentikan local countdown
-                    if (localCountdownInterval) {
-                        clearInterval(localCountdownInterval);
-                        localCountdownInterval = null;
-                    }
-                } else {
-                    // Jika tidak ada data countdown, gunakan fallback dari game issue
-                    if (lastGameIssueEndTime && !localCountdownInterval) {
-                        startLocalCountdown(lastGameIssueEndTime);
-                    }
-                }
-            }, (error) => {
-                console.warn("Countdown listener error:", error);
-            });
-        }
-
-        // Ambil game_issue terbaru untuk menentukan mode
-        function setupGameIssueListener() {
-            if (gameIssueRef) gameIssueRef.off();
-            gameIssueRef = analyticsDb.ref('game_issues').orderByChild('timestamp').limitToLast(1);
-            gameIssueRef.on('value', (snapshot) => {
-                let latest = null;
-                snapshot.forEach(child => { latest = child.val(); });
-                if (latest) {
-                    updateModeFromGameIssue(latest);
-                }
-            });
         }
 
         // ========== FIREBASE DATA LOAD ==========
         function loadAllData() {
             analyticsDb.ref('results').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
+                const oldFirstTimestamp = allResults.length > 0 ? allResults[0].timestamp : null;
                 allResults = [];
                 snapshot.forEach((child) => {
                     const data = child.val();
                     data.id = child.key;
                     allResults.unshift(data);
                 });
-                if (allResults.length > 0 && allResults[0].timestamp !== lastResultTimestamp) {
-                    // Result baru muncul
+                const newFirstTimestamp = allResults.length > 0 ? allResults[0].timestamp : null;
+                if (newFirstTimestamp && newFirstTimestamp !== oldFirstTimestamp) {
                     playNotificationSound();
-                    lastResultTimestamp = allResults[0].timestamp;
+                    resetCountdown();
+                    lastResultTimestamp = newFirstTimestamp;
+                } else if (allResults.length > 0 && !oldFirstTimestamp) {
+                    resetCountdown();
                 }
                 updateChartFromResults();
                 mergeDataAndDisplay();
@@ -842,7 +741,7 @@
                 });
                 updatePredictionFromData();
                 mergeDataAndDisplay();
-                updateBalanceDisplay();  // update total balance card
+                updateBalanceDisplay();
                 updateStats();
             }, showConnectionError);
             analyticsDb.ref('resets').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
@@ -937,18 +836,9 @@
                 const waiting = item.isWaiting;
                 const statusClass = waiting ? 'result-waiting' : (item.isWin ? 'result-win' : 'result-lose');
                 const statusText = waiting ? 'Wait' : (item.isWin ? 'Win' : 'Loss');
-                // Hasil besar/kecil dari data result
                 const hasil = item.result ? item.result : (item.number !== null ? (item.number <= 4 ? 'KECIL' : 'BESAR') : '-');
                 const taruhan = item.betAmount !== undefined ? `Rp ${formatNumber(item.betAmount)}` : '-';
-                html += `<tr>
-                    <td>${item.issue?.slice(-6) || '-'}</td>
-                    <td><strong>${item.number !== null ? item.number : '-'}</strong></td>
-                    <td>${item.prediction || '-'}</td>
-                    <td>${renderColourDots(item.colour)}</td>
-                    <td>${hasil}</td>
-                    <td>${taruhan}</td>
-                    <td><span class="${statusClass}">${statusText}</span></td>
-                </tr>`;
+                html += `<tr><td>${item.issue?.slice(-6) || '-'}</td><td><strong>${item.number !== null ? item.number : '-'}</strong></td><td>${item.prediction || '-'}</td><td>${renderColourDots(item.colour)}</td><td>${hasil}</td><td>${taruhan}</td><td><span class="${statusClass}">${statusText}</span></td></tr>`;
             });
             tbody.innerHTML = html;
             loading.style.display = 'none';
@@ -964,14 +854,11 @@
         function nextPage() { if (currentPage < totalPages) { currentPage++; displayMergedData(); } }
         function previousPage() { if (currentPage > 1) { currentPage--; displayMergedData(); } }
 
-        // Other display functions
         function displayResets() {
             const tbody = document.getElementById('resetsBody');
             if (!allResets.length) { document.getElementById('loadingResets').style.display='none'; document.getElementById('emptyResets').style.display='block'; tbody.innerHTML=''; return; }
             let html = '';
-            allResets.forEach(r => {
-                html += `<tr><td>${new Date(r.timestamp || r.resetTime).toLocaleString()}</td><td>${r.reason || '-'}</td><td>Rp ${formatNumber(r.oldBalance)}</td><td>Rp ${formatNumber(r.newBalance)}</td></tr>`;
-            });
+            allResets.forEach(r => { html += `<tr><td>${new Date(r.timestamp || r.resetTime).toLocaleString()}</td><td>${r.reason || '-'}</td><td>Rp ${formatNumber(r.oldBalance)}</td><td>Rp ${formatNumber(r.newBalance)}</td></tr>`; });
             tbody.innerHTML = html;
             document.getElementById('loadingResets').style.display = 'none';
             document.getElementById('emptyResets').style.display = 'none';
@@ -992,9 +879,7 @@
             const tbody = document.getElementById('safetyBody');
             if (!allSafetyEvents.length) { document.getElementById('loadingSafety').style.display='none'; document.getElementById('emptySafety').style.display='block'; tbody.innerHTML=''; return; }
             let html = '';
-            allSafetyEvents.forEach(e => {
-                html += `<tr><td>${new Date(e.timestamp).toLocaleString()}</td><td>${e.event||'-'}</td><td>${e.details ? JSON.stringify(e.details).substring(0,40) : '-'}</td></tr>`;
-            });
+            allSafetyEvents.forEach(e => { html += `<tr><td>${new Date(e.timestamp).toLocaleString()}</td><td>${e.event||'-'}</td><td>${e.details ? JSON.stringify(e.details).substring(0,40) : '-'}</td></tr>`; });
             tbody.innerHTML = html;
             document.getElementById('loadingSafety').style.display = 'none';
             document.getElementById('emptySafety').style.display = 'none';
@@ -1035,12 +920,10 @@
         function refreshData() {
             currentPage = 1;
             document.getElementById('connectionStatus').innerHTML = '<span>⏳</span> Memuat...';
-            document.getElementById('connectionStatus').className = 'status-disconnected';
             loadAllData();
         }
         function showConnectionError() {
             document.getElementById('connectionStatus').innerHTML = '<span>❌</span> Gagal koneksi';
-            document.getElementById('connectionStatus').className = 'status-disconnected';
         }
 
         // ========== LOGIN & AUTH ==========
@@ -1052,28 +935,12 @@
                 authDb.ref('uids/' + savedUid).once('value').then(snapshot => {
                     if (snapshot.exists()) {
                         const userData = snapshot.val();
-                        if (userData.active === false) {
-                            localStorage.removeItem('wingo_uid');
-                            showLogin();
-                            document.getElementById('loginError').textContent = 'Akun dinonaktifkan. Hubungi admin.';
-                            return;
-                        }
-                        if (userData.password) {
-                            currentUid = savedUid;
-                            currentUserData = userData;
-                            showDashboard();
-                        } else {
-                            localStorage.removeItem('wingo_uid');
-                            showSetPassword(savedUid);
-                        }
-                    } else {
-                        localStorage.removeItem('wingo_uid');
-                        showLogin();
-                    }
+                        if (userData.active === false) { localStorage.removeItem('wingo_uid'); showLogin(); document.getElementById('loginError').textContent = 'Akun dinonaktifkan.'; return; }
+                        if (userData.password) { currentUid = savedUid; currentUserData = userData; showDashboard(); }
+                        else { localStorage.removeItem('wingo_uid'); showSetPassword(savedUid); }
+                    } else { localStorage.removeItem('wingo_uid'); showLogin(); }
                 }).catch(() => showLogin());
-            } else {
-                showLogin();
-            }
+            } else { showLogin(); }
         }
         function showLogin() {
             document.getElementById('loginPage').style.display = 'block';
@@ -1116,15 +983,10 @@
                     if (userData.active === false) { errorEl.textContent = 'Akun dinonaktifkan.'; return; }
                     if (userData.password === pwd) {
                         localStorage.setItem('wingo_uid', uid);
-                        currentUid = uid;
-                        currentUserData = userData;
+                        currentUid = uid; currentUserData = userData;
                         showDashboard();
-                    } else {
-                        errorEl.textContent = 'Password salah';
-                    }
-                } else {
-                    errorEl.textContent = 'UID tidak terdaftar';
-                }
+                    } else { errorEl.textContent = 'Password salah'; }
+                } else { errorEl.textContent = 'UID tidak terdaftar'; }
             }).catch(() => errorEl.textContent = 'Gagal menghubungi database');
         }
         function setPassword() {
@@ -1140,18 +1002,12 @@
                 setTimeout(() => showLogin(), 2000);
             }).catch(() => errorEl.textContent = 'Gagal menyimpan password');
         }
-        function showRegisterOptions() {
-            alert("Untuk mendapatkan akses, hubungi admin via Telegram @PredictorUser");
-            window.open('https://www.lixnobe.com/#/register?invitationCode=DtX6m351494', '_blank');
-        }
+        function showRegisterOptions() { alert("Untuk mendapatkan akses, hubungi admin via Telegram @PredictorUser"); window.open('https://www.lixnobe.com/#/register?invitationCode=DtX6m351494', '_blank'); }
         function logout() {
             if (presenceRef) presenceRef.remove().catch(()=>{});
             localStorage.removeItem('wingo_uid');
-            currentUid = null;
-            currentUserData = null;
-            if (countdownRef) countdownRef.off();
-            if (gameIssueRef) gameIssueRef.off();
-            if (localCountdownInterval) clearInterval(localCountdownInterval);
+            currentUid = null; currentUserData = null;
+            if (countdownInterval) clearInterval(countdownInterval);
             showLogin();
         }
 
@@ -1166,9 +1022,7 @@
                 document.getElementById('publicOnlineCount').textContent = Object.keys(onlineUsers).length + needFake;
             });
         }
-        function stopPublicOnlineCounter() {
-            if (publicOnlineListener) { authDb.ref('online_users').off('value', publicOnlineListener); publicOnlineListener = null; }
-        }
+        function stopPublicOnlineCounter() { if (publicOnlineListener) { authDb.ref('online_users').off('value', publicOnlineListener); publicOnlineListener = null; } }
         function setupPresence() {
             if (!currentUid) return;
             presenceRef = authDb.ref('online_users/' + currentUid);
@@ -1188,43 +1042,55 @@
                 const targetTotal = 1200 + Math.floor(Math.random() * 300);
                 const needFake = Math.max(0, targetTotal - Object.keys(onlineUsers).length);
                 let displayUsers = { ...onlineUsers };
-                for (let i = 0; i < needFake; i++) {
-                    const fakeUid = `fake_${i}_${Date.now()}`;
-                    displayUsers[fakeUid] = { nickName: generateFakeName(i), lastSeen: Date.now() - Math.random()*60000 };
-                }
+                for (let i = 0; i < needFake; i++) { const fakeUid = `fake_${i}_${Date.now()}`; displayUsers[fakeUid] = { nickName: generateFakeName(i), lastSeen: Date.now() - Math.random()*60000 }; }
                 document.getElementById('onlineCount').textContent = Object.keys(displayUsers).length;
                 const listEl = document.getElementById('onlineUsersList');
                 listEl.innerHTML = '';
-                Object.values(displayUsers).forEach(user => {
-                    const li = document.createElement('li');
-                    const avatar = document.createElement('span');
-                    avatar.className = 'user-avatar';
-                    avatar.textContent = (user.nickName || 'U').charAt(0).toUpperCase();
-                    li.appendChild(avatar);
-                    li.appendChild(document.createTextNode(user.nickName || 'Unknown'));
-                    listEl.appendChild(li);
-                });
+                Object.values(displayUsers).forEach(user => { const li = document.createElement('li'); const avatar = document.createElement('span'); avatar.className = 'user-avatar'; avatar.textContent = (user.nickName || 'U').charAt(0).toUpperCase(); li.appendChild(avatar); li.appendChild(document.createTextNode(user.nickName || 'Unknown')); listEl.appendChild(li); });
             });
         }
-        function toggleOnlineTooltip() {
-            document.getElementById('onlineTooltip').classList.toggle('show');
-        }
-        document.addEventListener('click', function(e) {
-            const tooltip = document.getElementById('onlineTooltip');
-            const indicator = document.querySelector('.online-indicator');
-            if (!indicator.contains(e.target)) tooltip.classList.remove('show');
-        });
+        function toggleOnlineTooltip() { document.getElementById('onlineTooltip').classList.toggle('show'); }
+        document.addEventListener('click', function(e) { const tooltip = document.getElementById('onlineTooltip'); const indicator = document.querySelector('.online-indicator'); if (!indicator.contains(e.target)) tooltip.classList.remove('show'); });
 
         // ========== DASHBOARD INIT ==========
         function initDashboard() {
             initChart();
-            setupCountdownListener();
-            setupGameIssueListener();
+            resetCountdown(); // mulai countdown 30 detik
             loadAllData();
-            setInterval(() => {
-                loadAllData(); // refresh berkala
-            }, 30000);
+            setInterval(() => { loadAllData(); }, 30000);
+            
+            // ========== BOTTOM NAVIGATION EVENT LISTENER ==========
+            const navItems = document.querySelectorAll('.nav-item');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            function switchTab(tabId) {
+                // Sembunyikan semua tab
+                tabContents.forEach(tab => tab.classList.remove('active'));
+                // Tampilkan tab yang dipilih
+                const activeTab = document.getElementById(tabId);
+                if (activeTab) activeTab.classList.add('active');
+                // Update active class pada nav item
+                navItems.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('data-tab') === tabId) {
+                        item.classList.add('active');
+                    }
+                });
+                // Reset halaman ke 1 jika tab hasil yang diaktifkan
+                if (tabId === 'resultsTab') {
+                    currentPage = 1;
+                    displayMergedData();
+                }
+            }
+            
+            navItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const tabId = item.getAttribute('data-tab');
+                    if (tabId) switchTab(tabId);
+                });
+            });
         }
+        
         function initChart() {
             const ctx = document.getElementById('predictionChart').getContext('2d');
             chart = new Chart(ctx, {
@@ -1234,11 +1100,9 @@
             });
         }
 
-        // Event listeners for filters
         document.getElementById('dateFilter').addEventListener('change', () => { if (document.getElementById('resultsTab').classList.contains('active')) { currentPage = 1; displayMergedData(); } });
         document.getElementById('searchFilter').addEventListener('input', () => { if (document.getElementById('resultsTab').classList.contains('active')) { currentPage = 1; displayMergedData(); } });
 
-        // Expose globals for onclick
         window.handleLogin = handleLogin;
         window.setPassword = setPassword;
         window.showRegisterOptions = showRegisterOptions;
@@ -1249,7 +1113,6 @@
         window.previousPage = previousPage;
         window.toggleOnlineTooltip = toggleOnlineTooltip;
 
-        // Start
         checkLogin();
     </script>
 </body>
