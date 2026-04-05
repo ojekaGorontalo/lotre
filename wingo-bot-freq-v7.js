@@ -1,7 +1,7 @@
 (function () {
 
   console.clear();
-  console.log("🤖 WinGo Smart Trading Bot - System v7.0 (ANALISIS FREKUENSI 10 PERIODE)");
+  console.log("🤖 WinGo Smart Trading Bot - System v7.0 (ANALISIS FREKUENSI 10 PERIODE) - DENGAN DETEKSI STREAK");
 
   /* ========= KONSTANTA SALDO AWAL ========= */
   const INITIAL_BALANCE = 2916000;  // Saldo awal: 2.916.000 (cukup untuk 8 level)
@@ -271,14 +271,15 @@
 
   /* ========= PESAN MOTIVASI STARTUP ========= */
   function sendStartupMotivationMessage() {
-    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v7.0 - ANALISIS FREKUENSI 10 PERIODE</b>\n\n` +
+    const startupMessage = `🤖 <b>WINGO SMART TRADING BOT v7.0 - ANALISIS FREKUENSI 10 PERIODE + DETEKSI STREAK</b>\n\n` +
                           `Sistem prediksi berdasarkan data 10 hasil terakhir:\n\n` +
                           `🧮 <b>METODE:</b>\n` +
                           `• Hitung frekuensi kemunculan angka 0-9 dalam 10 periode terakhir\n` +
                           `• Cari angka yang paling jarang muncul (atau tidak muncul sama sekali)\n` +
                           `• Prediksi KECIL (0-4) atau BESAR (5-9) berdasarkan angka tersebut\n` +
                           `• Jika semua angka muncul, pilih yang memiliki frekuensi terendah\n` +
-                          `• Fallback ke hasil terakhir jika data kurang dari 5 periode\n\n` +
+                          `• Fallback ke hasil terakhir jika data kurang dari 5 periode\n` +
+                          `• ✅ DILENGKAPI DETEKSI STREAK: jika 4x hasil sama, ikuti trend!\n\n` +
                           `💰 <b>SISTEM MARTINGALE 8 LEVEL:</b>\n` +
                           `1. Rp 1.000\n` +
                           `2. Rp 3.000\n` +
@@ -301,8 +302,19 @@
     return colourString.split(',')[0];
   }
 
-  /* ========= PREDIKSI BERDASARKAN FREKUENSI 10 PERIODE ========= */
+  /* ========= PREDIKSI BERDASARKAN FREKUENSI 10 PERIODE + DETEKSI STREAK ========= */
   function getPredictionFromFrequency() {
+    // ========= DETEKSI STREAK PANJANG (4x SAMA) =========
+    if (historicalData.length >= 4) {
+      const last4 = historicalData.slice(0, 4).map(d => d.result);
+      const allSame = last4.every(r => r === last4[0]);
+      if (allSame) {
+        console.log(`⚠️ Terdeteksi streak ${last4[0]} sebanyak 4x, ikuti trend!`);
+        return last4[0]; // "BESAR" atau "KECIL"
+      }
+    }
+
+    // ========= FALLBACK JIKA DATA KURANG =========
     // Jika data historis kurang dari 5, fallback ke hasil terakhir (trend sederhana)
     if (historicalData.length < 5) {
       if (historicalData.length > 0) {
@@ -313,6 +325,7 @@
       return "KECIL";
     }
 
+    // ========= ANALISIS FREKUENSI 10 PERIODE TERAKHIR =========
     // Ambil maksimal 10 data terakhir
     const last10 = historicalData.slice(0, 10);
     const freq = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -441,16 +454,14 @@
 
   function createPredictionMessage(nextIssueShort) {
     const betLabel = betLabels[currentBetIndex];
-    // Tambahkan informasi angka yang dipilih (optional, bisa diambil dari log terakhir)
     let predictionInfo = "";
     if (historicalData.length >= 5) {
-      // Tampilkan analisis singkat (opsional)
-      predictionInfo = `\n🧮 Analisis: frekuensi 10 periode`;
+      predictionInfo = `\n🧮 Analisis: frekuensi 10 periode + deteksi streak`;
     }
-    let message = `<b>WINGO 30s - FREKUENSI 10 PERIODE</b>\n`;
+    let message = `<b>WINGO 30s - FREKUENSI 10 PERIODE + STREAK</b>\n`;
     message += `<b>🆔 PERIODE ${nextIssueShort}</b>\n`;
     message += `<b>🎯 PREDIKSI: ${currentPrediction} ${betLabel}</b>\n`;
-    message += `<b>📊 Metode: Angka paling jarang dalam 10 periode terakhir</b>\n`;
+    message += `<b>📊 Metode: Angka paling jarang / deteksi streak 4x</b>\n`;
     message += `─────────────────\n`;
     message += `<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n`;
     message += `<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n`;
@@ -853,10 +864,11 @@
     sendResetToFirebase(oldBalance, "manual_reset");
     console.log(`🔄 Bot direset ke saldo ${INITIAL_BALANCE.toLocaleString()} dan diaktifkan`);
 
-    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (Analisis Frekuensi 10 Periode)</b>\n\n` +
+    const startupMsg = `🔄 <b>BOT DIRESET DAN DIAKTIFKAN (Analisis Frekuensi 10 Periode + Deteksi Streak)</b>\n\n` +
                       `💰 Saldo: Rp ${INITIAL_BALANCE.toLocaleString()}\n` +
                       `🎯 Mulai dari Level 1\n` +
                       `🧮 Metode: Cari angka paling jarang dalam 10 periode terakhir, prediksi KECIL/BESAR\n` +
+                      `✅ Ditambah deteksi streak 4x untuk mengikuti trend\n` +
                       `📊 Martingale 8 Level\n\n` +
                       `<i>Bot berjalan otomatis.</i>`;
     sendTelegram(startupMsg);
@@ -878,7 +890,7 @@
   /* ========= STARTUP ========= */
   console.log(`
 
-🤖 WINGO SMART TRADING BOT v7.0 - ANALISIS FREKUENSI 10 PERIODE
+🤖 WINGO SMART TRADING BOT v7.0 - ANALISIS FREKUENSI 10 PERIODE + DETEKSI STREAK
 
 💰 Saldo awal: ${INITIAL_BALANCE.toLocaleString()}
 🧮 Strategi: 
@@ -886,6 +898,7 @@
    - Menghitung frekuensi setiap angka (0-9)
    - Memilih angka yang paling jarang muncul (atau tidak muncul)
    - Prediksi KECIL jika angka <=4, BESAR jika >=5
+   - ✅ DETEKSI STREAK: jika 4x hasil sama, ikuti trend (abaikan frekuensi)
    - Fallback ke hasil terakhir jika data kurang
 📊 Martingale 8 Level (1K, 3K, 8K, 24K, 72K, 216K, 648K, 1.94M)
 📡 Firebase aktif
