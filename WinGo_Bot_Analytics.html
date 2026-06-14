@@ -744,7 +744,8 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
 }
 
         // ========== FIREBASE DATA LOAD ==========
-      function loadAllData() {
+     function loadAllData() {
+    // Listener untuk RESULTS
     analyticsDb.ref('results').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
         const oldFirstTimestamp = allResults.length > 0 ? allResults[0].timestamp : null;
         allResults = [];
@@ -758,7 +759,6 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
             playNotificationSound();
             resetCountdown();
             
-            // ========== CEK WIN STREAK (TAMBAHAN) ==========
             const latestResult = allResults[0];
             if (latestResult.isWin) {
                 const streak = latestResult.currentStreak || 0;
@@ -773,8 +773,6 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
             } else {
                 lastNotifiedStreak = 0;
             }
-            // =========================================
-            
             lastResultTimestamp = newFirstTimestamp;
         } else if (allResults.length > 0 && !oldFirstTimestamp) {
             resetCountdown();
@@ -783,25 +781,46 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
         mergeDataAndDisplay();
         updateStats();
     }, showConnectionError);
-            analyticsDb.ref('daily_reports').orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => {
-                allReports = [];
-                snapshot.forEach((child) => allReports.unshift(child.val()));
-                displayReports();
-            }, showConnectionError);
-            analyticsDb.ref('safety_events').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
-                allSafetyEvents = [];
-                snapshot.forEach((child) => allSafetyEvents.unshift(child.val()));
-                displaySafetyEvents();
-            }, showConnectionError);
-            analyticsDb.ref('balance_changes').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
-                allBalanceChanges = [];
-                snapshot.forEach((child) => allBalanceChanges.unshift(child.val()));
-                displayBalanceChanges();
-            }, showConnectionError);
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
-            document.getElementById('connectionStatus').innerHTML = '<span>✅</span> Terhubung';
-            document.getElementById('connectionStatus').className = 'status-connected';
-        }
+
+    // ========== TAMBAHAN: LISTENER UNTUK PREDICTIONS ==========
+    analyticsDb.ref('predictions').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
+        allPredictions = [];
+        snapshot.forEach((child) => {
+            const data = child.val();
+            data.id = child.key;
+            allPredictions.unshift(data);
+        });
+        updatePredictionFromData();   // update kotak prediksi
+        mergeDataAndDisplay();        // update tabel (menampilkan prediksi yang belum ada hasil)
+        updateBalanceDisplay();       // update saldo total
+        updateStats();                // update statistik
+    }, showConnectionError);
+
+    // Listener untuk DAILY REPORTS
+    analyticsDb.ref('daily_reports').orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => {
+        allReports = [];
+        snapshot.forEach((child) => allReports.unshift(child.val()));
+        displayReports();
+    }, showConnectionError);
+
+    // Listener untuk SAFETY EVENTS
+    analyticsDb.ref('safety_events').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+        allSafetyEvents = [];
+        snapshot.forEach((child) => allSafetyEvents.unshift(child.val()));
+        displaySafetyEvents();
+    }, showConnectionError);
+
+    // Listener untuk BALANCE CHANGES
+    analyticsDb.ref('balance_changes').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+        allBalanceChanges = [];
+        snapshot.forEach((child) => allBalanceChanges.unshift(child.val()));
+        displayBalanceChanges();
+    }, showConnectionError);
+
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
+    document.getElementById('connectionStatus').innerHTML = '<span>✅</span> Terhubung';
+    document.getElementById('connectionStatus').className = 'status-connected';
+}
 
         function updatePredictionFromData() {
             const el = document.getElementById('hasilPrediksi');
