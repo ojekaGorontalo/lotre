@@ -4,7 +4,7 @@
   console.log("🤖 WinGo Smart Trading Bot - v11.0 (AI Prediction + Firebase Key)");
 
   /* ========= TELEGRAM ========= */
-  const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
+  const BOT_TOKEN = "false dulu8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
   const TELEGRAM_GROUPS = {
     primary: "-1003291560910",
     secondary: ["-1001570553211"],
