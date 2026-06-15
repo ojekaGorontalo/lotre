@@ -4,7 +4,7 @@
   console.log("🤖 WinGo Smart Trading Bot - v11.0 (AI Prediction + Firebase Key)");
 
   /* ========= TELEGRAM ========= */
-  const BOT_TOKEN = "Falsedulu - 8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
+  const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
   const TELEGRAM_GROUPS = {
     primary: "-1003291560910",
     secondary: ["-1001570553211"],
@@ -67,7 +67,6 @@
       const response = await fetch(OPENROUTER_KEY_URL);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      // Mendukung dua kemungkinan struktur: { apikey: "..." } atau langsung string
       OPENROUTER_API_KEY = data.apikey || data;
       if (OPENROUTER_API_KEY && typeof OPENROUTER_API_KEY === 'string' && OPENROUTER_API_KEY.startsWith('sk-or-v1-')) {
         console.log("✅ API Key OpenRouter berhasil dimuat dari Firebase");
@@ -82,8 +81,8 @@
     }
   }
 
-  /* ========= FUNGSI PREDIKSI ANGKA (RATA-RATA) ========= */
-  function predictNumber() {
+  /* ========= FUNGSI PREDIKSI ANGKA LAMA (tidak digunakan lagi, hanya untuk referensi) ========= */
+  function _oldPredictNumber() {
     if (historicalData.length === 0) return 5;
     const lastNumbers = historicalData.slice(0, 5).map((d) => d.number);
     let avg = lastNumbers.reduce((a, b) => a + b, 0) / lastNumbers.length;
@@ -91,6 +90,41 @@
     predicted = Math.min(9, Math.max(0, predicted));
     console.log(`🔢 Prediksi angka (rata-rata 5 terakhir: ${lastNumbers.join(",")}) -> ${predicted}`);
     return predicted;
+  }
+
+  // FIX NUMBER PREDICTION: fungsi baru untuk menghasilkan angka yang konsisten dengan prediksi AI
+  function getNumberByPrediction(prediction) {
+    // Rentang angka berdasarkan prediksi
+    const range = prediction === "KECIL" ? [0,1,2,3,4] : [5,6,7,8,9];
+    
+    // Jika belum ada data historis, pilih angka tengah dari rentang
+    if (historicalData.length === 0) {
+      const defaultNumber = prediction === "KECIL" ? 2 : 7;
+      console.log(`🔢 Prediksi angka (default) untuk ${prediction}: ${defaultNumber}`);
+      return defaultNumber;
+    }
+    
+    // Filter angka historis yang berada dalam rentang yang sama dengan prediksi
+    const relevantNumbers = historicalData
+      .slice(0, 10) // ambil 10 terakhir untuk analisis
+      .map(d => d.number)
+      .filter(num => range.includes(num));
+    
+    let predictedNumber;
+    if (relevantNumbers.length > 0) {
+      // Hitung rata-rata dari angka-angka yang relevan
+      const avg = relevantNumbers.reduce((a, b) => a + b, 0) / relevantNumbers.length;
+      predictedNumber = Math.round(avg);
+      // Pastikan masih dalam rentang
+      if (predictedNumber < range[0]) predictedNumber = range[0];
+      if (predictedNumber > range[range.length-1]) predictedNumber = range[range.length-1];
+      console.log(`🔢 Prediksi angka (dari ${relevantNumbers.length} data ${prediction}) rata-rata ${avg.toFixed(1)} -> ${predictedNumber}`);
+    } else {
+      // Tidak ada data historis dalam kategori ini, gunakan angka tengah
+      predictedNumber = prediction === "KECIL" ? 2 : 7;
+      console.log(`🔢 Prediksi angka (tidak ada data ${prediction}) default ${predictedNumber}`);
+    }
+    return predictedNumber;
   }
 
   /* ========= FALLBACK LOGIKA (jika AI gagal) ========= */
@@ -363,8 +397,11 @@ CONFIDENCE: 65`;
     dailyStats.profit -= currentBetAmount;
     isBetPlaced = true;
 
+    // 🔮 PREDIKSI DARI AI
     currentPrediction = await getAIPrediction();
-    currentNumberPrediction = predictNumber();
+    // FIX NUMBER PREDICTION: gunakan fungsi baru yang menghasilkan angka konsisten dengan prediksi AI
+    currentNumberPrediction = getNumberByPrediction(currentPrediction);
+    
     predictedAt = new Date();
     predictedIssue = nextIssueNumber;
 
