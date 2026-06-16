@@ -1,6 +1,4 @@
 // prediksiAI.js - AI Enhanced Version (OpenRouter) - API Key dari Firebase
-// + Fitur: pembersihan otomatis (hanya 100 data terbaru)
-// + Fitur: toggle pengiriman Telegram (enableTelegram)
 (function () {
   console.clear();
   console.log("🤖 WinGo Smart Trading Bot - v11.0 (AI Prediction + Firebase Key)");
@@ -12,7 +10,6 @@
     secondary: ["-1001570553211"],
   };
   let enableMultipleGroups = false;
-  let enableTelegram = false;   // <-- tambahkan ini untuk mengaktifkan/menonaktifkan kirim ke Telegram
   let messageQueue = [];
   let isSendingMessage = false;
   const MESSAGE_DELAY = 800;
@@ -352,12 +349,6 @@ CONFIDENCE: 65`;
 
   /* ========= TELEGRAM ========= */
   function sendTelegram(msg) {
-    if (!enableTelegram) {
-      // Jika dinonaktifkan, tidak kirim ke manapun, dan kosongkan antrian
-      messageQueue = [];
-      isSendingMessage = false;
-      return;
-    }
     sendToGroup(msg, TELEGRAM_GROUPS.primary);
     if (enableMultipleGroups && TELEGRAM_GROUPS.secondary.length) {
       TELEGRAM_GROUPS.secondary.forEach((chatId) => sendToGroup(msg, chatId));
@@ -663,26 +654,14 @@ CONFIDENCE: 65`;
   })();
 
   window.wingoBot = {
-    check: manualCheck,
-    reset: resetBot,
-    add: addBalance,
+    check: manualCheck, reset: resetBot, add: addBalance,
     activate: () => { isBotActive = true; sendTelegram("✅ BOT DIAKTIFKAN"); },
     deactivate: () => { isBotActive = false; sendTelegram("⏸️ BOT DINONAKTIFKAN"); },
     stats: () => {
       const winRate = totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0;
       console.log(`💰 Saldo: ${virtualBalance.toLocaleString()}\n📈 P/L: ${profitLoss}\n🎯 Bet: ${totalBets} (W:${totalWins}/L:${totalLosses})\n📊 Win Rate: ${winRate}%\n🔥 Streak: ${currentStreak}\n📊 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`);
     },
-    // Fungsi untuk toggle Telegram
-    toggleTelegram: (enable) => {
-      if (enable === undefined) enableTelegram = !enableTelegram;
-      else enableTelegram = !!enable;
-      if (!enableTelegram) {
-        messageQueue = [];
-        isSendingMessage = false;
-      }
-      console.log(`📢 Telegram ${enableTelegram ? 'diaktifkan' : 'dinonaktifkan'}`);
-    },
-    // Fungsi untuk menjalankan pembersihan manual
+    // Tambahkan fungsi untuk menjalankan pembersihan manual jika diperlukan
     cleanup: cleanupAllCollections,
   };
   window.wingoBetData = {
@@ -692,5 +671,4 @@ CONFIDENCE: 65`;
     get balance() { return virtualBalance; },
   };
   console.log("✅ Bot ready! Gunakan window.wingoBot untuk kontrol.");
-  console.log("📢 Telegram aktif? " + (enableTelegram ? "YA" : "TIDAK"));
 })();
