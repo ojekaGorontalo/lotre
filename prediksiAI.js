@@ -1,15 +1,18 @@
 // prediksiAI.js - AI Enhanced Version (OpenRouter) - API Key dari Firebase
+// + Fitur: pembersihan otomatis (hanya 100 data terbaru)
+// + Fitur: toggle pengiriman Telegram (enableTelegram)
 (function () {
   console.clear();
   console.log("🤖 WinGo Smart Trading Bot - v11.0 (AI Prediction + Firebase Key)");
 
   /* ========= TELEGRAM ========= */
-  const BOT_TOKEN = "false dulu8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
+  const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
   const TELEGRAM_GROUPS = {
     primary: "-1003291560910",
     secondary: ["-1001570553211"],
   };
   let enableMultipleGroups = false;
+  let enableTelegram = false;   // <-- tambahkan ini untuk mengaktifkan/menonaktifkan kirim ke Telegram
   let messageQueue = [];
   let isSendingMessage = false;
   const MESSAGE_DELAY = 800;
@@ -61,6 +64,9 @@
   let currentGameData = null;
   let countdownInterval = null;
 
+  /* ========= KONFIGURASI PEMBERSIHAN DATA ========= */
+  const MAX_DATA_LIMIT = 100; // hanya sisakan 100 data terbaru per koleksi
+
   /* ========= FUNGSI AMBIL API KEY DARI FIREBASE ========= */
   async function fetchApiKey() {
     try {
@@ -94,33 +100,24 @@
 
   // FIX NUMBER PREDICTION: fungsi baru untuk menghasilkan angka yang konsisten dengan prediksi AI
   function getNumberByPrediction(prediction) {
-    // Rentang angka berdasarkan prediksi
     const range = prediction === "KECIL" ? [0,1,2,3,4] : [5,6,7,8,9];
-    
-    // Jika belum ada data historis, pilih angka tengah dari rentang
     if (historicalData.length === 0) {
       const defaultNumber = prediction === "KECIL" ? 2 : 7;
       console.log(`🔢 Prediksi angka (default) untuk ${prediction}: ${defaultNumber}`);
       return defaultNumber;
     }
-    
-    // Filter angka historis yang berada dalam rentang yang sama dengan prediksi
     const relevantNumbers = historicalData
-      .slice(0, 10) // ambil 10 terakhir untuk analisis
+      .slice(0, 10)
       .map(d => d.number)
       .filter(num => range.includes(num));
-    
     let predictedNumber;
     if (relevantNumbers.length > 0) {
-      // Hitung rata-rata dari angka-angka yang relevan
       const avg = relevantNumbers.reduce((a, b) => a + b, 0) / relevantNumbers.length;
       predictedNumber = Math.round(avg);
-      // Pastikan masih dalam rentang
       if (predictedNumber < range[0]) predictedNumber = range[0];
       if (predictedNumber > range[range.length-1]) predictedNumber = range[range.length-1];
       console.log(`🔢 Prediksi angka (dari ${relevantNumbers.length} data ${prediction}) rata-rata ${avg.toFixed(1)} -> ${predictedNumber}`);
     } else {
-      // Tidak ada data historis dalam kategori ini, gunakan angka tengah
       predictedNumber = prediction === "KECIL" ? 2 : 7;
       console.log(`🔢 Prediksi angka (tidak ada data ${prediction}) default ${predictedNumber}`);
     }
@@ -226,6 +223,52 @@ CONFIDENCE: 65`;
     }
   }
 
+  // ----- FUNGSI PEMBERSIHAN DATA (HANYA SISAKAN 100 TERBARU) -----
+  async function cleanupFirebaseCollection(path, limit = MAX_DATA_LIMIT) {
+    try {
+      const url = `${FIREBASE_URL}${path}.json`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.warn(`⚠️ Gagal mengambil data dari ${path} untuk pembersihan: ${response.status}`);
+        return;
+      }
+      const data = await response.json();
+      if (!data) return;
+      const keys = Object.keys(data);
+      if (keys.length <= limit) {
+        console.log(`📦 ${path}: data saat ini ${keys.length} ≤ ${limit}, tidak perlu pembersihan.`);
+        return;
+      }
+
+      // Urutkan berdasarkan timestamp (descending) → yang terbaru dulu
+      const entries = keys.map(key => [key, data[key]]);
+      entries.sort((a, b) => {
+        const tsA = a[1]?.timestamp || 0;
+        const tsB = b[1]?.timestamp || 0;
+        return tsB - tsA;
+      });
+
+      const toKeep = entries.slice(0, limit).map(entry => entry[0]);
+      const toDelete = entries.slice(limit).map(entry => entry[0]);
+
+      // Hapus data lama secara paralel
+      const deletePromises = toDelete.map(key =>
+        fetch(`${FIREBASE_URL}${path}/${key}.json`, { method: 'DELETE' })
+      );
+      await Promise.all(deletePromises);
+      console.log(`🧹 Pembersihan ${path}: menyisakan ${toKeep.length} data, dihapus ${toDelete.length} data lama.`);
+    } catch (error) {
+      console.error(`❌ Gagal membersihkan ${path}:`, error);
+    }
+  }
+
+  async function cleanupAllCollections() {
+    const collections = ['results', 'predictions', 'game_issues', 'resets', 'balance_changes'];
+    for (const col of collections) {
+      await cleanupFirebaseCollection(col);
+    }
+  }
+
   function sendResultToFirebase(apiResultData, prediction, isWin, predictedNumber, gameType = 30) {
     const resultData = {
       issue: apiResultData.issueNumber,
@@ -309,6 +352,12 @@ CONFIDENCE: 65`;
 
   /* ========= TELEGRAM ========= */
   function sendTelegram(msg) {
+    if (!enableTelegram) {
+      // Jika dinonaktifkan, tidak kirim ke manapun, dan kosongkan antrian
+      messageQueue = [];
+      isSendingMessage = false;
+      return;
+    }
     sendToGroup(msg, TELEGRAM_GROUPS.primary);
     if (enableMultipleGroups && TELEGRAM_GROUPS.secondary.length) {
       TELEGRAM_GROUPS.secondary.forEach((chatId) => sendToGroup(msg, chatId));
@@ -397,11 +446,8 @@ CONFIDENCE: 65`;
     dailyStats.profit -= currentBetAmount;
     isBetPlaced = true;
 
-    // 🔮 PREDIKSI DARI AI
     currentPrediction = await getAIPrediction();
-    // FIX NUMBER PREDICTION: gunakan fungsi baru yang menghasilkan angka konsisten dengan prediksi AI
     currentNumberPrediction = getNumberByPrediction(currentPrediction);
-    
     predictedAt = new Date();
     predictedIssue = nextIssueNumber;
 
@@ -610,16 +656,34 @@ CONFIDENCE: 65`;
         sendTelegram(message);
       }
     }, 2000);
+
+    // 🔥 Pembersihan data: jalankan setiap 5 menit dan sekali saat startup
+    setInterval(cleanupAllCollections, 300000); // 5 menit
+    setTimeout(cleanupAllCollections, 10000);   // 10 detik setelah startup
   })();
 
   window.wingoBot = {
-    check: manualCheck, reset: resetBot, add: addBalance,
+    check: manualCheck,
+    reset: resetBot,
+    add: addBalance,
     activate: () => { isBotActive = true; sendTelegram("✅ BOT DIAKTIFKAN"); },
     deactivate: () => { isBotActive = false; sendTelegram("⏸️ BOT DINONAKTIFKAN"); },
     stats: () => {
       const winRate = totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0;
       console.log(`💰 Saldo: ${virtualBalance.toLocaleString()}\n📈 P/L: ${profitLoss}\n🎯 Bet: ${totalBets} (W:${totalWins}/L:${totalLosses})\n📊 Win Rate: ${winRate}%\n🔥 Streak: ${currentStreak}\n📊 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`);
     },
+    // Fungsi untuk toggle Telegram
+    toggleTelegram: (enable) => {
+      if (enable === undefined) enableTelegram = !enableTelegram;
+      else enableTelegram = !!enable;
+      if (!enableTelegram) {
+        messageQueue = [];
+        isSendingMessage = false;
+      }
+      console.log(`📢 Telegram ${enableTelegram ? 'diaktifkan' : 'dinonaktifkan'}`);
+    },
+    // Fungsi untuk menjalankan pembersihan manual
+    cleanup: cleanupAllCollections,
   };
   window.wingoBetData = {
     get prediction() { return currentPrediction; },
@@ -628,4 +692,5 @@ CONFIDENCE: 65`;
     get balance() { return virtualBalance; },
   };
   console.log("✅ Bot ready! Gunakan window.wingoBot untuk kontrol.");
+  console.log("📢 Telegram aktif? " + (enableTelegram ? "YA" : "TIDAK"));
 })();
