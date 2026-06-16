@@ -14,126 +14,154 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
         body {
-            background: #f8f9fa;
-            padding-bottom: 70px;
+            background: #0b1120;
+            color: #e8edf5;
+            padding-bottom: 80px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
         }
         .container {
             max-width: 600px;
-            margin: 0 auto;
+            width: 100%;
             padding: 12px;
+            margin: 0 auto;
         }
+
         /* Header */
         .header {
-            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-            border-radius: 16px;
-            padding: 10px 12px;
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            border-radius: 20px;
+            padding: 14px 16px;
             margin-bottom: 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             color: white;
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
         .header h1 {
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
         .user-info {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
         .user-name {
-            background: rgba(255,255,255,0.2);
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 0.65rem;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
         }
         .logout-btn {
-            background: #333;
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 0.65rem;
-            cursor: pointer;
+            background: rgba(0,0,0,0.4);
             border: none;
             color: white;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 600;
         }
+        .logout-btn:hover { background: rgba(0,0,0,0.6); }
+
         .online-indicator {
             display: flex;
             align-items: center;
-            gap: 4px;
-            background: rgba(255,255,255,0.2);
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 0.65rem;
+            gap: 5px;
+            background: rgba(255,255,255,0.12);
+            padding: 4px 12px 4px 8px;
+            border-radius: 30px;
+            font-size: 0.7rem;
             cursor: pointer;
             position: relative;
+            font-weight: 600;
         }
         .online-dot {
             width: 8px;
             height: 8px;
-            background-color: #4ade80;
+            background: #4ade80;
             border-radius: 50%;
-            animation: pulse 1.5s infinite;
+            display: inline-block;
+            animation: pulse 1.8s infinite;
         }
         @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
+            0% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.3); }
+            100% { opacity: 0.6; transform: scale(1); }
         }
         .online-tooltip {
             position: absolute;
-            top: 30px;
+            top: 36px;
             right: 0;
-            background: white;
-            color: #333;
-            border-radius: 12px;
-            padding: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            background: #1e293b;
+            color: #e8edf5;
+            border-radius: 16px;
+            padding: 12px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.6);
             z-index: 1000;
-            min-width: 160px;
+            min-width: 180px;
             display: none;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
+            border: 1px solid #334155;
         }
-        .online-tooltip.show {
-            display: block;
-        }
+        .online-tooltip.show { display: block; }
+        .online-tooltip h4 { margin-bottom: 8px; color: #facc15; }
+        #onlineUsersList { list-style: none; padding: 0; max-height: 120px; overflow-y: auto; }
+        #onlineUsersList li { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid #2d3f5e; }
+        .user-avatar { display: inline-block; width: 22px; height: 22px; background: #3b82f6; border-radius: 50%; text-align: center; line-height: 22px; font-size: 0.65rem; font-weight: 700; color: white; }
+
         /* Prediction Box */
         .prediction-box {
             background: #0f172a;
-            border-radius: 20px;
-            padding: 12px;
+            border-radius: 24px;
+            padding: 16px;
             margin-bottom: 16px;
-            color: white;
+            border: 1px solid #1e293b;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
         .timer-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .timer-label {
             font-size: 0.85rem;
             color: #94a3b8;
+            font-weight: 500;
         }
         #timerDisplay {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 2.2rem;
+            font-weight: 800;
             color: #f87171;
+            background: rgba(248, 113, 113, 0.1);
+            padding: 0 16px;
+            border-radius: 40px;
+            line-height: 1.4;
         }
         .prediction-title {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-align: center;
-            margin: 6px 0;
-            color: #fca5a5;
+            color: #94a3b8;
+            margin: 4px 0 8px;
+            letter-spacing: 1px;
+            font-weight: 600;
         }
         .chart-container {
-            margin: 6px 0;
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 5px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 6px;
+            margin-bottom: 6px;
         }
         canvas {
             max-height: 90px;
@@ -141,131 +169,225 @@
         }
         .final-prediction {
             text-align: center;
-            background: linear-gradient(135deg, #dc2626, #991b1b);
-            border-radius: 40px;
-            padding: 6px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            margin-top: 6px;
-        }
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 8px;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .stat-card h3 {
-            font-size: 0.65rem;
-            color: #666;
-            margin-bottom: 2px;
-        }
-        .stat-card .value {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            border-radius: 50px;
+            padding: 10px;
             font-size: 1rem;
-            font-weight: bold;
-            color: #dc2626;
+            font-weight: 700;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(220,38,38,0.3);
         }
-        /* New balance cards */
+
+        /* Balance Cards */
         .balance-row {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
         }
         .balance-card {
             background: linear-gradient(135deg, #1e293b, #0f172a);
-            border-radius: 12px;
-            padding: 8px;
+            border-radius: 16px;
+            padding: 12px;
             text-align: center;
-            color: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            border: 1px solid #2d3f5e;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         .balance-card h3 {
             font-size: 0.7rem;
-            color: #cbd5e1;
+            color: #94a3b8;
+            font-weight: 500;
             margin-bottom: 4px;
         }
         .balance-card .value {
-            font-size: 1.1rem;
-            font-weight: bold;
+            font-size: 1.2rem;
+            font-weight: 700;
             color: #facc15;
         }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .stat-card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #2d3f5e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .stat-card h3 {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        .stat-card .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #facc15;
+        }
+
+        /* Summary */
         .summary {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            margin-bottom: 12px;
+            gap: 8px;
+            margin-bottom: 14px;
         }
         .summary-item {
-            background: white;
-            border-radius: 10px;
-            padding: 6px;
+            background: #1e293b;
+            border-radius: 14px;
+            padding: 10px 4px;
             text-align: center;
+            border: 1px solid #2d3f5e;
         }
         .summary-value {
-            font-size: 0.9rem;
-            font-weight: bold;
-            color: #dc2626;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #facc15;
         }
         .summary-label {
             font-size: 0.6rem;
-            color: #666;
+            color: #94a3b8;
+            margin-top: 2px;
         }
+
         /* Controls */
         .controls {
-            background: white;
-            border-radius: 12px;
-            padding: 8px;
-            margin-bottom: 12px;
+            background: #1e293b;
+            border-radius: 18px;
+            padding: 10px 12px;
+            margin-bottom: 14px;
             display: flex;
-            gap: 6px;
+            gap: 8px;
             flex-wrap: wrap;
+            align-items: center;
+            border: 1px solid #2d3f5e;
         }
         .filter-input {
             flex: 1;
-            padding: 6px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            min-width: 100px;
+            padding: 8px 12px;
+            border: 1px solid #334155;
+            border-radius: 40px;
             font-size: 0.7rem;
+            background: #0f172a;
+            color: #e8edf5;
+            outline: none;
         }
+        .filter-input:focus { border-color: #facc15; }
         .btn {
             background: #dc2626;
             color: white;
             border: none;
-            border-radius: 8px;
-            padding: 6px 10px;
-            font-size: 0.7rem;
+            border-radius: 40px;
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
             cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
         }
+        .btn:hover { background: #b91c1c; transform: scale(0.96); }
         #connectionStatus {
-            background: #dcfce7;
-            color: #166534;
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 0.65rem;
+            background: #0f172a;
+            color: #4ade80;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: 1px solid #2d3f5e;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
         }
+
+        /* Pagination */
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e293b;
+            padding: 8px 14px;
+            border-radius: 40px;
+            margin: 6px 0 12px;
+            border: 1px solid #2d3f5e;
+        }
+        .pagination-btn {
+            background: #2d3f5e;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 30px;
+            color: white;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .pagination-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        #pageInfo { font-size: 0.75rem; font-weight: 600; color: #94a3b8; }
+
+        /* Table */
+        .table-container {
+            border-radius: 18px;
+            background: #1e293b;
+            overflow-x: auto;
+            border: 1px solid #2d3f5e;
+            margin: 6px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.7rem;
+        }
+        th {
+            background: #0f172a;
+            color: #facc15;
+            padding: 10px 6px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.65rem;
+        }
+        td {
+            padding: 10px 6px;
+            border-bottom: 1px solid #2d3f5e;
+            color: #e8edf5;
+        }
+        tr:last-child td { border-bottom: none; }
+        .result-win { background: #065f46; color: #6ee7b7; padding: 2px 10px; border-radius: 30px; display: inline-block; font-weight: 700; }
+        .result-lose { background: #7f1d1d; color: #fca5a5; padding: 2px 10px; border-radius: 30px; display: inline-block; font-weight: 700; }
+        .result-waiting { background: #78350f; color: #fcd34d; padding: 2px 10px; border-radius: 30px; display: inline-block; font-weight: 700; }
+        .colour-dots { display: flex; gap: 4px; justify-content: center; }
+        .colour-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #334155; }
+        .colour-red { background: #ef4444; }
+        .colour-green { background: #22c55e; }
+        .colour-violet { background: #a855f7; }
+
+        .loading, .empty-state {
+            text-align: center;
+            padding: 30px 10px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
         /* Bottom Navigation */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: white;
+            background: #0f172a;
             display: flex;
             justify-content: space-around;
-            padding: 6px 8px;
-            border-top: 1px solid #eee;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            padding: 6px 8px 10px;
+            border-top: 1px solid #1e293b;
+            box-shadow: 0 -8px 24px rgba(0,0,0,0.6);
             z-index: 100;
         }
         .nav-item {
@@ -275,180 +397,109 @@
             background: none;
             border: none;
             font-size: 0.6rem;
-            color: #666;
+            color: #94a3b8;
             cursor: pointer;
-            padding: 4px;
-            border-radius: 20px;
-            transition: all 0.2s;
-        }
-        .nav-item.active {
-            color: #dc2626;
-            font-weight: bold;
-        }
-        .nav-icon {
-            font-size: 1rem;
-        }
-        /* Tab Content */
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        /* Table */
-        .table-container {
-            overflow-x: auto;
-            border-radius: 12px;
-            background: white;
-            margin-top: 6px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.65rem;
-        }
-        th {
-            background: #dc2626;
-            color: white;
-            padding: 6px 4px;
+            padding: 4px 8px;
+            border-radius: 30px;
+            transition: 0.2s;
             font-weight: 600;
         }
-        td {
-            padding: 6px 4px;
-            border-bottom: 1px solid #f0f0f0;
-            font-weight: bold;
-        }
-        .result-win {
-            background-color: #dcfce7;
-            color: #166534;
-            padding: 2px 6px;
-            border-radius: 12px;
-            display: inline-block;
-            font-weight: bold;
-        }
-        .result-lose {
-            background-color: #fee2e2;
-            color: #991b1b;
-            padding: 2px 6px;
-            border-radius: 12px;
-            display: inline-block;
-            font-weight: bold;
-        }
-        .result-waiting {
-            background-color: #fff3cd;
-            color: #856404;
-            padding: 2px 6px;
-            border-radius: 12px;
-            display: inline-block;
-            font-weight: bold;
-        }
-        .colour-dots {
-            display: flex;
-            gap: 2px;
-        }
-        .colour-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-        .colour-red { background: #ff4444; }
-        .colour-green { background: #44ff44; }
-        .colour-violet { background: #aa44ff; }
-        .pagination-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: white;
-            padding: 6px;
-            border-radius: 12px;
-            margin: 6px 0;
-        }
-        .pagination-btn {
-            background: #f0f0f0;
-            border: none;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.65rem;
-            cursor: pointer;
-        }
-        .pagination-btn:disabled {
-            opacity: 0.5;
-        }
-        #pageInfo {
-            font-size: 0.65rem;
-        }
-        .last-update {
-            text-align: center;
-            font-size: 0.55rem;
-            color: #888;
-            margin: 12px 0;
-        }
-        .loading, .empty-state {
-            text-align: center;
-            padding: 20px;
-            color: #777;
-            font-size: 0.7rem;
-        }
-        /* Login pages */
+        .nav-item.active { color: #facc15; background: #1e293b; padding: 4px 14px; }
+        .nav-icon { font-size: 1.2rem; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Login */
         .login-container, .set-password-container {
             max-width: 400px;
             margin: 50px auto;
-            background: white;
-            border-radius: 20px;
-            padding: 30px 20px;
+            background: #1e293b;
+            border-radius: 30px;
+            padding: 30px 24px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            border: 1px solid #2d3f5e;
         }
+        .login-container h2, .set-password-container h2 { color: #facc15; margin-bottom: 8px; }
+        .login-container p { color: #94a3b8; margin-bottom: 20px; }
         .login-input {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            margin-bottom: 15px;
+            padding: 14px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 40px;
+            color: white;
             font-size: 1rem;
+            margin-bottom: 16px;
+            outline: none;
         }
+        .login-input:focus { border-color: #facc15; }
         .login-btn {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background: #dc2626;
             color: white;
             border: none;
-            border-radius: 12px;
-            font-weight: 600;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1rem;
             cursor: pointer;
+            transition: 0.2s;
             margin-bottom: 10px;
         }
-        .register-btn {
-            background: #2563eb;
-        }
-        .login-error {
-            color: red;
-            margin-top: 10px;
-            font-size: 0.8rem;
-        }
+        .login-btn:hover { background: #b91c1c; }
+        .register-btn { background: #2563eb; }
+        .register-btn:hover { background: #1d4ed8; }
+        .login-error { color: #f87171; margin-top: 12px; font-size: 0.85rem; }
         .online-indicator-public {
-            margin-top: 15px;
+            margin-top: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            background: #f0f0f0;
-            padding: 8px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            color: #94a3b8;
         }
+        .online-indicator-public .online-dot { width: 10px; height: 10px; }
+
+        /* Last update */
+        .last-update {
+            text-align: center;
+            font-size: 0.6rem;
+            color: #4f688b;
+            margin: 16px 0 8px;
+        }
+
+        /* Animations */
         @keyframes flash {
             0% { background: linear-gradient(135deg,#dc2626 0%,#991b1b 100%); }
             50% { background: linear-gradient(135deg,#22c55e 0%,#15803d 100%); }
             100% { background: linear-gradient(135deg,#dc2626 0%,#991b1b 100%); }
         }
-        .header {
-            transition: background 0.3s;
-        }
         @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        #winStreakPopup > div { animation: fadeIn 0.4s ease; }
+
+        /* mobile tweaks */
+        @media (max-width: 480px) {
+            .container { padding: 8px; }
+            .header h1 { font-size: 1rem; }
+            .balance-card .value { font-size: 1rem; }
+            .stat-card .value { font-size: 0.95rem; }
+            .summary-value { font-size: 0.9rem; }
+            .controls { gap: 6px; }
+            .filter-input { min-width: 70px; font-size: 0.65rem; }
+            .btn { font-size: 0.65rem; padding: 6px 12px; }
+            .final-prediction { font-size: 0.9rem; }
+            table { font-size: 0.6rem; }
+            th, td { padding: 6px 4px; }
+        }
     </style>
 </head>
 <body>
@@ -465,18 +516,18 @@
             <span class="online-dot"></span>
             <span id="publicOnlineCount">0</span> Pengguna Online
         </div>
-        <div style="margin-top:20px; font-size:0.7rem; color:#888;">Hubungi admin untuk pendaftaran</div>
+        <div style="margin-top:20px; font-size:0.7rem; color:#4f688b;">Hubungi admin untuk pendaftaran</div>
     </div>
 
     <!-- Set Password Page -->
     <div id="setPasswordPage" class="set-password-container" style="display:none;">
-    <h2>🔐 Buat Password</h2>
-    <p>UID Anda sudah terdaftar. Buat password untuk mengakses dashboard.</p>
-    <input type="password" id="newPassword" class="login-input" placeholder="Password baru">
-    <input type="password" id="confirmPassword" class="login-input" placeholder="Konfirmasi Password">
-    <button class="login-btn" onclick="setPassword()">💾 Simpan Password</button>
-    <div id="setPasswordError" class="login-error"></div>
-</div>
+        <h2>🔐 Buat Password</h2>
+        <p>UID Anda sudah terdaftar. Buat password untuk mengakses dashboard.</p>
+        <input type="password" id="newPassword" class="login-input" placeholder="Password baru">
+        <input type="password" id="confirmPassword" class="login-input" placeholder="Konfirmasi Password">
+        <button class="login-btn" onclick="setPassword()">💾 Simpan Password</button>
+        <div id="setPasswordError" class="login-error"></div>
+    </div>
 
     <!-- Dashboard -->
     <div id="dashboardContent" style="display:none;">
@@ -511,11 +562,11 @@
                 <div class="final-prediction" id="hasilPrediksi">PREDIKSI: Menunggu...</div>
             </div>
 
-            <!-- NEW: Balance Cards -->
+            <!-- Balance Cards -->
             <div class="balance-row">
                 <div class="balance-card">
                     <h3>💰 Saldo Awal</h3>
-                    <div class="value" id="initialBalance">Rp.247.000</div>
+                    <div class="value" id="initialBalance">Rp 2.916.000</div>
                 </div>
                 <div class="balance-card">
                     <h3>💵 Saldo Total</h3>
@@ -523,7 +574,7 @@
                 </div>
             </div>
 
-            <!-- Stats Grid (existing) -->
+            <!-- Stats Grid -->
             <div class="stats-grid">
                 <div class="stat-card"><h3>🎲 Total Taruhan</h3><div class="value" id="totalBets">0</div></div>
                 <div class="stat-card"><h3>📈 Win Rate</h3><div class="value" id="winRate">0%</div></div>
@@ -546,7 +597,7 @@
                 <span id="connectionStatus" class="status-connected">✅ Terhubung</span>
             </div>
 
-            <!-- Tab Content: Results (active) -->
+            <!-- Tab Content: Results -->
             <div id="resultsTab" class="tab-content active">
                 <div class="pagination-controls">
                     <span>Total: <span id="totalRecords">0</span></span>
@@ -557,7 +608,7 @@
                     </div>
                 </div>
                 <div class="table-container">
-                    <table id="resultsTable">
+                    <table>
                         <thead>
                             <tr><th>Periode</th><th>Angka</th><th>Prediksi</th><th>Warna</th><th>Hasil</th><th>Taruhan</th><th>Status</th></tr>
                         </thead>
@@ -575,7 +626,7 @@
             </div>
 
             <div id="reportsTab" class="tab-content">
-                <div class="table-container"><tr><thead><tr><th>Tanggal</th><th>Taruhan</th><th>Menang</th><th>Kalah</th><th>Win Rate</th><th>Profit</th></tr></thead><tbody id="reportsBody"></tbody></table></div>
+                <div class="table-container"><table><thead><tr><th>Tanggal</th><th>Taruhan</th><th>Menang</th><th>Kalah</th><th>Win Rate</th><th>Profit</th></tr></thead><tbody id="reportsBody"></tbody></table></div>
                 <div class="loading" id="loadingReports">Memuat...</div>
                 <div class="empty-state" id="emptyReports" style="display:none;">📭 Tidak ada data</div>
             </div>
@@ -609,8 +660,8 @@
         <source src="https://splendid-queijadas-d948bb.netlify.app/sound%2030%20detik.mp3" type="audio/mpeg">
     </audio>
     <audio id="victorySound" preload="auto">
-    <source src="https://splendid-queijadas-d948bb.netlify.app/Victory.mp3" type="audio/mpeg">
-</audio>
+        <source src="https://splendid-queijadas-d948bb.netlify.app/Victory.mp3" type="audio/mpeg">
+    </audio>
 
     <script>
         // ========== FIREBASE CONFIG ==========
@@ -645,14 +696,11 @@
         let lastResultTimestamp = 0;
         let chart;
         let currentUid = null, currentUserData = null, presenceRef = null;
-        let lastNotifiedStreak = 0;   // untuk mencegah popup berulang pada streak yang sama
-let victorySound = null;      // akan diinisialisasi setelah DOM ready
-        
-        // TIMER LOKAL HARDCODE 30 DETIK
+        let lastNotifiedStreak = 0;
+        let victorySound = null;
         let countdownSeconds = 30;
         let countdownInterval = null;
 
-        // Helper functions
         function formatNumber(num) {
             if (num === undefined || num === null) return '0';
             return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -668,159 +716,124 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
             return html + '</div>';
         }
 
-        // Update total balance dari prediksi terbaru
         function updateBalanceDisplay() {
             if (allPredictions.length > 0 && allPredictions[0].balanceAfterBet !== undefined) {
-                const latestBalance = allPredictions[0].balanceAfterBet;
-                document.getElementById('totalBalance').innerHTML = `Rp ${formatNumber(latestBalance)}`;
+                document.getElementById('totalBalance').innerHTML = `Rp ${formatNumber(allPredictions[0].balanceAfterBet)}`;
             } else {
                 document.getElementById('totalBalance').innerHTML = 'Rp 0';
             }
         }
 
-        // ========== COUNTDOWN HARDCODE ==========
+        // ========== COUNTDOWN ==========
         function startCountdown(initialSeconds = 30) {
             if (countdownInterval) clearInterval(countdownInterval);
             countdownSeconds = initialSeconds;
             document.getElementById('timerDisplay').textContent = countdownSeconds;
-            
             countdownInterval = setInterval(() => {
                 if (countdownSeconds > 0) {
                     countdownSeconds--;
                     document.getElementById('timerDisplay').textContent = countdownSeconds;
                 } else {
-                    if (countdownInterval) {
-                        clearInterval(countdownInterval);
-                        countdownInterval = null;
-                    }
+                    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
                 }
             }, 1000);
         }
-        
-        function resetCountdown() {
-            startCountdown(30);
-        }
+        function resetCountdown() { startCountdown(30); }
 
-        // ========== NOTIFIKASI SUARA ==========
+        // ========== SOUND ==========
         function playNotificationSound() {
             if (!soundEnabled) return;
             flashHeader();
             const audio = document.getElementById('sound30s');
-            if (audio) {
-                audio.pause();
-                audio.currentTime = 0;
-                audio.play().catch(e => console.log('Audio play error:', e));
-            }
+            if (audio) { audio.pause(); audio.currentTime = 0; audio.play().catch(e => console.log('Audio error:', e)); }
         }
-
         function flashHeader() {
             const header = document.querySelector('.header');
             header.style.animation = 'none';
             setTimeout(() => header.style.animation = 'flash 0.5s ease', 10);
         }
         function showWinStreakPopup(streak) {
-    // Hapus popup sebelumnya jika ada
-    const existing = document.getElementById('winStreakPopup');
-    if (existing) existing.remove();
-    
-    const popup = document.createElement('div');
-    popup.id = 'winStreakPopup';
-    popup.innerHTML = `
-        <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:10000; animation:fadeIn 0.3s;">
-            <div style="background:linear-gradient(135deg, #fbbf24, #f59e0b); padding:30px; border-radius:30px; text-align:center; box-shadow:0 0 50px gold; max-width:90%;">
-                <h1 style="font-size:4rem; margin:0; color:#1e293b;">🔥 WIN STREAK ${streak}X 🔥</h1>
-                <p style="font-size:1.5rem; color:#0f172a;">Selamat! Anda mendapatkan bonus!</p>
-                <button onclick="this.parentElement.parentElement.remove()" style="margin-top:20px; padding:10px 30px; background:#0f172a; color:white; border:none; border-radius:50px; font-size:1.2rem; cursor:pointer;">Tutup</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(popup);
-    
-    // Auto close setelah 5 detik
-    setTimeout(() => {
-        const p = document.getElementById('winStreakPopup');
-        if (p) p.remove();
-    }, 5000);
-}
+            const existing = document.getElementById('winStreakPopup');
+            if (existing) existing.remove();
+            const popup = document.createElement('div');
+            popup.id = 'winStreakPopup';
+            popup.innerHTML = `
+                <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:10000; animation:fadeIn 0.3s;">
+                    <div style="background:linear-gradient(135deg, #fbbf24, #f59e0b); padding:30px; border-radius:30px; text-align:center; box-shadow:0 0 50px gold; max-width:90%;">
+                        <h1 style="font-size:4rem; margin:0; color:#1e293b;">🔥 WIN STREAK ${streak}X 🔥</h1>
+                        <p style="font-size:1.5rem; color:#0f172a;">Selamat! Anda mendapatkan bonus!</p>
+                        <button onclick="this.parentElement.parentElement.remove()" style="margin-top:20px; padding:10px 30px; background:#0f172a; color:white; border:none; border-radius:50px; font-size:1.2rem; cursor:pointer;">Tutup</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+            setTimeout(() => { const p = document.getElementById('winStreakPopup'); if (p) p.remove(); }, 5000);
+        }
 
         // ========== FIREBASE DATA LOAD ==========
-     function loadAllData() {
-    // Listener untuk RESULTS
-    analyticsDb.ref('results').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
-        const oldFirstTimestamp = allResults.length > 0 ? allResults[0].timestamp : null;
-        allResults = [];
-        snapshot.forEach((child) => {
-            const data = child.val();
-            data.id = child.key;
-            allResults.unshift(data);
-        });
-        const newFirstTimestamp = allResults.length > 0 ? allResults[0].timestamp : null;
-        if (newFirstTimestamp && newFirstTimestamp !== oldFirstTimestamp) {
-            playNotificationSound();
-            resetCountdown();
-            
-            const latestResult = allResults[0];
-            if (latestResult.isWin) {
-                const streak = latestResult.currentStreak || 0;
-                if (streak >= 6 && streak > lastNotifiedStreak) {
-                    if (victorySound) {
-                        victorySound.currentTime = 0;
-                        victorySound.play().catch(e => console.log('Gagal mainkan sound victory', e));
-                    }
-                    showWinStreakPopup(streak);
-                    lastNotifiedStreak = streak;
-                }
-            } else {
-                lastNotifiedStreak = 0;
-            }
-            lastResultTimestamp = newFirstTimestamp;
-        } else if (allResults.length > 0 && !oldFirstTimestamp) {
-            resetCountdown();
+        function loadAllData() {
+            analyticsDb.ref('results').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
+                const oldFirstTimestamp = allResults.length > 0 ? allResults[0].timestamp : null;
+                allResults = [];
+                snapshot.forEach((child) => {
+                    const data = child.val();
+                    data.id = child.key;
+                    allResults.unshift(data);
+                });
+                const newFirstTimestamp = allResults.length > 0 ? allResults[0].timestamp : null;
+                if (newFirstTimestamp && newFirstTimestamp !== oldFirstTimestamp) {
+                    playNotificationSound();
+                    resetCountdown();
+                    const latestResult = allResults[0];
+                    if (latestResult.isWin) {
+                        const streak = latestResult.currentStreak || 0;
+                        if (streak >= 6 && streak > lastNotifiedStreak) {
+                            if (victorySound) { victorySound.currentTime = 0; victorySound.play().catch(e => {}); }
+                            showWinStreakPopup(streak);
+                            lastNotifiedStreak = streak;
+                        }
+                    } else { lastNotifiedStreak = 0; }
+                    lastResultTimestamp = newFirstTimestamp;
+                } else if (allResults.length > 0 && !oldFirstTimestamp) { resetCountdown(); }
+                updateChartFromResults();
+                mergeDataAndDisplay();
+                updateStats();
+            }, showConnectionError);
+
+            analyticsDb.ref('predictions').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
+                allPredictions = [];
+                snapshot.forEach((child) => {
+                    const data = child.val();
+                    data.id = child.key;
+                    allPredictions.unshift(data);
+                });
+                updatePredictionFromData();
+                mergeDataAndDisplay();
+                updateBalanceDisplay();
+                updateStats();
+            }, showConnectionError);
+
+            analyticsDb.ref('daily_reports').orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => {
+                allReports = [];
+                snapshot.forEach((child) => allReports.unshift(child.val()));
+                displayReports();
+            }, showConnectionError);
+
+            analyticsDb.ref('safety_events').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+                allSafetyEvents = [];
+                snapshot.forEach((child) => allSafetyEvents.unshift(child.val()));
+                displaySafetyEvents();
+            }, showConnectionError);
+
+            analyticsDb.ref('balance_changes').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+                allBalanceChanges = [];
+                snapshot.forEach((child) => allBalanceChanges.unshift(child.val()));
+                displayBalanceChanges();
+            }, showConnectionError);
+
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
+            document.getElementById('connectionStatus').innerHTML = '✅ Terhubung';
         }
-        updateChartFromResults();
-        mergeDataAndDisplay();
-        updateStats();
-    }, showConnectionError);
-
-    // ========== TAMBAHAN: LISTENER UNTUK PREDICTIONS ==========
-    analyticsDb.ref('predictions').orderByChild('timestamp').limitToLast(1000).on('value', (snapshot) => {
-        allPredictions = [];
-        snapshot.forEach((child) => {
-            const data = child.val();
-            data.id = child.key;
-            allPredictions.unshift(data);
-        });
-        updatePredictionFromData();   // update kotak prediksi
-        mergeDataAndDisplay();        // update tabel (menampilkan prediksi yang belum ada hasil)
-        updateBalanceDisplay();       // update saldo total
-        updateStats();                // update statistik
-    }, showConnectionError);
-
-    // Listener untuk DAILY REPORTS
-    analyticsDb.ref('daily_reports').orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => {
-        allReports = [];
-        snapshot.forEach((child) => allReports.unshift(child.val()));
-        displayReports();
-    }, showConnectionError);
-
-    // Listener untuk SAFETY EVENTS
-    analyticsDb.ref('safety_events').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
-        allSafetyEvents = [];
-        snapshot.forEach((child) => allSafetyEvents.unshift(child.val()));
-        displaySafetyEvents();
-    }, showConnectionError);
-
-    // Listener untuk BALANCE CHANGES
-    analyticsDb.ref('balance_changes').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
-        allBalanceChanges = [];
-        snapshot.forEach((child) => allBalanceChanges.unshift(child.val()));
-        displayBalanceChanges();
-    }, showConnectionError);
-
-    document.getElementById('lastUpdate').textContent = new Date().toLocaleString('id-ID');
-    document.getElementById('connectionStatus').innerHTML = '<span>✅</span> Terhubung';
-    document.getElementById('connectionStatus').className = 'status-connected';
-}
 
         function updatePredictionFromData() {
             const el = document.getElementById('hasilPrediksi');
@@ -971,22 +984,24 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
         }
         function refreshData() {
             currentPage = 1;
-            document.getElementById('connectionStatus').innerHTML = '<span>⏳</span> Memuat...';
+            document.getElementById('connectionStatus').innerHTML = '⏳ Memuat...';
             loadAllData();
         }
         function showConnectionError() {
-            document.getElementById('connectionStatus').innerHTML = '<span>❌</span> Gagal koneksi';
+            document.getElementById('connectionStatus').innerHTML = '❌ Gagal koneksi';
         }
 
-        // ========== LOGIN & AUTH ==========
+        // ========== LOGIN & AUTH (dengan debug) ==========
         const fakeNames = ["MemberNpkl","TraderJaya","Investor88","BotMaster","PrediksiGacor","WingoKing","JpTerus","PausBesar","SultanSaldo","CuanTerus"];
         function generateFakeName(i) { return fakeNames[i%fakeNames.length] + Math.floor(Math.random()*1000); }
+
         function checkLogin() {
             const savedUid = localStorage.getItem('wingo_uid');
             if (savedUid) {
                 authDb.ref('uids/' + savedUid).once('value').then(snapshot => {
                     if (snapshot.exists()) {
                         const userData = snapshot.val();
+                        console.log('🔍 [checkLogin] Data user:', userData);
                         if (userData.active === false) { localStorage.removeItem('wingo_uid'); showLogin(); document.getElementById('loginError').textContent = 'Akun dinonaktifkan.'; return; }
                         if (userData.password) { currentUid = savedUid; currentUserData = userData; showDashboard(); }
                         else { localStorage.removeItem('wingo_uid'); showSetPassword(savedUid); }
@@ -994,6 +1009,7 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
                 }).catch(() => showLogin());
             } else { showLogin(); }
         }
+
         function showLogin() {
             document.getElementById('loginPage').style.display = 'block';
             document.getElementById('setPasswordPage').style.display = 'none';
@@ -1001,13 +1017,15 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
             document.getElementById('bottomNav').style.display = 'none';
             startPublicOnlineCounter();
         }
+
         function showSetPassword(uid) {
-    document.getElementById('loginPage').style.display = 'none';
-    document.getElementById('setPasswordPage').style.display = 'block';
-    document.getElementById('dashboardContent').style.display = 'none';
-    document.getElementById('setPasswordPage').dataset.uid = uid;
-    stopPublicOnlineCounter(); // jika ada, atau abaikan
-}
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('setPasswordPage').style.display = 'block';
+            document.getElementById('dashboardContent').style.display = 'none';
+            document.getElementById('setPasswordPage').dataset.uid = uid;
+            stopPublicOnlineCounter();
+        }
+
         function showDashboard() {
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('setPasswordPage').style.display = 'none';
@@ -1018,11 +1036,14 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
             setupPresence();
             stopPublicOnlineCounter();
         }
+
         function updateUserDisplay() {
             const nameEl = document.getElementById('userDisplayName');
             if (currentUserData && currentUserData.nickName) nameEl.textContent = `👤 ${currentUserData.nickName}`;
             else nameEl.textContent = '';
         }
+
+        // ---- handleLogin dengan debug ----
         function handleLogin() {
     const uid = document.getElementById('uidInput').value.trim();
     const pwd = document.getElementById('passwordInput').value.trim();
@@ -1035,14 +1056,17 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
 
     errorEl.textContent = 'Memeriksa...';
 
-    authDb.ref('uids/' + uid).once('value').then(snapshot => {
+    // 🔥 PAKAI get() biar selalu fresh dari server
+    authDb.ref('uids/' + uid).get().then(snapshot => {
         if (snapshot.exists()) {
             const userData = snapshot.val();
+            console.log('🔍 [handleLogin] Data user dari Firebase (FRESH):', userData);
+
             if (userData.active === false) {
                 errorEl.textContent = 'Akun dinonaktifkan.';
                 return;
             }
-            // CEK APAKAH USER SUDAH PUNYA PASSWORD
+
             if (userData.password) {
                 if (userData.password === pwd) {
                     localStorage.setItem('wingo_uid', uid);
@@ -1053,46 +1077,60 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
                     errorEl.textContent = 'Password salah';
                 }
             } else {
-                // UID ada tapi BELUM punya password
                 errorEl.textContent = 'UID ini belum memiliki password. Silakan buat password.';
                 showSetPassword(uid);
             }
         } else {
             errorEl.textContent = 'UID tidak terdaftar. Silakan daftar terlebih dahulu.';
         }
-    }).catch(() => {
+    }).catch((err) => {
+        console.error('❌ Gagal mengambil data user:', err);
         errorEl.textContent = 'Gagal menghubungi database';
     });
 }
+
+        // ---- setPassword dengan debug ----
         function setPassword() {
-    const newPass = document.getElementById('newPassword').value.trim();
-    const confirmPass = document.getElementById('confirmPassword').value.trim();
-    const errorEl = document.getElementById('setPasswordError');
-    const uid = document.getElementById('setPasswordPage').dataset.uid;
+            const newPass = document.getElementById('newPassword').value.trim();
+            const confirmPass = document.getElementById('confirmPassword').value.trim();
+            const errorEl = document.getElementById('setPasswordError');
+            const uid = document.getElementById('setPasswordPage').dataset.uid;
 
-    if (!newPass || !confirmPass) {
-        errorEl.textContent = 'Password tidak boleh kosong';
-        return;
-    }
-    if (newPass !== confirmPass) {
-        errorEl.textContent = 'Password tidak cocok';
-        return;
-    }
+            if (!newPass || !confirmPass) {
+                errorEl.textContent = 'Password tidak boleh kosong';
+                return;
+            }
+            if (newPass !== confirmPass) {
+                errorEl.textContent = 'Password tidak cocok';
+                return;
+            }
 
-    errorEl.textContent = 'Menyimpan...';
-    authDb.ref('uids/' + uid).update({ password: newPass })
-        .then(() => {
-            errorEl.textContent = 'Password berhasil disimpan! Silakan login.';
-            setTimeout(() => showLogin(), 2000);
-        })
-        .catch(() => errorEl.textContent = 'Gagal menyimpan password');
-}
-        function showRegisterOptions() { alert("Untuk mendapatkan akses, hubungi admin via Telegram @PredictorUser"); window.open('https://www.lixnobe.com/#/register?invitationCode=DtX6m351494', '_blank'); }
+            errorEl.textContent = 'Menyimpan...';
+            console.log(`💾 Menyimpan password untuk UID: ${uid}`);
+
+            authDb.ref('uids/' + uid).update({ password: newPass })
+                .then(() => {
+                    console.log('✅ Password berhasil disimpan!');
+                    errorEl.textContent = 'Password berhasil disimpan! Silakan login.';
+                    setTimeout(() => showLogin(), 2000);
+                })
+                .catch((err) => {
+                    console.error('❌ Gagal menyimpan password:', err);
+                    errorEl.textContent = 'Gagal menyimpan password';
+                });
+        }
+
+        function showRegisterOptions() {
+            alert("Untuk mendapatkan akses, hubungi admin via Telegram @PredictorUser");
+            window.open('https://www.lixnobe.com/#/register?invitationCode=DtX6m351494', '_blank');
+        }
+
         function logout() {
             if (presenceRef) presenceRef.remove().catch(()=>{});
             localStorage.removeItem('wingo_uid');
             currentUid = null; currentUserData = null;
             if (countdownInterval) clearInterval(countdownInterval);
+            console.log('👋 Logout, localStorage cleared.');
             showLogin();
         }
 
@@ -1127,48 +1165,53 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
                 const targetTotal = 1200 + Math.floor(Math.random() * 300);
                 const needFake = Math.max(0, targetTotal - Object.keys(onlineUsers).length);
                 let displayUsers = { ...onlineUsers };
-                for (let i = 0; i < needFake; i++) { const fakeUid = `fake_${i}_${Date.now()}`; displayUsers[fakeUid] = { nickName: generateFakeName(i), lastSeen: Date.now() - Math.random()*60000 }; }
+                for (let i = 0; i < needFake; i++) {
+                    const fakeUid = `fake_${i}_${Date.now()}`;
+                    displayUsers[fakeUid] = { nickName: generateFakeName(i), lastSeen: Date.now() - Math.random()*60000 };
+                }
                 document.getElementById('onlineCount').textContent = Object.keys(displayUsers).length;
                 const listEl = document.getElementById('onlineUsersList');
                 listEl.innerHTML = '';
-                Object.values(displayUsers).forEach(user => { const li = document.createElement('li'); const avatar = document.createElement('span'); avatar.className = 'user-avatar'; avatar.textContent = (user.nickName || 'U').charAt(0).toUpperCase(); li.appendChild(avatar); li.appendChild(document.createTextNode(user.nickName || 'Unknown')); listEl.appendChild(li); });
+                Object.values(displayUsers).forEach(user => {
+                    const li = document.createElement('li');
+                    const avatar = document.createElement('span');
+                    avatar.className = 'user-avatar';
+                    avatar.textContent = (user.nickName || 'U').charAt(0).toUpperCase();
+                    li.appendChild(avatar);
+                    li.appendChild(document.createTextNode(user.nickName || 'Unknown'));
+                    listEl.appendChild(li);
+                });
             });
         }
-        function toggleOnlineTooltip() { document.getElementById('onlineTooltip').classList.toggle('show'); }
-        document.addEventListener('click', function(e) { const tooltip = document.getElementById('onlineTooltip'); const indicator = document.querySelector('.online-indicator'); if (!indicator.contains(e.target)) tooltip.classList.remove('show'); });
+        function toggleOnlineTooltip() {
+            document.getElementById('onlineTooltip').classList.toggle('show');
+        }
+        document.addEventListener('click', function(e) {
+            const tooltip = document.getElementById('onlineTooltip');
+            const indicator = document.querySelector('.online-indicator');
+            if (!indicator.contains(e.target)) tooltip.classList.remove('show');
+        });
 
         // ========== DASHBOARD INIT ==========
         function initDashboard() {
             initChart();
-            resetCountdown(); // mulai countdown 30 detik
+            resetCountdown();
             loadAllData();
             setInterval(() => { loadAllData(); }, 30000);
             victorySound = document.getElementById('victorySound');
-            
-            // ========== BOTTOM NAVIGATION EVENT LISTENER ==========
+
             const navItems = document.querySelectorAll('.nav-item');
             const tabContents = document.querySelectorAll('.tab-content');
-            
             function switchTab(tabId) {
-                // Sembunyikan semua tab
                 tabContents.forEach(tab => tab.classList.remove('active'));
-                // Tampilkan tab yang dipilih
                 const activeTab = document.getElementById(tabId);
                 if (activeTab) activeTab.classList.add('active');
-                // Update active class pada nav item
                 navItems.forEach(item => {
                     item.classList.remove('active');
-                    if (item.getAttribute('data-tab') === tabId) {
-                        item.classList.add('active');
-                    }
+                    if (item.getAttribute('data-tab') === tabId) item.classList.add('active');
                 });
-                // Reset halaman ke 1 jika tab hasil yang diaktifkan
-                if (tabId === 'resultsTab') {
-                    currentPage = 1;
-                    displayMergedData();
-                }
+                if (tabId === 'resultsTab') { currentPage = 1; displayMergedData(); }
             }
-            
             navItems.forEach(item => {
                 item.addEventListener('click', (e) => {
                     const tabId = item.getAttribute('data-tab');
@@ -1176,7 +1219,7 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
                 });
             });
         }
-        
+
         function initChart() {
             const ctx = document.getElementById('predictionChart').getContext('2d');
             chart = new Chart(ctx, {
@@ -1186,8 +1229,12 @@ let victorySound = null;      // akan diinisialisasi setelah DOM ready
             });
         }
 
-        document.getElementById('dateFilter').addEventListener('change', () => { if (document.getElementById('resultsTab').classList.contains('active')) { currentPage = 1; displayMergedData(); } });
-        document.getElementById('searchFilter').addEventListener('input', () => { if (document.getElementById('resultsTab').classList.contains('active')) { currentPage = 1; displayMergedData(); } });
+        document.getElementById('dateFilter').addEventListener('change', () => {
+            if (document.getElementById('resultsTab').classList.contains('active')) { currentPage = 1; displayMergedData(); }
+        });
+        document.getElementById('searchFilter').addEventListener('input', () => {
+            if (document.getElementById('resultsTab').classList.contains('active')) { currentPage = 1; displayMergedData(); }
+        });
 
         window.handleLogin = handleLogin;
         window.setPassword = setPassword;
