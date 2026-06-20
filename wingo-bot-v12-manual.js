@@ -15,11 +15,11 @@
   let isSendingMessage = false;
   const MESSAGE_DELAY = 800;
 
-  /* ========= FIREBASE DATABASE (tetap untuk logging) ========= */
+  /* ========= FIREBASE DATABASE ========= */
   const FIREBASE_URL = "https://wingo-bot-analytics-default-rtdb.firebaseio.com/";
 
   /* ========= SALDO VIRTUAL ========= */
-  let virtualBalance = 2916000; // UBAH: saldo awal untuk level 1-8
+  let virtualBalance = 2916000;
   let totalBets = 0;
   let totalWins = 0;
   let totalLosses = 0;
@@ -36,7 +36,7 @@
     profit: 0,
   };
 
-  /* ========= STRATEGI MARTINGALE (LEVEL 1-8) ========= */
+  /* ========= STRATEGI MARTINGALE ========= */
   const betSequence = [1000, 3000, 8000, 24000, 72000, 216000, 648000, 1944000];
   const betLabels = ["1K", "3K", "8K", "24K", "72K", "216K", "648K", "1.944K"];
   let currentBetIndex = 0;
@@ -46,21 +46,34 @@
   let currentPrediction = null;
   let currentNumberPrediction = null;
   let nextIssueNumber = null;
-
   let predictedIssue = null;
   let predictedAt = null;
   let historicalData = [];
-
   let skipNextBet = false;
   let skipReason = "";
   let currentGameData = null;
   let countdownInterval = null;
 
+  /* ========= MODE PREDIKSI (FOLLOW / ZIGZAG) ========= */
+  let predictionMode = 'follow'; // 'follow' atau 'zigzag'
+  let zigzagCounter = 0;
+
   /* ========= KONFIGURASI PEMBERSIHAN DATA ========= */
   const MAX_DATA_LIMIT = 100;
 
-  /* ========= FUNGSI ANALISIS MANUAL (PENGGANTI AI) ========= */
+  /* ========= FUNGSI ANALISIS MANUAL ========= */
   function getManualPrediction() {
+    // Jika mode zigzag, prediksi bergantian
+    if (predictionMode === 'zigzag') {
+      const isEven = zigzagCounter % 2 === 0;
+      zigzagCounter++;
+      const pred = isEven ? "KECIL" : "BESAR";
+      const num = pred === "KECIL" ? 2 : 7;
+      console.log(`🔮 Prediksi ZIG-ZAG: ${pred} (angka ${num})`);
+      return { prediction: pred, number: num };
+    }
+
+    // Mode follow (ikuti tren)
     const data = historicalData.slice(0, 10);
     if (data.length < 5) {
       const lastNumbers = data.map(d => d.number);
@@ -127,11 +140,11 @@
     if (prediction === "BESAR" && predictedNumber < 5) predictedNumber = 7;
 
     console.log(`📊 Analisis Manual: Kecil=${kecil}, Besar=${besar}, hot=[${hotNumbers.join(',')}], cold=[${coldNumbers.join(',')}]`);
-    console.log(`🔮 Prediksi: ${prediction} (angka ${predictedNumber})`);
+    console.log(`🔮 Prediksi FOLLOW: ${prediction} (angka ${predictedNumber})`);
     return { prediction, number: predictedNumber };
   }
 
-  /* ========= FIREBASE FUNCTIONS ========= */
+  /* ========= FIREBASE FUNCTIONS (tidak berubah) ========= */
   async function sendToFirebase(path, data) {
     try {
       const dataWithTimestamp = { ...data, timestamp: Date.now(), date: new Date().toISOString() };
@@ -270,12 +283,12 @@
   }
 
   function sendTelegram(msg) {
-  if (!ENABLE_TELEGRAM) return; // <- Jika false, langsung berhenti
-  sendToGroup(msg, TELEGRAM_GROUPS.primary);
-  if (enableMultipleGroups && TELEGRAM_GROUPS.secondary.length) {
-    TELEGRAM_GROUPS.secondary.forEach((chatId) => sendToGroup(msg, chatId));
+    if (!ENABLE_TELEGRAM) return;
+    sendToGroup(msg, TELEGRAM_GROUPS.primary);
+    if (enableMultipleGroups && TELEGRAM_GROUPS.secondary.length) {
+      TELEGRAM_GROUPS.secondary.forEach((chatId) => sendToGroup(msg, chatId));
+    }
   }
-}
   function sendToGroup(msg, chatId) {
     messageQueue.push({ msg, chatId });
     if (!isSendingMessage) processMessageQueue();
@@ -425,6 +438,20 @@
     return isWin;
   }
 
+  /* ========= TOGGLE MODE PREDIKSI SETIAP 1 JAM ========= */
+  function togglePredictionMode() {
+    if (predictionMode === 'follow') {
+      predictionMode = 'zigzag';
+      console.log('🔄 Mode prediksi berubah menjadi ZIG-ZAG (bergantian)');
+      sendTelegram('🔄 Mode prediksi: ZIG-ZAG (bergantian KECIL/BESAR)');
+    } else {
+      predictionMode = 'follow';
+      console.log('🔄 Mode prediksi berubah menjadi IKUTI TREN');
+      sendTelegram('🔄 Mode prediksi: IKUTI TREN');
+    }
+    zigzagCounter = 0; // reset counter untuk zigzag
+  }
+
   /* ========= PROCESS DATA API ========= */
   let isProcessing = false;
   function processData(data) {
@@ -555,11 +582,17 @@
     console.log(`
  🤖 WINGO SMART TRADING BOT v12.0 - MANUAL ANALYSIS
  💰 Saldo awal: 2.916.000 (khusus 30 detik)
- 📊 Analisis berbasis frekuensi, pola, hot/cold number
+ 📊 Mode prediksi: FOLLOW (ikut tren) selama 1 jam pertama
+ 🔄 Setiap 1 jam berganti ke ZIG-ZAG (bergantian) dan seterusnya
  📡 Firebase aktif (menyimpan semua data + countdown)
  ✅ Bot siap!`);
+    
     setInterval(manualCheck, 30000);
     setTimeout(manualCheck, 3000);
+    
+    // Toggle mode setiap 1 jam (3600000 ms)
+    setInterval(togglePredictionMode, 3600000);
+    
     setTimeout(async () => {
       if (await placeBet()) {
         const message = `<b>WINGO 30s PREDIKSI v12.0 (Manual)</b>\n<b>🆔 PERIODE ???</b>\n<b>🎯 PREDIKSI: ${currentPrediction} 1K</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>`;
@@ -572,7 +605,9 @@
   })();
 
   window.wingoBot = {
-    check: manualCheck, reset: resetBot, add: addBalance,
+    check: manualCheck,
+    reset: resetBot,
+    add: addBalance,
     activate: () => { isBotActive = true; sendTelegram("✅ BOT DIAKTIFKAN"); },
     deactivate: () => { isBotActive = false; sendTelegram("⏸️ BOT DINONAKTIFKAN"); },
     stats: () => {
@@ -580,6 +615,8 @@
       console.log(`💰 Saldo: ${virtualBalance.toLocaleString()}\n📈 P/L: ${profitLoss}\n🎯 Bet: ${totalBets} (W:${totalWins}/L:${totalLosses})\n📊 Win Rate: ${winRate}%\n🔥 Streak: ${currentStreak}\n📊 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`);
     },
     cleanup: cleanupAllCollections,
+    toggleMode: togglePredictionMode, // tambahan untuk manual toggle
+    getMode: () => predictionMode,
   };
   window.wingoBetData = {
     get prediction() { return currentPrediction; },
