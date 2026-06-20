@@ -671,37 +671,41 @@
     </div>
 
     <!-- Modal Info -->
-    <div id="infoModal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="closeInfoModal()">&times;</button>
-            <h3>⚠️ PERINGATAN PENTING</h3>
-            <div>
-                <p><strong>1. PREDIKSI TIDAK 100% AKURAT</strong><br>
-                   Hasil prediksi dari sistem ini berdasarkan analisis data historis dan kecerdasan buatan.<br>
-                   Namun, PERLU DIPAHAMI bahwa permainan Kecil/Besar bersifat acak (RNG) dan TIDAK ADA JAMINAN KEMENANGAN.<br>
-                   Segala keputusan taruhan adalah TANGGUNG JAWAB ANDA SEPENUHNYA.</p>
-                <p><strong>2. STRATEGI MARTINGALE – CARA KERJA &amp; RISIKO</strong><br>
-                   Martingale adalah strategi menaikkan taruhan setelah setiap kekalahan, dengan tujuan menutup kerugian saat menang.<br>
-                   Contoh urutan taruhan yang digunakan sistem: 1K → 3K → 7K → 15K → 31K → 63K → 127K.<br>
-                   Setiap kali menang, taruhan kembali ke level awal (1K).<br>
-                   Jika kalah terus, taruhan akan naik hingga level maksimal (127K).</p>
-                <p><strong>3. BATASAN DAN PERINGATAN MARTINGALE</strong><br>
-                   ⚠️ MARTINGALE BUKAN STRATEGI TANPA RISIKO!<br>
-                   - Jika mengalami kekalahan beruntun, saldo Anda bisa habis sangat cepat.<br>
-                   - Pastikan saldo Anda cukup untuk menahan hingga level tertinggi sebelum mulai.<br>
-                   - Sistem ini memiliki batas 7 level. Jika kalah di level 7, saldo akan otomatis direset ke 247.000.<br>
-                   - Jangan pernah bertaruh dengan uang yang tidak siap Anda kehilangan.</p>
-                <p><strong>4. ATURAN EMAS UNTUK PENGGUNAAN</strong><br>
-                   ✅ Gunakan uang dingin (dana di luar kebutuhan pokok).<br>
-                   ✅ Tetapkan batas kerugian harian dan patuhi.<br>
-                   ✅ Jangan mengejar kekalahan dengan emosi – istirahat jika perlu.<br>
-                   ✅ Jika merasa kecanduan judi, segera cari bantuan profesional.</p>
-                <p><strong>📌 INGAT:</strong> Tidak ada sistem yang bisa mengalahkan keberuntungan. Hasil akhir selalu di luar kendali siapa pun. Gunakan dengan bijak dan bertanggung jawab.</p>
-            </div>
-            <button class="close-bottom" onclick="closeInfoModal()">Tutup</button>
-        </div>
-    </div>
+<div id="infoModal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeInfoModal()">&times;</button>
+        <h3>⚠️ PERINGATAN PENTING</h3>
+        <div>
+            <p><strong>1. PREDIKSI TIDAK 100% AKURAT</strong><br>
+               Hasil prediksi dari sistem ini berdasarkan analisis data historis dan kecerdasan buatan.<br>
+               Namun, PERLU DIPAHAMI bahwa permainan Kecil/Besar bersifat acak (RNG) dan TIDAK ADA JAMINAN KEMENANGAN.<br>
+               Segala keputusan taruhan adalah TANGGUNG JAWAB ANDA SEPENUHNYA.</p>
 
+            <p><strong>2. STRATEGI MARTINGALE – CARA KERJA &amp; RISIKO</strong><br>
+               Martingale adalah strategi menaikkan taruhan setelah setiap kekalahan, bertujuan menutup semua kerugian saat akhirnya menang.<br>
+               Urutan taruhan yang digunakan sistem saat ini: <br>
+               <strong>1K → 3K → 8K → 24K → 72K → 216K → 648K → 1.944K</strong> (total 8 level).<br>
+               Setiap kali menang, taruhan akan kembali ke level awal (1K).<br>
+               Jika terus menerus kalah, taruhan naik hingga level maksimal (1.944K).</p>
+
+            <p><strong>3. BATASAN DAN PERINGATAN MARTINGALE</strong><br>
+               ⚠️ MARTINGALE BUKAN STRATEGI TANPA RISIKO!<br>
+               - Kekalahan beruntun dapat menguras saldo dengan sangat cepat.<br>
+               - Pastikan saldo Anda cukup untuk menahan hingga level tertinggi (total dibutuhkan <strong>Rp 2.916.000</strong>).<br>
+               - Sistem memiliki 8 level. Jika kalah di level 8, saldo akan otomatis direset ke Rp 2.916.000.<br>
+               - Jangan pernah bertaruh dengan uang yang tidak siap Anda kehilangan.</p>
+
+            <p><strong>4. ATURAN EMAS UNTUK PENGGUNAAN</strong><br>
+               ✅ Gunakan uang dingin (dana di luar kebutuhan pokok).<br>
+               ✅ Tetapkan batas kerugian harian dan patuhi dengan disiplin.<br>
+               ✅ Jangan mengejar kekalahan dengan emosi – istirahat jika perlu.<br>
+               ✅ Jika merasa kecanduan judi, segera cari bantuan profesional.</p>
+
+            <p><strong>📌 INGAT:</strong> Tidak ada sistem yang bisa mengalahkan keberuntungan. Hasil akhir selalu di luar kendali siapa pun. Gunakan dengan bijak dan bertanggung jawab.</p>
+        </div>
+        <button class="close-bottom" onclick="closeInfoModal()">Tutup</button>
+    </div>
+</div>
     <audio id="sound30s" preload="auto">
         <source src="https://splendid-queijadas-d948bb.netlify.app/sound%2030%20detik.mp3" type="audio/mpeg">
     </audio>
