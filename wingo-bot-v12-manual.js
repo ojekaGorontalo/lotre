@@ -1,8 +1,7 @@
 // prediksiAI.js - Manual Analysis Version (No AI, No Firebase Key)
-// DIUBAH: Metode analisis menggunakan Weighted Recency + Cold Pick
 (function () {
   console.clear();
-  console.log("🤖 WinGo Smart Trading Bot - v12.0 (Manual Analysis - Weighted Cold Pick)");
+  console.log("🤖 WinGo Smart Trading Bot - v12.0 (Manual Analysis)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -11,6 +10,7 @@
     secondary: ["-1001570553211"],
   };
   let enableMultipleGroups = false;
+  const ENABLE_TELEGRAM = false; // ← SET false UNTUK MATIKAN, true UNTUK NYALAKAN
   let messageQueue = [];
   let isSendingMessage = false;
   const MESSAGE_DELAY = 800;
@@ -19,7 +19,7 @@
   const FIREBASE_URL = "https://wingo-bot-analytics-default-rtdb.firebaseio.com/";
 
   /* ========= SALDO VIRTUAL ========= */
-  let virtualBalance = 247000;
+  let virtualBalance = 2916000; // UBAH: saldo awal untuk level 1-8
   let totalBets = 0;
   let totalWins = 0;
   let totalLosses = 0;
@@ -36,9 +36,9 @@
     profit: 0,
   };
 
-  /* ========= STRATEGI MARTINGALE ========= */
-  const betSequence = [1000, 3000, 7000, 15000, 31000, 63000, 127000];
-  const betLabels = ["1K", "3K", "7K", "15K", "31K", "63K", "127K"];
+  /* ========= STRATEGI MARTINGALE (LEVEL 1-8) ========= */
+  const betSequence = [1000, 3000, 8000, 24000, 72000, 216000, 648000, 1944000];
+  const betLabels = ["1K", "3K", "8K", "24K", "72K", "216K", "648K", "1.944K"];
   let currentBetIndex = 0;
   let lastProcessedIssue = null;
   let currentBetAmount = betSequence[0];
@@ -59,11 +59,10 @@
   /* ========= KONFIGURASI PEMBERSIHAN DATA ========= */
   const MAX_DATA_LIMIT = 100;
 
-  /* ========= FUNGSI ANALISIS MANUAL (METODE WEIGHTED + COLD PICK) ========= */
+  /* ========= FUNGSI ANALISIS MANUAL (PENGGANTI AI) ========= */
   function getManualPrediction() {
-    const data = historicalData.slice(0, 10); // 10 data terakhir (terbaru di index 0)
+    const data = historicalData.slice(0, 10);
     if (data.length < 5) {
-      // Jika data kurang dari 5, gunakan rata-rata sederhana
       const lastNumbers = data.map(d => d.number);
       const avg = lastNumbers.reduce((a, b) => a + b, 0) / lastNumbers.length;
       const pred = avg <= 4 ? "KECIL" : "BESAR";
@@ -71,68 +70,68 @@
       return { prediction: pred, number: Math.min(9, Math.max(0, num)) };
     }
 
-    // 1. Hitung frekuensi berbobot: 5 terakhir × 1.5
-    const weightedFreq = Array(10).fill(0);
-    data.forEach((d, index) => {
-      const weight = index < 5 ? 1.5 : 1; // 5 terakhir (index 0-4) lebih berbobot
-      weightedFreq[d.number] += weight;
+    const freq = Array(10).fill(0);
+    data.forEach(d => freq[d.number]++);
+
+    let kecil = 0, besar = 0;
+    data.forEach(d => {
+      if (d.number <= 4) kecil++;
+      else besar++;
     });
 
-    // 2. Total skor Kecil vs Besar
-    let kecilScore = 0, besarScore = 0;
-    for (let i = 0; i <= 9; i++) {
-      if (i <= 4) kecilScore += weightedFreq[i];
-      else besarScore += weightedFreq[i];
-    }
+    let maxFreq = -1;
+    let hotNumbers = [];
+    freq.forEach((count, num) => {
+      if (count > maxFreq) {
+        maxFreq = count;
+        hotNumbers = [num];
+      } else if (count === maxFreq) {
+        hotNumbers.push(num);
+      }
+    });
 
-    // 3. Tentukan prediksi dasar berdasarkan skor tertinggi
-    let basePrediction;
-    if (kecilScore > besarScore) basePrediction = "KECIL";
-    else if (besarScore > kecilScore) basePrediction = "BESAR";
-    else {
-      // Jika seri, ikuti hasil terakhir (rotasi)
-      const lastResult = data[0].result;
-      basePrediction = lastResult === "KECIL" ? "BESAR" : "KECIL";
-    }
-
-    // 4. Cari angka paling dingin (skor terendah) di range yang dipilih
-    const range = basePrediction === "KECIL" ? [0,1,2,3,4] : [5,6,7,8,9];
-    let minScore = Infinity;
+    let minFreq = Infinity;
     let coldNumbers = [];
-    range.forEach(num => {
-      const score = weightedFreq[num];
-      if (score < minScore) {
-        minScore = score;
+    freq.forEach((count, num) => {
+      if (count < minFreq) {
+        minFreq = count;
         coldNumbers = [num];
-      } else if (score === minScore) {
+      } else if (count === minFreq) {
         coldNumbers.push(num);
       }
     });
 
-    // Jika ada lebih dari satu angka dengan skor sama, pilih yang paling lama tidak muncul
-    let predictedNumber = coldNumbers[0];
-    if (coldNumbers.length > 1) {
-      const lastAppearance = data.map(d => d.number);
-      let maxGap = -1;
-      coldNumbers.forEach(num => {
-        const gap = lastAppearance.lastIndexOf(num);
-        if (gap > maxGap) {
-          maxGap = gap;
-          predictedNumber = num;
-        }
-      });
+    let prediction;
+    if (kecil > besar) prediction = "KECIL";
+    else if (besar > kecil) prediction = "BESAR";
+    else {
+      const lastResult = data[0].result;
+      prediction = lastResult === "KECIL" ? "BESAR" : "KECIL";
     }
 
-    // Koreksi keamanan (pastikan angka masih dalam range)
-    if (basePrediction === "KECIL" && predictedNumber > 4) predictedNumber = 2;
-    if (basePrediction === "BESAR" && predictedNumber < 5) predictedNumber = 7;
+    const range = prediction === "KECIL" ? [0, 1, 2, 3, 4] : [5, 6, 7, 8, 9];
+    let candidates = hotNumbers.filter(n => range.includes(n));
+    let predictedNumber;
+    if (candidates.length > 0) {
+      predictedNumber = candidates[0];
+    } else {
+      candidates = coldNumbers.filter(n => range.includes(n));
+      if (candidates.length > 0) {
+        predictedNumber = candidates[0];
+      } else {
+        predictedNumber = prediction === "KECIL" ? 2 : 7;
+      }
+    }
 
-    console.log(`📊 Analisis Weighted: Kecil=${kecilScore.toFixed(1)}, Besar=${besarScore.toFixed(1)}`);
-    console.log(`🔮 Prediksi: ${basePrediction} (angka ${predictedNumber})`);
-    return { prediction: basePrediction, number: predictedNumber };
+    if (prediction === "KECIL" && predictedNumber > 4) predictedNumber = 2;
+    if (prediction === "BESAR" && predictedNumber < 5) predictedNumber = 7;
+
+    console.log(`📊 Analisis Manual: Kecil=${kecil}, Besar=${besar}, hot=[${hotNumbers.join(',')}], cold=[${coldNumbers.join(',')}]`);
+    console.log(`🔮 Prediksi: ${prediction} (angka ${predictedNumber})`);
+    return { prediction, number: predictedNumber };
   }
 
-  /* ========= FIREBASE FUNCTIONS (tidak berubah) ========= */
+  /* ========= FIREBASE FUNCTIONS ========= */
   async function sendToFirebase(path, data) {
     try {
       const dataWithTimestamp = { ...data, timestamp: Date.now(), date: new Date().toISOString() };
@@ -267,16 +266,16 @@
   }
 
   function sendResetToFirebase(oldBalance, reason) {
-    sendToFirebase("resets", { oldBalance, newBalance: 247000, reason, resetTime: new Date().toISOString() });
+    sendToFirebase("resets", { oldBalance, newBalance: 2916000, reason, resetTime: new Date().toISOString() });
   }
 
-  /* ========= TELEGRAM (tidak berubah) ========= */
   function sendTelegram(msg) {
-    sendToGroup(msg, TELEGRAM_GROUPS.primary);
-    if (enableMultipleGroups && TELEGRAM_GROUPS.secondary.length) {
-      TELEGRAM_GROUPS.secondary.forEach((chatId) => sendToGroup(msg, chatId));
-    }
+  if (!ENABLE_TELEGRAM) return; // <- Jika false, langsung berhenti
+  sendToGroup(msg, TELEGRAM_GROUPS.primary);
+  if (enableMultipleGroups && TELEGRAM_GROUPS.secondary.length) {
+    TELEGRAM_GROUPS.secondary.forEach((chatId) => sendToGroup(msg, chatId));
   }
+}
   function sendToGroup(msg, chatId) {
     messageQueue.push({ msg, chatId });
     if (!isSendingMessage) processMessageQueue();
@@ -330,7 +329,7 @@
     }
   }
 
-  /* ========= LOGIKA TARUHAN DENGAN METODE MANUAL ========= */
+  /* ========= LOGIKA TARUHAN ========= */
   async function placeBet() {
     if (!isBotActive) return false;
     if (skipNextBet) {
@@ -342,7 +341,7 @@
     if (virtualBalance < currentBetAmount) {
       console.log("❌ Saldo tidak cukup, reset...");
       sendResetToFirebase(virtualBalance, "saldo_habis");
-      virtualBalance = 247000;
+      virtualBalance = 2916000;
       currentBetIndex = 0;
       currentBetAmount = betSequence[0];
       totalBets = totalWins = totalLosses = currentStreak = profitLoss = 0;
@@ -350,7 +349,7 @@
       historicalData = [];
       lastMotivationSentAtLoss = lastDonationMessageAtWin = 0;
       sendTelegram("🚫 <b>SALDO HABIS - RESET OTOMATIS</b>");
-      console.log("🔄 Saldo direset ke 247.000");
+      console.log("🔄 Saldo direset ke 2.916.000");
       return false;
     }
 
@@ -360,7 +359,6 @@
     dailyStats.profit -= currentBetAmount;
     isBetPlaced = true;
 
-    // === PREDIKSI MENGGUNAKAN METODE MANUAL YANG SUDAH DIPERBARUI ===
     const manualPred = getManualPrediction();
     currentPrediction = manualPred.prediction;
     currentNumberPrediction = manualPred.number;
@@ -420,7 +418,7 @@
       }
     }
 
-    profitLoss = virtualBalance - 247000;
+    profitLoss = virtualBalance - 2916000;
     isBetPlaced = false;
     predictedIssue = null;
     predictedAt = null;
@@ -455,7 +453,7 @@
           if (await placeBet()) {
             const nextIssue = nextIssueNumber || issueNumber.slice(0, -3) + (parseInt(issueNumber.slice(-3)) + 1).toString().padStart(3, "0");
             const shortIssue = nextIssue.slice(-3);
-            const message = `<b>WINGO 30s PREDIKSI v12.0 (Weighted Cold)</b>\n<b>🆔 PERIODE ${shortIssue}</b>\n<b>🎯 PREDIKSI: ${currentPrediction} ${betLabels[currentBetIndex]}</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>\n─────────────────\n<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n<b>📈 P/L: ${profitLoss >= 0 ? "🟢" : "🔴"} ${profitLoss >= 0 ? "+" : ""}${profitLoss.toLocaleString()}</b>`;
+            const message = `<b>WINGO 30s PREDIKSI v12.0 (Manual)</b>\n<b>🆔 PERIODE ${shortIssue}</b>\n<b>🎯 PREDIKSI: ${currentPrediction} ${betLabels[currentBetIndex]}</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>\n─────────────────\n<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n<b>📈 P/L: ${profitLoss >= 0 ? "🟢" : "🔴"} ${profitLoss >= 0 ? "+" : ""}${profitLoss.toLocaleString()}</b>`;
             setTimeout(() => sendTelegram(message), 1500);
           }
           lastProcessedIssue = issueNumber;
@@ -535,7 +533,7 @@
 
   function resetBot() {
     const oldBalance = virtualBalance;
-    virtualBalance = 247000;
+    virtualBalance = 2916000;
     currentBetIndex = 0;
     totalBets = totalWins = totalLosses = currentStreak = profitLoss = 0;
     currentBetAmount = betSequence[0];
@@ -549,22 +547,22 @@
     dailyStats = { date: new Date().toDateString(), bets: 0, wins: 0, losses: 0, profit: 0 };
     isBotActive = true;
     sendResetToFirebase(oldBalance, "manual_reset");
-    sendTelegram("🔄 <b>BOT DIRESET (v12.0 Weighted Cold)</b>\n💰 Saldo: 247.000");
+    sendTelegram("🔄 <b>BOT DIRESET (v12.0 Manual)</b>\n💰 Saldo: 2.916.000");
   }
 
   /* ========= STARTUP ========= */
   (function start() {
     console.log(`
- 🤖 WINGO SMART TRADING BOT v12.0 - WEIGHTED COLD PICK
- 💰 Saldo awal: 247.000 (khusus 30 detik)
- 📊 Analisis: bobot 1.5 untuk 5 data terakhir + pilih angka paling dingin di range dominan
+ 🤖 WINGO SMART TRADING BOT v12.0 - MANUAL ANALYSIS
+ 💰 Saldo awal: 2.916.000 (khusus 30 detik)
+ 📊 Analisis berbasis frekuensi, pola, hot/cold number
  📡 Firebase aktif (menyimpan semua data + countdown)
  ✅ Bot siap!`);
     setInterval(manualCheck, 30000);
     setTimeout(manualCheck, 3000);
     setTimeout(async () => {
       if (await placeBet()) {
-        const message = `<b>WINGO 30s PREDIKSI v12.0 (Weighted Cold)</b>\n<b>🆔 PERIODE ???</b>\n<b>🎯 PREDIKSI: ${currentPrediction} 1K</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>`;
+        const message = `<b>WINGO 30s PREDIKSI v12.0 (Manual)</b>\n<b>🆔 PERIODE ???</b>\n<b>🎯 PREDIKSI: ${currentPrediction} 1K</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>`;
         sendTelegram(message);
       }
     }, 2000);
