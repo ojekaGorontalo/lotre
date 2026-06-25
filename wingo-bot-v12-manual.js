@@ -291,38 +291,13 @@
   /* ========= ANALISIS HISTORIS ========= */
   function analyzeTrendData(listData) {
     if (!listData || listData.length < 4) return;
-
-    // Konversi data dari API ke format internal
     const results = listData.map((item) => ({
       issue: item.issueNumber,
-      number: parseInt(item.number, 10),
-      result: parseInt(item.number, 10) <= 4 ? "KECIL" : "BESAR",
+      number: parseInt(item.number),
+      result: parseInt(item.number) <= 4 ? "KECIL" : "BESAR",
       colour: item.colour,
     }));
-
-    // Buat Set dari issue yang sudah ada di historicalData untuk deteksi duplikat
-    const existingIssues = new Set(historicalData.map(item => item.issue));
-
-    // Filter data baru yang belum ada di historicalData
-    const newResults = results.filter(item => {
-      if (existingIssues.has(item.issue)) {
-        console.log(`⚠️ Duplicate issue detected, skipped: ${item.issue}`);
-        return false;
-      }
-      return true;
-    });
-
-    if (newResults.length === 0) {
-      console.log(`📦 Tidak ada data baru (semua issue sudah ada).`);
-      return;
-    }
-
-    // Gabungkan data baru (paling baru di depan) dan potong maksimal 20
-    historicalData = [...newResults, ...historicalData].slice(0, 20);
-
-    // Log data historis terbaru
-    const recentIssues = historicalData.slice(0, 4).map(d => d.issue);
-    console.log(`📦 Historical Data (terbaru): ${recentIssues.join(", ")}`);
+    historicalData = [...results, ...historicalData].slice(0, 20);
     if (historicalData.length >= 4) {
       const recentNumbers = historicalData.slice(0, 4).map(d => d.number);
       console.log(`📊 4 DATA TERBARU: ${recentNumbers.join(", ")}`);
@@ -488,7 +463,7 @@
 
       const isGame30s = currentGameData && currentGameData.intervalM === 0.5;
       if (isGame30s) {
-        // Update historical data (dengan deteksi duplikat)
+        // Update historical data
         analyzeTrendData(list);
 
         if (isBetPlaced) {
