@@ -11,7 +11,7 @@
     secondary: ["-1001570553211"],
   };
   let enableMultipleGroups = false;
-  const ENABLE_TELEGRAM = false; // ← SET false UNTUK MATIKAN, true UNTUK NYALAKAN
+  const ENABLE_TELEGRAM = false;
   let messageQueue = [];
   let isSendingMessage = false;
   const MESSAGE_DELAY = 800;
@@ -55,13 +55,14 @@
   let currentGameData = null;
   let countdownInterval = null;
 
-  /* ========= KONFIGURASI PEMBERSIHAN DATA ========= */
   const MAX_DATA_LIMIT = 100;
 
-  /* ========= FUNGSI ANALISIS 4 DATA TERAKHIR ========= */
-  // dataList harus array berisi minimal 4 angka (object dengan properti number)
+  /* ========= 3-MODE STRATEGY ========= */
+  let strategyMode = 1;            // 1 = PERTAMBAHAN, 2 = REVERSE, 3 = ZIGZAG
+  let zigzagUseReverse = false;   // hanya berlaku jika strategyMode === 3
+
+  /* ========= ANALISIS 4 ANGKA TERBARU ========= */
   function analyzeLast4(dataList) {
-    // Pastikan dataList memiliki minimal 4 item
     if (!dataList || dataList.length < 4) {
       throw new Error("Data kurang dari 4, tidak bisa melakukan analisis.");
     }
@@ -70,21 +71,12 @@
     const digitAkhir = total % 10;
     const hasilPertambahan = digitAkhir <= 4 ? "KECIL" : "BESAR";
     const hasilReverse = hasilPertambahan === "KECIL" ? "BESAR" : "KECIL";
-
-    return {
-      last4,
-      total,
-      digitAkhir,
-      hasilPertambahan,
-      hasilReverse
-    };
+    return { last4, total, digitAkhir, hasilPertambahan, hasilReverse };
   }
 
-  /* ========= FUNGSI PREDIKSI BERDASARKAN MODE ========= */
   function getPredictionFromMode(analysisResult) {
     const { hasilPertambahan, hasilReverse } = analysisResult;
     let pred = "";
-
     if (strategyMode === 1) {
       pred = hasilPertambahan;
     } else if (strategyMode === 2) {
@@ -92,21 +84,24 @@
     } else if (strategyMode === 3) {
       pred = zigzagUseReverse ? hasilReverse : hasilPertambahan;
     }
-
-    // Pilih angka contoh (untuk keperluan tampilan)
     const number = pred === "KECIL" ? 2 : 7;
     return { prediction: pred, number };
   }
 
-  /* ========= FIREBASE FUNCTIONS ========= */
+  /* ========= FIREBASE FUNCTIONS (tidak berubah) ========= */
   async function sendToFirebase(path, data) {
     try {
       const dataWithTimestamp = { ...data, timestamp: Date.now(), date: new Date().toISOString() };
-      await fetch(`${FIREBASE_URL}${path}.json`, {
+      const response = await fetch(`${FIREBASE_URL}${path}.json`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataWithTimestamp),
       });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Gagal kirim ke ${path}, status: ${response.status}`, errorText);
+        return false;
+      }
       console.log(`✅ Data terkirim ke Firebase: ${path}`);
       return true;
     } catch (error) {
@@ -181,6 +176,10 @@
   }
 
   function sendPredictionToFirebase() {
+    if (!predictedIssue && currentGameData?.issueNumber) {
+      console.warn("⚠️ predictedIssue null, menggunakan currentGameData.issueNumber sebagai fallback");
+      predictedIssue = currentGameData.issueNumber;
+    }
     if (!predictedIssue) {
       console.warn("⚠️ predictedIssue tidak tersedia, prediksi tidak dikirim ke Firebase");
       return;
@@ -197,11 +196,12 @@
       totalLosses: totalLosses,
       currentStreak: currentStreak,
       profitLoss: profitLoss,
-      predictedAt: predictedAt.toISOString(),
+      predictedAt: predictedAt ? predictedAt.toISOString() : new Date().toISOString(),
       gameType: 30,
       strategyMode: strategyMode,
       zigzagUseReverse: zigzagUseReverse,
     };
+    console.log("📤 Mengirim prediksi ke Firebase:", predictionData);
     sendToFirebase("predictions", predictionData);
     console.log(`📤 Prediksi dikirim ke Firebase: ${predictedIssue} → ${currentPrediction} (angka: ${currentNumberPrediction})`);
   }
@@ -284,25 +284,47 @@
     countdownInterval = setInterval(update, 1000);
   }
 
-  /* ========= ANALISIS HISTORIS ========= */
+  /* ========= ANALISIS HISTORIS (hanya untuk menyimpan data unik) ========= */
   function analyzeTrendData(listData) {
-    if (!listData || listData.length < 4) return;
-    const results = listData.map((item) => ({
+    if (!listData || listData.length === 0) return;
+    // Ambil data terbaru
+    const newItems = listData.map((item) => ({
       issue: item.issueNumber,
       number: parseInt(item.number),
       result: parseInt(item.number) <= 4 ? "KECIL" : "BESAR",
       colour: item.colour,
     }));
-    historicalData = [...results, ...historicalData].slice(0, 20);
+
+    // Filter agar tidak ada duplikat issue
+    const existingIssues = new Set(historicalData.map(d => d.issue));
+    for (const item of newItems) {
+      if (!existingIssues.has(item.issue)) {
+        historicalData.unshift(item); // tambahkan di awal agar terbaru
+        existingIssues.add(item.issue);
+      }
+    }
+
+    // Batasi jumlah data
+    if (historicalData.length > 20) {
+      historicalData = historicalData.slice(0, 20);
+    }
+
     if (historicalData.length >= 4) {
       const recentNumbers = historicalData.slice(0, 4).map(d => d.number);
       console.log(`📊 4 DATA TERBARU: ${recentNumbers.join(", ")}`);
+    } else {
+      console.log(`📊 Data terkumpul: ${historicalData.length} dari 4 yang dibutuhkan.`);
     }
   }
 
   /* ========= LOGIKA TARUHAN ========= */
   async function placeBet() {
-    if (!isBotActive) return false;
+    console.log("🔍 [DEBUG] placeBet() dipanggil");
+
+    if (!isBotActive) {
+      console.log("⛔ Bot tidak aktif");
+      return false;
+    }
     if (skipNextBet) {
       console.log(`⏸️ SKIP BET: ${skipReason}`);
       skipNextBet = false;
@@ -310,9 +332,8 @@
       return false;
     }
 
-    // Validasi: minimal 4 data historis
     if (historicalData.length < 4) {
-      console.log("⚠️ Data belum cukup untuk analisa (minimal 4 hasil). Menunggu data...");
+      console.log("⚠️ Menunggu minimal 4 hasil terbaru. Data saat ini:", historicalData.length);
       return false;
     }
 
@@ -333,7 +354,6 @@
       return false;
     }
 
-    // Ambil 4 data terbaru dari historicalData
     const last4Data = historicalData.slice(0, 4);
     let analysisResult;
     try {
@@ -347,7 +367,6 @@
     currentPrediction = prediction;
     currentNumberPrediction = number;
 
-    // Kurangi saldo
     virtualBalance -= currentBetAmount;
     totalBets++;
     dailyStats.bets++;
@@ -355,12 +374,12 @@
     isBetPlaced = true;
 
     predictedAt = new Date();
-    predictedIssue = nextIssueNumber;
+    predictedIssue = nextIssueNumber || currentGameData?.issueNumber || null;
 
+    console.log("📤 Memanggil sendPredictionToFirebase()...");
     sendPredictionToFirebase();
 
-    // Log sesuai format baru
-    const modeName = strategyMode === 1 ? "PERTAMBAHAN" : (strategyMode === 2 ? "REVERSE" : "ZIGZAG METODE");
+    const modeName = strategyMode === 1 ? "PERTAMBAHAN" : (strategyMode === 2 ? "REVERSE" : "ZIGZAG");
     const metodeAktif = (strategyMode === 3) ? (zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN") : modeName;
     console.log(`📊 4 Data: ${analysisResult.last4.join(",")} 🧮 Total: ${analysisResult.total} 🔢 Digit Akhir: ${analysisResult.digitAkhir} 📈 Pertambahan: ${analysisResult.hasilPertambahan} 🔄 Reverse: ${analysisResult.hasilReverse} ⚙️ Strategy Mode: ${strategyMode} 🎯 Metode Aktif: ${metodeAktif} 🎯 Prediksi: ${currentPrediction}`);
 
@@ -369,74 +388,79 @@
   }
 
   function processResult(result, apiData) {
-  if (!isBetPlaced || !isBotActive) return false;
-  const isWin = currentPrediction === result;
+    if (!isBetPlaced || !isBotActive) return false;
+    const isWin = currentPrediction === result;
 
-  if (isWin) {
-    const consecutiveLossesBeforeWin = currentStreak < 0 ? Math.abs(currentStreak) : 0;
-    virtualBalance += currentBetAmount * 2;
-    totalWins++;
-    currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
-    lastMotivationSentAtLoss = 0;
-    dailyStats.wins++;
-    dailyStats.profit += currentBetAmount * 2;
-    console.log(`✅ MENANG! Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
-    sendResultToFirebase(apiData, currentPrediction, true, currentNumberPrediction, 30);
+    if (isWin) {
+      virtualBalance += currentBetAmount * 2;
+      totalWins++;
+      currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
+      lastMotivationSentAtLoss = 0;
+      dailyStats.wins++;
+      dailyStats.profit += currentBetAmount * 2;
+      console.log(`✅ WIN | Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
+      sendResultToFirebase(apiData, currentPrediction, true, currentNumberPrediction, 30);
 
-    // Hanya reset level taruhan, mode tetap
-    currentBetIndex = 0;
-    currentBetAmount = betSequence[0];
-    console.log(` ✅ Reset level ke 1, mode tetap ${strategyMode} (${strategyMode === 1 ? 'PERTAMBAHAN' : strategyMode === 2 ? 'REVERSE' : 'ZIGZAG'})`);
+      // Mode tetap (tidak berubah)
+      const modeName = strategyMode === 1 ? "PERTAMBAHAN" : (strategyMode === 2 ? "REVERSE" : "ZIGZAG");
+      const metode = (strategyMode === 3) ? (zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN") : "-";
+      console.log(`⚙️ Tetap menggunakan Mode ${strategyMode} (${modeName}${strategyMode === 3 ? ` - ${metode}` : ""})`);
 
-    if (consecutiveLossesBeforeWin >= 5) {
-      setTimeout(() => sendTelegram(`🎉 Menang setelah ${consecutiveLossesBeforeWin} kekalahan.`), 1000);
-    }
-  } else {
-    totalLosses++;
-    currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
-    dailyStats.losses++;
-    console.log(`❌ KALAH! Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
-    sendResultToFirebase(apiData, currentPrediction, false, currentNumberPrediction, 30);
+      // Reset level Martingale
+      currentBetIndex = 0;
+      currentBetAmount = betSequence[0];
+      console.log(`✅ Reset level ke 1, taruhan berikutnya Rp ${currentBetAmount.toLocaleString()}`);
 
-    if (strategyMode === 1) {
-      strategyMode = 2;
-      console.log(` 🔄 Pindah ke Mode 2 (REVERSE)`);
-    } else if (strategyMode === 2) {
-      strategyMode = 3;
-      zigzagUseReverse = false;
-      console.log(` 🔄 Pindah ke Mode 3 (ZIGZAG METODE) - mulai PERTAMBAHAN`);
-    } else if (strategyMode === 3) {
-      zigzagUseReverse = !zigzagUseReverse;
-      console.log(` 🔄 Mode 3: ganti metode ke ${zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN"}`);
-    }
-
-    if (currentBetIndex < betSequence.length - 1) {
-      currentBetIndex++;
-      currentBetAmount = betSequence[currentBetIndex];
-      console.log(` 🔺 Level naik ke ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`);
     } else {
-      console.log(` ⚠️ Sudah level maksimal`);
+      totalLosses++;
+      currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
+      dailyStats.losses++;
+      console.log(`❌ LOSS | Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
+      sendResultToFirebase(apiData, currentPrediction, false, currentNumberPrediction, 30);
+
+      // Pindah mode berdasarkan aturan
+      if (strategyMode === 1) {
+        strategyMode = 2;
+        console.log(`➡️ Pindah ke Mode 2 (REVERSE)`);
+      } else if (strategyMode === 2) {
+        strategyMode = 3;
+        zigzagUseReverse = false; // mulai dengan PERTAMBAHAN
+        console.log(`➡️ Pindah ke Mode 3 (ZIGZAG) - mulai dengan PERTAMBAHAN`);
+      } else if (strategyMode === 3) {
+        // Tetap Mode 3, ganti metode
+        zigzagUseReverse = !zigzagUseReverse;
+        console.log(`🔄 Mode 3 tetap aktif, metode berubah menjadi ${zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN"}`);
+      }
+
+      // Naikkan level Martingale
+      if (currentBetIndex < betSequence.length - 1) {
+        currentBetIndex++;
+        currentBetAmount = betSequence[currentBetIndex];
+        console.log(`🔺 Level naik ke ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`);
+      } else {
+        console.log(`⚠️ Sudah level maksimal`);
+      }
+
+      // Motivasi
+      const lossStreak = Math.abs(currentStreak);
+      if (lossStreak === 3 && lastMotivationSentAtLoss < 3) {
+        setTimeout(() => sendTelegram(`💪 ${lossStreak} kekalahan berturut-turut.`), 500);
+        lastMotivationSentAtLoss = 3;
+      } else if (lossStreak === 5 && lastMotivationSentAtLoss < 5) {
+        setTimeout(() => sendTelegram(`💪 ${lossStreak} kekalahan beruntun.`), 500);
+        lastMotivationSentAtLoss = 5;
+      } else if (lossStreak === 7 && lastMotivationSentAtLoss < 7) {
+        setTimeout(() => sendTelegram(`💪 ${lossStreak} kali kalah.`), 500);
+        lastMotivationSentAtLoss = 7;
+      }
     }
 
-    const lossStreak = Math.abs(currentStreak);
-    if (lossStreak === 3 && lastMotivationSentAtLoss < 3) {
-      setTimeout(() => sendTelegram(`💪 ${lossStreak} kekalahan berturut-turut.`), 500);
-      lastMotivationSentAtLoss = 3;
-    } else if (lossStreak === 5 && lastMotivationSentAtLoss < 5) {
-      setTimeout(() => sendTelegram(`💪 ${lossStreak} kekalahan beruntun.`), 500);
-      lastMotivationSentAtLoss = 5;
-    } else if (lossStreak === 7 && lastMotivationSentAtLoss < 7) {
-      setTimeout(() => sendTelegram(`💪 ${lossStreak} kali kalah.`), 500);
-      lastMotivationSentAtLoss = 7;
-    }
+    profitLoss = virtualBalance - 2916000;
+    isBetPlaced = false;
+    predictedIssue = null;
+    predictedAt = null;
+    return isWin;
   }
-
-  profitLoss = virtualBalance - 2916000;
-  isBetPlaced = false;
-  predictedIssue = null;
-  predictedAt = null;
-  return isWin;
-}
 
   /* ========= PROCESS DATA API ========= */
   let isProcessing = false;
@@ -457,7 +481,6 @@
 
       const isGame30s = currentGameData && currentGameData.intervalM === 0.5;
       if (isGame30s) {
-        // Update historical data
         analyzeTrendData(list);
 
         if (isBetPlaced) {
@@ -565,6 +588,8 @@
     skipNextBet = false; skipReason = "";
     dailyStats = { date: new Date().toDateString(), bets: 0, wins: 0, losses: 0, profit: 0 };
     isBotActive = true;
+    strategyMode = 1;
+    zigzagUseReverse = false;
     sendResetToFirebase(oldBalance, "manual_reset");
     sendTelegram("🔄 <b>BOT DIRESET (v12.1 - 3 Mode)</b>\n💰 Saldo: 2.916.000\n⚙️ Mode: PERTAMBAHAN");
   }
@@ -575,14 +600,13 @@
  🤖 WINGO SMART TRADING BOT v12.1 - 3 MODE STRATEGY
  💰 Saldo awal: 2.916.000 (khusus 30 detik)
  📊 Mode awal: 1 (PERTAMBAHAN)
- 🔄 Mode 2 = REVERSE, Mode 3 = ZIGZAG METODE (bergantian PERTAMBAHAN/REVERSE)
+ 🔄 Mode 2 = REVERSE, Mode 3 = ZIGZAG (bergantian PERTAMBAHAN/REVERSE)
  📡 Firebase aktif (menyimpan semua data + countdown)
  ✅ Bot siap!`);
     
     setInterval(manualCheck, 30000);
     setTimeout(manualCheck, 3000);
     
-    // Tidak langsung placeBet karena data belum cukup, akan otomatis setelah 4 data terkumpul
     console.log("⏳ Menunggu 4 data pertama untuk memulai prediksi...");
 
     setInterval(cleanupAllCollections, 300000);
