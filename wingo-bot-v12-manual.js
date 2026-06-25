@@ -369,79 +369,74 @@
   }
 
   function processResult(result, apiData) {
-    if (!isBetPlaced || !isBotActive) return false;
-    const isWin = currentPrediction === result;
+  if (!isBetPlaced || !isBotActive) return false;
+  const isWin = currentPrediction === result;
 
-    if (isWin) {
-  const consecutiveLossesBeforeWin = currentStreak < 0 ? Math.abs(currentStreak) : 0;
-  virtualBalance += currentBetAmount * 2;
-  totalWins++;
-  currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
-  lastMotivationSentAtLoss = 0;
-  dailyStats.wins++;
-  dailyStats.profit += currentBetAmount * 2;
-  console.log(`✅ MENANG! Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
-  sendResultToFirebase(apiData, currentPrediction, true, currentNumberPrediction, 30);
-  
-  // ★ HANYA RESET LEVEL TARUHAN, MODE TETAP
-  currentBetIndex = 0;
-  currentBetAmount = betSequence[0];
-  
-  // ← BARIS INI DILETAKKAN DI SINI (setelah reset level)
-  console.log(` ✅ Reset level ke 1, mode tetap ${strategyMode} (${strategyMode === 1 ? 'PERTAMBAHAN' : strategyMode === 2 ? 'REVERSE' : 'ZIGZAG'})`);
-  
-  if (consecutiveLossesBeforeWin >= 5) {
-    setTimeout(() => sendTelegram(`🎉 Menang setelah ${consecutiveLossesBeforeWin} kekalahan.`), 1000);
-  }
-}
-    } else {
-      totalLosses++;
-      currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
-      dailyStats.losses++;
-      console.log(`❌ KALAH! Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
-      sendResultToFirebase(apiData, currentPrediction, false, currentNumberPrediction, 30);
+  if (isWin) {
+    const consecutiveLossesBeforeWin = currentStreak < 0 ? Math.abs(currentStreak) : 0;
+    virtualBalance += currentBetAmount * 2;
+    totalWins++;
+    currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
+    lastMotivationSentAtLoss = 0;
+    dailyStats.wins++;
+    dailyStats.profit += currentBetAmount * 2;
+    console.log(`✅ MENANG! Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
+    sendResultToFirebase(apiData, currentPrediction, true, currentNumberPrediction, 30);
 
-      // Update strategy mode berdasarkan kekalahan
-      if (strategyMode === 1) {
-        strategyMode = 2;
-        console.log(` 🔄 Pindah ke Mode 2 (REVERSE)`);
-      } else if (strategyMode === 2) {
-        strategyMode = 3;
-        zigzagUseReverse = false; // mulai dengan Pertambahan
-        console.log(` 🔄 Pindah ke Mode 3 (ZIGZAG METODE) - mulai PERTAMBAHAN`);
-      } else if (strategyMode === 3) {
-        zigzagUseReverse = !zigzagUseReverse;
-        console.log(` 🔄 Mode 3: ganti metode ke ${zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN"}`);
-      }
+    // Hanya reset level taruhan, mode tetap
+    currentBetIndex = 0;
+    currentBetAmount = betSequence[0];
+    console.log(` ✅ Reset level ke 1, mode tetap ${strategyMode} (${strategyMode === 1 ? 'PERTAMBAHAN' : strategyMode === 2 ? 'REVERSE' : 'ZIGZAG'})`);
 
-      // Naikkan level martingale
-      if (currentBetIndex < betSequence.length - 1) {
-        currentBetIndex++;
-        currentBetAmount = betSequence[currentBetIndex];
-        console.log(` 🔺 Level naik ke ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`);
-      } else {
-        console.log(` ⚠️ Sudah level maksimal`);
-      }
+    if (consecutiveLossesBeforeWin >= 5) {
+      setTimeout(() => sendTelegram(`🎉 Menang setelah ${consecutiveLossesBeforeWin} kekalahan.`), 1000);
+    }
+  } else {
+    totalLosses++;
+    currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
+    dailyStats.losses++;
+    console.log(`❌ KALAH! Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
+    sendResultToFirebase(apiData, currentPrediction, false, currentNumberPrediction, 30);
 
-      const lossStreak = Math.abs(currentStreak);
-      if (lossStreak === 3 && lastMotivationSentAtLoss < 3) {
-        setTimeout(() => sendTelegram(`💪 ${lossStreak} kekalahan berturut-turut.`), 500);
-        lastMotivationSentAtLoss = 3;
-      } else if (lossStreak === 5 && lastMotivationSentAtLoss < 5) {
-        setTimeout(() => sendTelegram(`💪 ${lossStreak} kekalahan beruntun.`), 500);
-        lastMotivationSentAtLoss = 5;
-      } else if (lossStreak === 7 && lastMotivationSentAtLoss < 7) {
-        setTimeout(() => sendTelegram(`💪 ${lossStreak} kali kalah.`), 500);
-        lastMotivationSentAtLoss = 7;
-      }
+    if (strategyMode === 1) {
+      strategyMode = 2;
+      console.log(` 🔄 Pindah ke Mode 2 (REVERSE)`);
+    } else if (strategyMode === 2) {
+      strategyMode = 3;
+      zigzagUseReverse = false;
+      console.log(` 🔄 Pindah ke Mode 3 (ZIGZAG METODE) - mulai PERTAMBAHAN`);
+    } else if (strategyMode === 3) {
+      zigzagUseReverse = !zigzagUseReverse;
+      console.log(` 🔄 Mode 3: ganti metode ke ${zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN"}`);
     }
 
-    profitLoss = virtualBalance - 2916000;
-    isBetPlaced = false;
-    predictedIssue = null;
-    predictedAt = null;
-    return isWin;
+    if (currentBetIndex < betSequence.length - 1) {
+      currentBetIndex++;
+      currentBetAmount = betSequence[currentBetIndex];
+      console.log(` 🔺 Level naik ke ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`);
+    } else {
+      console.log(` ⚠️ Sudah level maksimal`);
+    }
+
+    const lossStreak = Math.abs(currentStreak);
+    if (lossStreak === 3 && lastMotivationSentAtLoss < 3) {
+      setTimeout(() => sendTelegram(`💪 ${lossStreak} kekalahan berturut-turut.`), 500);
+      lastMotivationSentAtLoss = 3;
+    } else if (lossStreak === 5 && lastMotivationSentAtLoss < 5) {
+      setTimeout(() => sendTelegram(`💪 ${lossStreak} kekalahan beruntun.`), 500);
+      lastMotivationSentAtLoss = 5;
+    } else if (lossStreak === 7 && lastMotivationSentAtLoss < 7) {
+      setTimeout(() => sendTelegram(`💪 ${lossStreak} kali kalah.`), 500);
+      lastMotivationSentAtLoss = 7;
+    }
   }
+
+  profitLoss = virtualBalance - 2916000;
+  isBetPlaced = false;
+  predictedIssue = null;
+  predictedAt = null;
+  return isWin;
+}
 
   /* ========= PROCESS DATA API ========= */
   let isProcessing = false;
