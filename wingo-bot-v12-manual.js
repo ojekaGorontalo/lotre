@@ -1,4 +1,5 @@
 // prediksiAI.js - Manual Analysis Version (No AI, No Firebase Key)
+
 (function () {
   console.clear();
   console.log("🤖 WinGo Smart Trading Bot - v12.0 (Manual Analysis)");
@@ -54,94 +55,53 @@
   let currentGameData = null;
   let countdownInterval = null;
 
-  /* ========= MODE PREDIKSI (FOLLOW / ZIGZAG) ========= */
-  let predictionMode = 'follow'; // 'follow' atau 'zigzag'
-  let zigzagCounter = 0;
+  /* ========= VARIABEL ADAPTIF ZIGZAG ========= */
+  let lossMode = false;
+  let zigzagPrediction = null;
+  let consecutiveLosses = 0;
 
   /* ========= KONFIGURASI PEMBERSIHAN DATA ========= */
   const MAX_DATA_LIMIT = 100;
 
-  /* ========= FUNGSI ANALISIS MANUAL ========= */
+  /* ========= FUNGSI ANALISIS MANUAL (BARU) ========= */
   function getManualPrediction() {
-    // Jika mode zigzag, prediksi bergantian
-    if (predictionMode === 'zigzag') {
-      const isEven = zigzagCounter % 2 === 0;
-      zigzagCounter++;
-      const pred = isEven ? "KECIL" : "BESAR";
-      const num = pred === "KECIL" ? 2 : 7;
-      console.log(`🔮 Prediksi ZIG-ZAG: ${pred} (angka ${num})`);
-      return { prediction: pred, number: num };
+    // Ambil 4 hasil terbaru dari historicalData
+    const recent = historicalData.slice(0, 4);
+    if (recent.length === 0) {
+      // Jika belum ada data, prediksi default (misal BESAR)
+      console.log("⚠️ Belum ada data historis, prediksi default: BESAR (angka 7)");
+      return { prediction: "BESAR", number: 7 };
     }
 
-    // Mode follow (ikuti tren)
-    const data = historicalData.slice(0, 10);
-    if (data.length < 5) {
-      const lastNumbers = data.map(d => d.number);
-      const avg = lastNumbers.reduce((a, b) => a + b, 0) / lastNumbers.length;
-      const pred = avg <= 4 ? "KECIL" : "BESAR";
-      const num = pred === "KECIL" ? Math.floor(avg) : Math.ceil(avg);
-      return { prediction: pred, number: Math.min(9, Math.max(0, num)) };
-    }
+    // Hitung total angka
+    const numbers = recent.map(item => item.number);
+    const total = numbers.reduce((a, b) => a + b, 0);
+    const digit = total % 10;
+    const analisa = digit <= 4 ? "KECIL" : "BESAR";
 
-    const freq = Array(10).fill(0);
-    data.forEach(d => freq[d.number]++);
+    // Log analisa
+    console.log(`📊 4 Data: ${numbers.join(", ")}`);
+    console.log(`🧮 Total: ${total}`);
+    console.log(`🔢 Digit Akhir: ${digit}`);
+    console.log(`📈 Analisa: ${analisa}`);
 
-    let kecil = 0, besar = 0;
-    data.forEach(d => {
-      if (d.number <= 4) kecil++;
-      else besar++;
-    });
+    let prediksi;
+    let angka;
 
-    let maxFreq = -1;
-    let hotNumbers = [];
-    freq.forEach((count, num) => {
-      if (count > maxFreq) {
-        maxFreq = count;
-        hotNumbers = [num];
-      } else if (count === maxFreq) {
-        hotNumbers.push(num);
-      }
-    });
-
-    let minFreq = Infinity;
-    let coldNumbers = [];
-    freq.forEach((count, num) => {
-      if (count < minFreq) {
-        minFreq = count;
-        coldNumbers = [num];
-      } else if (count === minFreq) {
-        coldNumbers.push(num);
-      }
-    });
-
-    let prediction;
-    if (kecil > besar) prediction = "KECIL";
-    else if (besar > kecil) prediction = "BESAR";
-    else {
-      const lastResult = data[0].result;
-      prediction = lastResult === "KECIL" ? "BESAR" : "KECIL";
-    }
-
-    const range = prediction === "KECIL" ? [0, 1, 2, 3, 4] : [5, 6, 7, 8, 9];
-    let candidates = hotNumbers.filter(n => range.includes(n));
-    let predictedNumber;
-    if (candidates.length > 0) {
-      predictedNumber = candidates[0];
+    if (!lossMode) {
+      // Mode normal: prediksi = kebalikan analisa
+      prediksi = analisa === "KECIL" ? "BESAR" : "KECIL";
+      angka = prediksi === "KECIL" ? 2 : 7;
+      console.log(`🎯 Prediksi (normal): ${prediksi} (angka ${angka})`);
     } else {
-      candidates = coldNumbers.filter(n => range.includes(n));
-      if (candidates.length > 0) {
-        predictedNumber = candidates[0];
-      } else {
-        predictedNumber = prediction === "KECIL" ? 2 : 7;
-      }
+      // Mode zigzag: gunakan zigzagPrediction
+      prediksi = zigzagPrediction;
+      angka = prediksi === "KECIL" ? 2 : 7;
+      console.log(`⚠️ LOSS MODE AKTIF`);
+      console.log(`🔄 ZIGZAG PREDIKSI: ${prediksi} (angka ${angka})`);
     }
 
-    if (prediction === "KECIL" && predictedNumber > 4) predictedNumber = 2;
-    if (prediction === "BESAR" && predictedNumber < 5) predictedNumber = 7;
-
-    console.log(`📊 Analisis Manual: Kecil=${kecil}, Besar=${besar}, hot=[${hotNumbers.join(',')}], cold=[${coldNumbers.join(',')}]`);
-    console.log(`🔮 Prediksi FOLLOW: ${prediction} (angka ${predictedNumber})`);
-    return { prediction, number: predictedNumber };
+    return { prediction: prediksi, number: angka };
   }
 
   /* ========= FIREBASE FUNCTIONS (tidak berubah) ========= */
@@ -398,6 +358,12 @@
       dailyStats.wins++;
       dailyStats.profit += currentBetAmount * 2;
       console.log(`✅ MENANG! Prediksi Manual ${currentPrediction} untuk issue ${apiData.issueNumber}`);
+
+      // Reset loss mode
+      consecutiveLosses = 0;
+      lossMode = false;
+      zigzagPrediction = null;
+
       sendResultToFirebase(apiData, currentPrediction, true, currentNumberPrediction, 30);
       currentBetIndex = 0;
       currentBetAmount = betSequence[0];
@@ -410,6 +376,17 @@
       currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
       dailyStats.losses++;
       console.log(`❌ KALAH! Prediksi Manual ${currentPrediction} untuk issue ${apiData.issueNumber}`);
+
+      // Update loss mode (zigzag adaptif)
+      consecutiveLosses++;
+      if (!lossMode) {
+        lossMode = true;
+        zigzagPrediction = currentPrediction === "KECIL" ? "BESAR" : "KECIL";
+      } else {
+        zigzagPrediction = zigzagPrediction === "KECIL" ? "BESAR" : "KECIL";
+      }
+      console.log(`🔄 Loss mode aktif, zigzagPrediction = ${zigzagPrediction}`);
+
       sendResultToFirebase(apiData, currentPrediction, false, currentNumberPrediction, 30);
       if (currentBetIndex < betSequence.length - 1) {
         currentBetIndex++;
@@ -436,20 +413,6 @@
     predictedIssue = null;
     predictedAt = null;
     return isWin;
-  }
-
-  /* ========= TOGGLE MODE PREDIKSI SETIAP 1 JAM ========= */
-  function togglePredictionMode() {
-    if (predictionMode === 'follow') {
-      predictionMode = 'zigzag';
-      console.log('🔄 Mode prediksi berubah menjadi ZIG-ZAG (bergantian)');
-      sendTelegram('🔄 Mode prediksi: ZIG-ZAG (bergantian KECIL/BESAR)');
-    } else {
-      predictionMode = 'follow';
-      console.log('🔄 Mode prediksi berubah menjadi IKUTI TREN');
-      sendTelegram('🔄 Mode prediksi: IKUTI TREN');
-    }
-    zigzagCounter = 0; // reset counter untuk zigzag
   }
 
   /* ========= PROCESS DATA API ========= */
@@ -573,6 +536,10 @@
     skipNextBet = false; skipReason = "";
     dailyStats = { date: new Date().toDateString(), bets: 0, wins: 0, losses: 0, profit: 0 };
     isBotActive = true;
+    // Reset loss mode
+    lossMode = false;
+    zigzagPrediction = null;
+    consecutiveLosses = 0;
     sendResetToFirebase(oldBalance, "manual_reset");
     sendTelegram("🔄 <b>BOT DIRESET (v12.0 Manual)</b>\n💰 Saldo: 2.916.000");
   }
@@ -582,17 +549,14 @@
     console.log(`
  🤖 WINGO SMART TRADING BOT v12.0 - MANUAL ANALYSIS
  💰 Saldo awal: 2.916.000 (khusus 30 detik)
- 📊 Mode prediksi: FOLLOW (ikut tren) selama 1 jam pertama
- 🔄 Setiap 1 jam berganti ke ZIG-ZAG (bergantian) dan seterusnya
+ 📊 Algoritma: jumlah 4 angka terakhir → digit terakhir → analisa KECIL/BESAR
+ 🔄 Prediksi = kebalikan analisa (normal), zigzag otomatis saat kalah beruntun
  📡 Firebase aktif (menyimpan semua data + countdown)
  ✅ Bot siap!`);
-    
+
     setInterval(manualCheck, 30000);
     setTimeout(manualCheck, 3000);
-    
-    // Toggle mode setiap 1 jam (3600000 ms)
-    setInterval(togglePredictionMode, 3600000);
-    
+
     setTimeout(async () => {
       if (await placeBet()) {
         const message = `<b>WINGO 30s PREDIKSI v12.0 (Manual)</b>\n<b>🆔 PERIODE ???</b>\n<b>🎯 PREDIKSI: ${currentPrediction} 1K</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>`;
@@ -615,8 +579,6 @@
       console.log(`💰 Saldo: ${virtualBalance.toLocaleString()}\n📈 P/L: ${profitLoss}\n🎯 Bet: ${totalBets} (W:${totalWins}/L:${totalLosses})\n📊 Win Rate: ${winRate}%\n🔥 Streak: ${currentStreak}\n📊 Level: ${currentBetIndex + 1} (Rp ${currentBetAmount.toLocaleString()})`);
     },
     cleanup: cleanupAllCollections,
-    toggleMode: togglePredictionMode, // tambahan untuk manual toggle
-    getMode: () => predictionMode,
   };
   window.wingoBetData = {
     get prediction() { return currentPrediction; },
