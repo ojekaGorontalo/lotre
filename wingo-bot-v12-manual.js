@@ -55,10 +55,6 @@
   let currentGameData = null;
   let countdownInterval = null;
 
-  /* ========= STRATEGI 3 MODE BARU ========= */
-  let strategyMode = 1;           // 1 = Pertambahan, 2 = Reverse, 3 = ZigZag Metode
-  let zigzagUseReverse = false;   // false = Pertambahan, true = Reverse (hanya dipakai jika strategyMode == 3)
-
   /* ========= KONFIGURASI PEMBERSIHAN DATA ========= */
   const MAX_DATA_LIMIT = 100;
 
@@ -377,24 +373,27 @@
     const isWin = currentPrediction === result;
 
     if (isWin) {
-      const consecutiveLossesBeforeWin = currentStreak < 0 ? Math.abs(currentStreak) : 0;
-      virtualBalance += currentBetAmount * 2;
-      totalWins++;
-      currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
-      lastMotivationSentAtLoss = 0;
-      dailyStats.wins++;
-      dailyStats.profit += currentBetAmount * 2;
-      console.log(`✅ MENANG! Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
-      sendResultToFirebase(apiData, currentPrediction, true, currentNumberPrediction, 30);
-      // Reset ke Mode 1
-      strategyMode = 1;
-      zigzagUseReverse = false;
-      currentBetIndex = 0;
-      currentBetAmount = betSequence[0];
-      console.log(` ✅ Reset ke Level 1 dan Mode 1 (Pertambahan)`);
-      if (consecutiveLossesBeforeWin >= 5) {
-        setTimeout(() => sendTelegram(`🎉 Menang setelah ${consecutiveLossesBeforeWin} kekalahan.`), 1000);
-      }
+  const consecutiveLossesBeforeWin = currentStreak < 0 ? Math.abs(currentStreak) : 0;
+  virtualBalance += currentBetAmount * 2;
+  totalWins++;
+  currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
+  lastMotivationSentAtLoss = 0;
+  dailyStats.wins++;
+  dailyStats.profit += currentBetAmount * 2;
+  console.log(`✅ MENANG! Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
+  sendResultToFirebase(apiData, currentPrediction, true, currentNumberPrediction, 30);
+  
+  // ★ HANYA RESET LEVEL TARUHAN, MODE TETAP
+  currentBetIndex = 0;
+  currentBetAmount = betSequence[0];
+  
+  // ← BARIS INI DILETAKKAN DI SINI (setelah reset level)
+  console.log(` ✅ Reset level ke 1, mode tetap ${strategyMode} (${strategyMode === 1 ? 'PERTAMBAHAN' : strategyMode === 2 ? 'REVERSE' : 'ZIGZAG'})`);
+  
+  if (consecutiveLossesBeforeWin >= 5) {
+    setTimeout(() => sendTelegram(`🎉 Menang setelah ${consecutiveLossesBeforeWin} kekalahan.`), 1000);
+  }
+}
     } else {
       totalLosses++;
       currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
@@ -571,8 +570,6 @@
     skipNextBet = false; skipReason = "";
     dailyStats = { date: new Date().toDateString(), bets: 0, wins: 0, losses: 0, profit: 0 };
     isBotActive = true;
-    strategyMode = 1;
-    zigzagUseReverse = false;
     sendResetToFirebase(oldBalance, "manual_reset");
     sendTelegram("🔄 <b>BOT DIRESET (v12.1 - 3 Mode)</b>\n💰 Saldo: 2.916.000\n⚙️ Mode: PERTAMBAHAN");
   }
