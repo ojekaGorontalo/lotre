@@ -361,15 +361,40 @@
             userDisplayName.textContent = '👤 ' + displayName;
 
             // ================================================================
-            // 3. FUNGSI KIRIM KE KODULAR (kompatibel dengan login)
+            // 3. FUNGSI KIRIM KE KODULAR (versi robust)
             // ================================================================
             function sendToKodular(message) {
                 console.log('[Kirim ke Kodular]', message);
 
-                // 3a. Kirim via postMessage ke parent (jika di dalam iframe)
+                // 3a. AppInventor (yang paling umum di Kodular)
+                if (window.AppInventor && typeof window.AppInventor.webViewString === 'function') {
+                    try {
+                        window.AppInventor.webViewString(message);
+                        console.log('✅ Dikirim via AppInventor.webViewString');
+                        showToast('📤 Pesan terkirim ke AppInventor');
+                        return true;
+                    } catch (e) {
+                        console.warn('AppInventor gagal:', e);
+                    }
+                }
+
+                // 3b. Kodular (kadang berbeda)
+                if (window.Kodular && typeof window.Kodular.webViewString === 'function') {
+                    try {
+                        window.Kodular.webViewString(message);
+                        console.log('✅ Dikirim via Kodular.webViewString');
+                        showToast('📤 Pesan terkirim ke Kodular');
+                        return true;
+                    } catch (e) {
+                        console.warn('Kodular gagal:', e);
+                    }
+                }
+
+                // 3c. Kirim via postMessage ke parent (jika di dalam iframe)
                 if (window.parent && window.parent !== window) {
                     try {
                         window.parent.postMessage(message, '*');
+                        console.log('✅ Dikirim via postMessage');
                         showToast('📤 Pesan terkirim ke parent');
                         return true;
                     } catch (e) {
@@ -377,10 +402,11 @@
                     }
                 }
 
-                // 3b. Kirim via WingoBridge (Android WebView custom)
+                // 3d. Kirim via WingoBridge (custom Android bridge)
                 if (window.WingoBridge && typeof window.WingoBridge.sendMessage === 'function') {
                     try {
                         window.WingoBridge.sendMessage(message);
+                        console.log('✅ Dikirim via WingoBridge');
                         showToast('📤 Pesan terkirim via WingoBridge');
                         return true;
                     } catch (e) {
@@ -388,7 +414,8 @@
                     }
                 }
 
-                // 3c. Fallback: hanya log & toast
+                // 3e. Fallback: tidak ada cara kirim
+                console.error('❌ Tidak ada metode pengiriman ke Kodular yang tersedia.');
                 showToast('⚠️ Tidak dapat mengirim ke Kodular (lihat console)');
                 return false;
             }
@@ -443,6 +470,9 @@
             // ================================================================
             console.log('✅ Wingo Beranda siap (tema merah).');
             console.log('👤 User:', userData);
+            console.log('🔍 Deteksi window.AppInventor:', typeof window.AppInventor);
+            console.log('🔍 Deteksi window.Kodular:', typeof window.Kodular);
+            console.log('🔍 Deteksi window.WingoBridge:', typeof window.WingoBridge);
 
         })();
     </script>
