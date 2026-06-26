@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover" />
+    <title>Peringatan - Wingo Bot</title>
+
+    <!-- Font & Ikon -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <style>
+        /* ===== RESET ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 20px 12px 40px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* ===== HEADER (sama seperti di analytics) ===== */
+        .header {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+        }
+
+        .header h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header h1 i {
+            font-size: 1.2rem;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* ===== CARD UTAMA ===== */
+        .card {
+            background: #0f172a;
+            border-radius: 20px;
+            padding: 24px 20px 28px;
+            margin-bottom: 16px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ===== KONTEN PERINGATAN ===== */
+        .warning-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            text-align: center;
+            color: #fbbf24;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .warning-title i {
+            font-size: 2rem;
+            color: #dc2626;
+        }
+
+        .warning-section {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .warning-section:last-of-type {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .warning-section h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fca5a5;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .warning-section h3 i {
+            color: #dc2626;
+            font-size: 0.9rem;
+        }
+
+        .warning-section p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 6px;
+        }
+
+        .warning-section ul {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+
+        .warning-section ul li {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 4px;
+        }
+
+        .highlight-box {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin: 12px 0;
+        }
+
+        .highlight-box strong {
+            color: #fbbf24;
+        }
+
+        .bet-levels {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-align: center;
+            letter-spacing: 0.5px;
+            margin: 8px 0;
+        }
+
+        .btn-back-home {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+            margin-top: 20px;
+        }
+
+        .btn-back-home:active {
+            transform: scale(0.97);
+        }
+
+        .btn-back-home i {
+            margin-right: 8px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 420px) {
+            .card {
+                padding: 18px 14px 20px;
+                border-radius: 16px;
+            }
+            .warning-title {
+                font-size: 1.3rem;
+            }
+            .warning-title i {
+                font-size: 1.5rem;
+            }
+            .warning-section h3 {
+                font-size: 0.9rem;
+            }
+            .warning-section p,
+            .warning-section ul li {
+                font-size: 0.8rem;
+            }
+            .header h1 {
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="header">
+            <h1><i class="fas fa-shield-alt"></i> Wingo Bot</h1>
+            <a href="berandaWingo.html" class="back-btn"><i class="fas fa-arrow-left"></i> Kembali</a>
+        </div>
+
+        <!-- CARD UTAMA -->
+        <div class="card">
+
+            <div class="warning-title">
+                <i class="fas fa-triangle-exclamation"></i>
+                PERINGATAN PENTING
+            </div>
+
+            <!-- SECTION 1 -->
+            <div class="warning-section">
+                <h3><i class="fas fa-chart-line"></i> 1. PREDIKSI TIDAK 100% AKURAT</h3>
+                <p>
+                    Hasil prediksi dari sistem ini berdasarkan analisis data historis dan kecerdasan buatan (AI).
+                    Namun, <strong style="color:#fca5a5;">PERLU DIPAHAMI</strong> bahwa permainan Kecil/Besar bersifat <strong style="color:#fbbf24;">acak (RNG)</strong> dan <strong style="color:#dc2626;">TIDAK ADA JAMINAN KEMENANGAN</strong>.
+                </p>
+                <p>
+                    Segala keputusan taruhan adalah <strong>TANGGUNG JAWAB ANDA SEPENUHNYA</strong>. Pemilik bot tidak bertanggung jawab atas kerugian finansial yang dialami.
+                </p>
+            </div>
+
+            <!-- SECTION 2 -->
+            <div class="warning-section">
+                <h3><i class="fas fa-arrow-trend-up"></i> 2. STRATEGI MARTINGALE – CARA KERJA &amp; RISIKO</h3>
+                <p>
+                    Martingale adalah strategi menaikkan taruhan setelah setiap kekalahan, bertujuan menutup semua kerugian saat akhirnya menang.
+                </p>
+                <div class="highlight-box">
+                    <strong>Urutan taruhan yang digunakan sistem saat ini:</strong>
+                    <div class="bet-levels">
+                        1K → 3K → 8K → 24K → 72K → 216K → 648K → 1.944K
+                    </div>
+                    <p style="font-size:0.8rem; margin-top:4px; color:#94a3b8;">
+                        Total dibutuhkan untuk menahan 8 level kekalahan: <strong style="color:#fbbf24;">Rp 2.916.000</strong>
+                    </p>
+                </div>
+                <p>
+                    Setiap kali menang, taruhan akan kembali ke level awal (1K). Jika terus menerus kalah, taruhan naik hingga level maksimal (1.944K).
+                </p>
+            </div>
+
+            <!-- SECTION 3 -->
+            <div class="warning-section">
+                <h3><i class="fas fa-exclamation-circle"></i> 3. BATASAN DAN PERINGATAN MARTINGALE</h3>
+                <div class="highlight-box" style="border-color: #dc2626; background: rgba(220, 38, 38, 0.15);">
+                    <p style="color:#f87171; font-weight:700;">⚠️ MARTINGALE BUKAN STRATEGI TANPA RISIKO!</p>
+                    <ul>
+                        <li>Kekalahan beruntun dapat menguras saldo dengan <strong style="color:#f87171;">sangat cepat</strong>.</li>
+                        <li>Pastikan saldo Anda cukup untuk menahan hingga level tertinggi (total dibutuhkan <strong style="color:#fbbf24;">Rp 2.916.000</strong>).</li>
+                        <li>Sistem memiliki 8 level. Jika kalah di level 8, saldo akan otomatis direset ke Rp 2.916.000.</li>
+                        <li><strong style="color:#dc2626;">Jangan pernah bertaruh dengan uang yang tidak siap Anda kehilangan.</strong></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- SECTION 4 -->
+            <div class="warning-section">
+                <h3><i class="fas fa-gem"></i> 4. ATURAN EMAS UNTUK PENGGUNAAN</h3>
+                <ul>
+                    <li>✅ Gunakan <strong>uang dingin</strong> (dana di luar kebutuhan pokok).</li>
+                    <li>✅ Tetapkan <strong>batas kerugian harian</strong> dan patuhi dengan disiplin.</li>
+                    <li>✅ Jangan mengejar kekalahan dengan emosi – <strong>istirahat jika perlu</strong>.</li>
+                    <li>✅ Jika merasa kecanduan judi, <strong style="color:#fbbf24;">segera cari bantuan profesional</strong>.</li>
+                </ul>
+            </div>
+
+            <!-- SECTION 5: Penutup -->
+            <div style="margin-top: 16px; padding: 14px; background: rgba(251, 191, 36, 0.05); border-radius: 12px; text-align: center;">
+                <p style="font-size:0.9rem; color:#fbbf24; font-weight:700;">
+                    📌 INGAT: Tidak ada sistem yang bisa mengalahkan keberuntungan. Hasil akhir selalu di luar kendali siapa pun. <br>Gunakan dengan bijak dan bertanggung jawab.
+                </p>
+            </div>
+
+            <!-- TOMBOL KEMBALI -->
+            <a href="berandaWingo.html" class="btn-back-home">
+                <i class="fas fa-home"></i> Kembali ke Beranda
+            </a>
+
+        </div><!-- end card -->
+
+        <!-- FOOTER (optional) -->
+        <div style="text-align: center; font-size: 12px; color: rgba(255,255,255,0.1); margin-top: 8px;">
+            v4.2 &bull; Halaman Peringatan
+        </div>
+
+    </div><!-- end container -->
+
+</body>
+</html>
