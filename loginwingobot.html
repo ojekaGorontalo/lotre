@@ -423,13 +423,18 @@
             setInterval(updateOnlineCount, 15000);
 
             // ================================================================
-            // 6. HANDLE LOGIN (langsung redirect, tanpa Firebase)
+            // 6. HANDLE LOGIN – VALIDASI KE FIREBASE
             // ================================================================
-            form.addEventListener('submit', function(e) {
+            const FIREBASE_URL = 'https://steady-fin-368617-default-rtdb.firebaseio.com/uids.json';
+
+            form.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 const uid = uidInput.value.trim();
                 const password = passwordInput.value.trim();
+
+                // Reset error
+                loginError.textContent = '';
 
                 if (!uid) {
                     loginError.textContent = '⚠️ UID tidak boleh kosong.';
@@ -442,25 +447,72 @@
                     return;
                 }
 
-                // Simpan ke localStorage
-                try {
-                    localStorage.setItem('wingo_user', JSON.stringify({
-                        uid: uid,
-                        nickName: 'User_' + uid,
-                        role: 'member',
-                        lv: 0,
-                        loginTime: new Date().toISOString()
-                    }));
-                } catch (err) {
-                    loginError.textContent = '❌ Gagal menyimpan data.';
-                    return;
-                }
+                // Disable tombol
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memeriksa...';
 
-                // Tampilkan toast dan redirect
-                showToast('✅ Login berhasil! Selamat datang.');
-                setTimeout(() => {
-                    window.location.href = 'berandaWingo.html';
-                }, 800);
+                try {
+                    // 1. Ambil data UID dari Firebase
+                    const response = await fetch(FIREBASE_URL);
+                    if (!response.ok) {
+                        throw new Error('Gagal terhubung ke server (HTTP ' + response.status + ')');
+                    }
+                    const data = await response.json();
+
+                    // 2. Cari UID yang dimasukkan
+                    const userRecord = data[uid];
+
+                    if (!userRecord) {
+                        loginError.textContent = '❌ UID tidak terdaftar. Periksa kembali.';
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                        return;
+                    }
+
+                    // 3. Cek status aktif
+                    if (userRecord.active === false || userRecord.status === 0) {
+                        loginError.textContent = '❌ Akun dinonaktifkan. Hubungi admin.';
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                        return;
+                    }
+
+                    // 4. Cek password
+                    const storedPassword = userRecord.password || '';
+                    if (storedPassword !== password) {
+                        loginError.textContent = '❌ Password salah. Coba lagi.';
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                        return;
+                    }
+
+                    // 5. Login berhasil!
+                    // Simpan data ke localStorage
+                    try {
+                        localStorage.setItem('wingo_user', JSON.stringify({
+                            uid: uid,
+                            nickName: userRecord.nickName || uid,
+                            role: userRecord.role || 'member',
+                            lv: userRecord.lv || userRecord.Lv || 0,
+                            loginTime: new Date().toISOString()
+                        }));
+                    } catch (e) {
+                        // Ignore
+                    }
+
+                    showToast('✅ Login berhasil! Selamat datang, ' + (userRecord.nickName || uid));
+
+                    // Redirect setelah delay
+                    setTimeout(() => {
+                        window.location.href = 'berandaWingo.html';
+                    }, 800);
+
+                } catch (error) {
+                    console.error('[Login Error]', error);
+                    loginError.textContent = '⚠️ Terjadi kesalahan: ' + error.message;
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                }
             });
 
             // ================================================================
@@ -484,7 +536,7 @@
             // ================================================================
             // 9. INFORMASI
             // ================================================================
-            console.log('✅ Halaman Login siap (tema merah).');
+            console.log('✅ Halaman Login (validasi Firebase) siap.');
 
         })();
     </script>
