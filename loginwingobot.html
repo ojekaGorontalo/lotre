@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Login Wingo Bot</title>
+
+    <!-- Font & Ikon -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <style>
+        /* ===== RESET ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        /* ===== HEADER (sama seperti di analytics) ===== */
+        .header {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header h1 i {
+            font-size: 1.4rem;
+        }
+
+        /* ===== CARD ===== */
+        .card {
+            background: #0f172a;
+            border-radius: 20px;
+            padding: 28px 20px 24px;
+            margin-bottom: 16px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-subtitle {
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 24px;
+        }
+
+        /* ===== FORM ===== */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 6px;
+        }
+
+        .form-group .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .form-group .input-wrapper:focus-within {
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+        }
+
+        .form-group .input-wrapper i {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 16px;
+            padding: 0 0 0 16px;
+            width: 44px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .form-group .input-wrapper input {
+            width: 100%;
+            padding: 14px 16px 14px 4px;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 15px;
+            font-weight: 500;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .form-group .input-wrapper input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+            font-weight: 400;
+        }
+
+        /* ===== TOMBOL ===== */
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.25s ease;
+            font-family: 'Inter', sans-serif;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-login:active {
+            transform: scale(0.97);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+            margin-top: 10px;
+        }
+
+        .btn-register:active {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-register i {
+            color: #38bdf8;
+            margin-right: 6px;
+        }
+
+        /* ===== STATUS ERROR ===== */
+        #loginError {
+            color: #f87171;
+            font-size: 13px;
+            margin-top: 12px;
+            min-height: 20px;
+            text-align: center;
+        }
+
+        /* ===== ONLINE INDICATOR ===== */
+        .online-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #4ade80;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 18px;
+            margin-top: 8px;
+        }
+
+        /* ===== TOAST ===== */
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            padding: 12px 24px;
+            border-radius: 100px;
+            font-size: 14px;
+            color: #fff;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            z-index: 999;
+            white-space: nowrap;
+            max-width: 90%;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 420px) {
+            .card {
+                padding: 20px 16px 20px;
+                border-radius: 16px;
+            }
+            .header h1 {
+                font-size: 1rem;
+            }
+            .btn-login {
+                font-size: 15px;
+                padding: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> Wingo Bot</h1>
+        </div>
+
+        <!-- CARD LOGIN -->
+        <div class="card">
+
+            <div class="card-subtitle">Masukkan UID &amp; Password untuk mengakses</div>
+
+            <!-- FORM -->
+            <form id="loginForm" autocomplete="off">
+
+                <!-- UID -->
+                <div class="form-group">
+                    <label for="uidInput"><i class="fas fa-id-card" style="margin-right:6px;color:#dc2626;"></i> UID</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user"></i>
+                        <input
+                            type="text"
+                            id="uidInput"
+                            placeholder="Contoh: 351494"
+                            autocomplete="username"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <!-- PASSWORD -->
+                <div class="form-group">
+                    <label for="passwordInput"><i class="fas fa-lock" style="margin-right:6px;color:#dc2626;"></i> Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-key"></i>
+                        <input
+                            type="password"
+                            id="passwordInput"
+                            placeholder="Masukkan password"
+                            autocomplete="current-password"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <!-- BUTTON LOGIN -->
+                <button type="submit" class="btn-login" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+
+                <!-- BUTTON REGISTER -->
+                <button type="button" class="btn-register" id="registerBtn">
+                    <i class="fas fa-user-plus"></i> Daftar / Hubungi Admin
+                </button>
+
+                <div id="loginError"></div>
+
+            </form>
+
+            <!-- ONLINE INDICATOR -->
+            <div class="online-indicator">
+                <span class="online-dot"></span>
+                <span id="onlineCount">0</span> Pengguna Online
+            </div>
+
+            <!-- FOOTER -->
+            <div class="footer">
+                v4.2 &bull; Login
+            </div>
+
+        </div><!-- end card -->
+
+    </div><!-- end container -->
+
+    <!-- TOAST -->
+    <div id="toast"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ================================================================
+            // 1. ELEMEN
+            // ================================================================
+            const form = document.getElementById('loginForm');
+            const uidInput = document.getElementById('uidInput');
+            const passwordInput = document.getElementById('passwordInput');
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const loginError = document.getElementById('loginError');
+            const onlineCount = document.getElementById('onlineCount');
+            const toast = document.getElementById('toast');
+
+            // ================================================================
+            // 2. CEK LOCALSTORAGE (jika sudah login, redirect ke beranda)
+            // ================================================================
+            try {
+                const saved = localStorage.getItem('wingo_user');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && parsed.uid) {
+                        window.location.href = 'berandaWingo.html';
+                        return;
+                    }
+                }
+            } catch (_) {}
+
+            // ================================================================
+            // 3. ISI UID DARI LOCALSTORAGE (jika ada)
+            // ================================================================
+            try {
+                const saved = localStorage.getItem('wingo_user');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && parsed.uid) {
+                        uidInput.value = parsed.uid;
+                    }
+                }
+            } catch (_) {}
+
+            // ================================================================
+            // 4. TOAST NOTIFIKASI
+            // ================================================================
+            let toastTimer = null;
+
+            function showToast(text) {
+                toast.textContent = text;
+                toast.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+
+            // ================================================================
+            // 5. ONLINE COUNTER (fake seperti di analytics)
+            // ================================================================
+            function updateOnlineCount() {
+                const base = 1200;
+                const fake = Math.floor(Math.random() * 300);
+                onlineCount.textContent = base + fake;
+            }
+            updateOnlineCount();
+            setInterval(updateOnlineCount, 15000);
+
+            // ================================================================
+            // 6. HANDLE LOGIN (langsung redirect, tanpa Firebase)
+            // ================================================================
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const uid = uidInput.value.trim();
+                const password = passwordInput.value.trim();
+
+                if (!uid) {
+                    loginError.textContent = '⚠️ UID tidak boleh kosong.';
+                    uidInput.focus();
+                    return;
+                }
+                if (!password) {
+                    loginError.textContent = '⚠️ Password tidak boleh kosong.';
+                    passwordInput.focus();
+                    return;
+                }
+
+                // Simpan ke localStorage
+                try {
+                    localStorage.setItem('wingo_user', JSON.stringify({
+                        uid: uid,
+                        nickName: 'User_' + uid,
+                        role: 'member',
+                        lv: 0,
+                        loginTime: new Date().toISOString()
+                    }));
+                } catch (err) {
+                    loginError.textContent = '❌ Gagal menyimpan data.';
+                    return;
+                }
+
+                // Tampilkan toast dan redirect
+                showToast('✅ Login berhasil! Selamat datang.');
+                setTimeout(() => {
+                    window.location.href = 'berandaWingo.html';
+                }, 800);
+            });
+
+            // ================================================================
+            // 7. REGISTER / HUBUNGI ADMIN
+            // ================================================================
+            registerBtn.addEventListener('click', function() {
+                alert('📌 Untuk mendapatkan akses, hubungi admin via Telegram @PredictorUser');
+                window.open('https://www.lixnobe.com/#/register?invitationCode=DtX6m351494', '_blank');
+            });
+
+            // ================================================================
+            // 8. HAPUS ERROR SAAT KETIK
+            // ================================================================
+            uidInput.addEventListener('input', function() {
+                loginError.textContent = '';
+            });
+            passwordInput.addEventListener('input', function() {
+                loginError.textContent = '';
+            });
+
+            // ================================================================
+            // 9. INFORMASI
+            // ================================================================
+            console.log('✅ Halaman Login siap (tema merah).');
+
+        })();
+    </script>
+
+</body>
+</html>
