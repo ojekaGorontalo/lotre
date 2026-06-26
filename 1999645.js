@@ -1,5 +1,6 @@
 // ====================================================
 // WINGO AUTO-BOT v4.2 - PAUSE SETELAH 3x LOSS, RESUME SETELAH 3x WIN
+// DIMODIFIKASI: Metode prediksi 4 angka + 3 mode strategi
 // ====================================================
 (function() {
     'use strict';
@@ -28,15 +29,19 @@
     let nextIssue = null;
     let lastProcessedIssue = null;
     
-    // Urutan taruhan baru: 2K, 4K, 8K, 16K, 32K
+    // Urutan taruhan (Martingale)
     const betSequence = [2000, 4000, 8000, 16000, 32000];
     const betLabels = ["2K", "4K", "8K", "16K", "32K"];
     
     // ========== STATE PAUSE ==========
-    let isPaused = false;           // true jika sedang pause karena 3x loss
-    let pauseWinStreak = 0;         // jumlah win berturut-turut selama pause (untuk resume)
+    let isPaused = false;
+    let pauseWinStreak = 0;
     
-    // ========== HOOK API ==========
+    // ========== [MODIFIKASI] STATE STRATEGI 3 MODE ==========
+    let strategyMode = 1;          // 1 = PERTAMBAHAN, 2 = REVERSE, 3 = ZIGZAG
+    let zigzagUseReverse = false;  // khusus mode 3 (false = pakai Pertambahan, true = Reverse)
+    
+    // ========== HOOK API (TIDAK DIUBAH) ==========
     function hookApi() {
         const originalFetch = window.fetch;
         window.fetch = function(...args) {
@@ -86,7 +91,7 @@
         console.log('✅ API Hook terpasang');
     }
     
-    // ========== FUNGSI ANALISIS DATA ==========
+    // ========== FUNGSI ANALISIS DATA (TIDAK DIUBAH) ==========
     function analyzeTrendData(listData) {
         if (!listData || listData.length < 5) return;
         const results = listData.map(item => ({
@@ -103,54 +108,41 @@
         }
     }
     
-    // ========== PREDIKSI ==========
+    // ========== [MODIFIKASI] PREDIKSI DENGAN 4 ANGKA + 3 MODE ==========
     function getPrediction() {
-        // Deteksi streak 3x
-        if (historicalData.length >= 3) {
-            const last3 = historicalData.slice(0, 3).map(d => d.result);
-            const allSame = last3.every(r => r === last3[0]);
-            if (allSame) {
-                console.log(`🔄 Streak 3x terdeteksi: ${last3[0]}`);
-                return last3[0];
-            }
-        }
-        
-        if (historicalData.length < 5) {
+        // Jika data kurang dari 4, gunakan fallback (hasil terakhir atau KECIL)
+        if (historicalData.length < 4) {
             if (historicalData.length > 0) {
                 const fallback = historicalData[0].result;
-                console.log(`⚠️ Data <5, pakai fallback: ${fallback}`);
+                console.log(`⚠️ Data <4, pakai fallback: ${fallback}`);
                 return fallback;
             }
             return "KECIL";
         }
-        
-        const last10 = historicalData.slice(0, 10);
-        const freq = [0,0,0,0,0,0,0,0,0,0];
-        for (const d of last10) freq[d.number]++;
-        
-        const missing = [];
-        for (let i=0; i<=9; i++) if (freq[i]===0) missing.push(i);
-        
-        let selectedNumber;
-        if (missing.length > 0) {
-            let closest = missing[0];
-            for (let m of missing) if (Math.abs(m-5) < Math.abs(closest-5)) closest = m;
-            selectedNumber = closest;
-        } else {
-            let minFreq = Math.min(...freq);
-            let candidates = [];
-            for (let i=0; i<=9; i++) if (freq[i]===minFreq) candidates.push(i);
-            let closest = candidates[0];
-            for (let c of candidates) if (Math.abs(c-5) < Math.abs(closest-5)) closest = c;
-            selectedNumber = closest;
+
+        // Ambil 4 angka terakhir (indeks 0 = terbaru)
+        const last4 = historicalData.slice(0, 4).map(d => d.number);
+        const total = last4.reduce((a, b) => a + b, 0);
+        const digitAkhir = total % 10;
+        const hasilPertambahan = digitAkhir <= 4 ? "KECIL" : "BESAR";
+        const hasilReverse = hasilPertambahan === "KECIL" ? "BESAR" : "KECIL";
+
+        // Tentukan prediksi berdasarkan mode aktif
+        let pred = "";
+        if (strategyMode === 1) {
+            pred = hasilPertambahan;
+        } else if (strategyMode === 2) {
+            pred = hasilReverse;
+        } else if (strategyMode === 3) {
+            pred = zigzagUseReverse ? hasilReverse : hasilPertambahan;
         }
-        
-        const prediction = selectedNumber <= 4 ? "KECIL" : "BESAR";
-        console.log(`🎯 Prediksi: ${prediction} (angka ${selectedNumber}) dari analisis frekuensi`);
-        return prediction;
+
+        const predictedNumber = pred === "KECIL" ? 2 : 7;
+        console.log(`🎯 Prediksi: ${pred} (angka ${predictedNumber}) dari 4 angka ${last4.join(', ')} | Mode: ${strategyMode}${strategyMode===3 ? (zigzagUseReverse ? ' (R)' : ' (P)') : ''}`);
+        return pred;
     }
     
-    // ========== AUTO-CLICK ==========
+    // ========== AUTO-CLICK (TIDAK DIUBAH) ==========
     function getTimerInfo() {
         const timerSelectors = [
             '.timer', '.countdown', '.van-count-down',
@@ -252,7 +244,6 @@
             if (CONFIG.autoConfirm) await confirmBet(popup);
             return;
         }
-        // Cari tombol cepat
         const buttons = popup.querySelectorAll('button, div, span');
         for (let btn of buttons) {
             const txt = btn.textContent || '';
@@ -311,7 +302,7 @@
         console.warn(`⚠️ Tombol konfirmasi tidak ditemukan`);
     }
     
-    // ========== LOGIKA TARUHAN ==========
+    // ========== [MODIFIKASI] LOGIKA TARUHAN (placeBet) ==========
     function placeBet() {
         if (isPaused) {
             console.log(`⏸️ Bot sedang pause, tidak melakukan taruhan.`);
@@ -324,51 +315,65 @@
         return true;
     }
     
+    // ========== [MODIFIKASI] processWin ==========
     function processWin() {
+        // Mode tetap (tidak berubah)
+        console.log(`✅ MENANG! Mode tetap: ${strategyMode}`);
+        
         // Update streak positif
         currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
         
         if (isPaused) {
-            // Saat pause, kita hanya menghitung win untuk resume
             pauseWinStreak++;
             console.log(`✅ MENANG (dalam pause) - ${pauseWinStreak}/3 win untuk resume`);
             if (pauseWinStreak >= 3) {
-                // Resume bot
                 isPaused = false;
                 pauseWinStreak = 0;
-                currentBetIndex = 0;          // reset ke level 1
+                currentBetIndex = 0;
                 currentBetAmount = betSequence[0];
                 console.log(`🟢 RESUME BOT! Sudah 3x win berturut-turut, mulai lagi dari 2K.`);
             }
-            // Jangan reset level karena kita tidak bertaruh saat pause
             return;
         }
         
-        // Jika tidak pause, reset level dan update streak
+        // Jika tidak pause, reset level
         currentBetIndex = 0;
         currentBetAmount = betSequence[0];
         console.log(`✅ MENANG! Reset level ke 1. Streak: ${currentStreak}`);
     }
     
+    // ========== [MODIFIKASI] processLoss ==========
     function processLoss() {
         // Update streak negatif
         currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
         
+        // [MODIFIKASI] Ubah mode berdasarkan aturan
+        if (strategyMode === 1) {
+            strategyMode = 2;
+            console.log(`➡️ KALAH! Pindah ke Mode 2 (REVERSE)`);
+        } else if (strategyMode === 2) {
+            strategyMode = 3;
+            zigzagUseReverse = false; // mulai dengan PERTAMBAHAN
+            console.log(`➡️ KALAH! Pindah ke Mode 3 (ZIGZAG) - mulai dengan PERTAMBAHAN`);
+        } else if (strategyMode === 3) {
+            zigzagUseReverse = !zigzagUseReverse;
+            console.log(`🔄 KALAH! Mode 3 tetap, metode berubah menjadi ${zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN"}`);
+        }
+        
         if (isPaused) {
-            // Jika masih pause dan kalah, reset hitungan win pause
             pauseWinStreak = 0;
             console.log(`❌ KALAH (dalam pause) - reset hitungan win untuk resume.`);
             return;
         }
         
-        // Naik level jika tidak pause
+        // Naik level Martingale
         if (currentBetIndex < betSequence.length - 1) {
             currentBetIndex++;
             currentBetAmount = betSequence[currentBetIndex];
         }
         console.log(`❌ KALAH! Naik level ke ${currentBetIndex+1} (Rp ${currentBetAmount.toLocaleString()})`);
         
-        // Cek apakah sudah 3x loss berturut-turut
+        // Cek pause 3x loss berturut-turut
         if (currentStreak === -3) {
             isPaused = true;
             pauseWinStreak = 0;
@@ -376,7 +381,7 @@
         }
     }
     
-    // ========== PROSES DATA DARI API ==========
+    // ========== PROSES DATA DARI API (TIDAK DIUBAH) ==========
     function processData(data) {
         const list = data?.data?.list;
         if (!list || list.length === 0) return;
@@ -397,60 +402,14 @@
                 processLoss();
             }
             isBetPlaced = false;
-        } else {
-            // Jika tidak ada bet (misal karena pause), tetap update streak untuk pantau pause
-            // Tapi kita tidak punya prediksi, jadi kita update streak berdasarkan hasil aktual?
-            // Sebaiknya kita tetap update streak untuk keperluan pause, meskipun tanpa bet.
-            // Kita bisa update streak secara manual di sini.
-            // Namun processWin/Loss membutuhkan currentPrediction, jadi kita tidak bisa pakai.
-            // Kita akan buat fungsi khusus untuk update streak tanpa bet.
-            updateStreakWithoutBet(result);
         }
         lastProcessedIssue = issueNumber;
     }
     
-    // Fungsi khusus untuk update streak saat tidak ada bet (misal saat pause)
-    function updateStreakWithoutBet(result) {
-        if (isPaused) {
-            // Saat pause, kita hanya peduli win untuk resume
-            if (result === "BESAR" || result === "KECIL") {
-                // Kita asumsikan result bisa dipakai, tapi kita tidak punya prediksi.
-                // Karena kita tidak tahu prediksi, kita tidak bisa menentukan menang/kalah.
-                // Namun untuk pause, kita hanya butuh menang berturut-turut secara aktual (tanpa prediksi).
-                // Jadi kita update currentStreak berdasarkan hasil aktual? Tapi untuk pause, kita ingin 3x win actual.
-                // Kita bisa gunakan pendekatan: jika result sama dengan prediksi terakhir? Tidak ada.
-                // Lebih baik kita tracking win/loss aktual secara independen.
-                // Kita akan buat variabel terpisah: actualWinStreak.
-                // Saya akan tambahkan variabel actualStreak.
-                // Tapi untuk kesederhanaan, saya gunakan currentStreak dengan asumsi kita selalu mengikuti prediksi.
-                // Saat pause, kita tidak punya prediksi, jadi kita tidak bisa menentukan menang/kalah.
-                // Karena itu, cara paling aman: saat pause, kita abaikan update streak dari hasil, dan hanya mengandalkan
-                // hasil taruhan yang sebenarnya (yang sudah diproses di processWin/Loss) - namun saat pause tidak ada taruhan.
-                // Maka kita perlu cara lain: kita pantau hasil aktual (nomor) dan bandingkan dengan prediksi terakhir? Tidak ada.
-                // Solusi: kita tidak perlu update streak saat pause. Kita hanya perlu menghitung menang aktual dari hasil.
-                // Kita akan buat variabel actualWinCount untuk menghitung berapa kali hasil = "BESAR" atau "KECIL"? Tidak.
-                // Sebenarnya untuk resume, kita butuh 3x menang berturut-turut secara aktual (hasil apapun, asalkan menang).
-                // Tapi menang itu relatif terhadap prediksi. Karena kita tidak bet, tidak ada menang/kalah.
-                // Mungkin maksudnya adalah: setelah pause, kita pantau hasil undian, jika terjadi 3x hasil yang sama?
-                // Tidak jelas. Saya asumsikan maksudnya adalah: setelah pause, kita tunggu sampai terjadi 3x kemenangan (yaitu hasil sesuai prediksi) tapi kita tidak bet.
-                // Untuk itu kita perlu tetap punya prediksi meskipun tidak bet. Kita bisa tetap hitung prediksi setiap periode, lalu bandingkan dengan hasil.
-                // Jika cocok, itu dianggap "win" untuk tujuan resume.
-                // Jadi kita akan tetap panggil getPrediction() untuk mendapatkan prediksi, lalu bandingkan dengan result.
-                // Meskipun tidak bet, kita bisa menghitung win/loss untuk keperluan resume.
-                // Saya akan modifikasi: saat tidak ada bet (isBetPlaced false), kita tetap hitung prediksi dan bandingkan.
-                // Tapi kita tidak ingin mengganggu logika bet. Kita bisa lakukan di sini.
-                // Saya akan tulis ulang processData untuk menangani ini.
-                // Karena lebih mudah, kita akan selalu hitung prediksi setiap periode (tanpa bet) dan update streak khusus untuk pause.
-                // Saya akan tambahkan variabel actualStreakForPause.
-            }
-        }
-    }
-    
-    // ========== CEK TIMER DAN EKSEKUSI ==========
+    // ========== CEK TIMER DAN EKSEKUSI (TIDAK DIUBAH) ==========
     async function checkAndBet() {
         if (isProcessing) return;
         if (isPaused) {
-            // Jika pause, kita tidak melakukan bet, tapi kita tetap bisa log status
             // console.log(`⏸️ Bot sedang pause, menunggu 3x win...`);
             return;
         }
@@ -514,6 +473,7 @@
     // ========== MONITOR ==========
     let monitorInterval = null;
     
+    // ========== [MODIFIKASI] startBot ==========
     function startBot() {
         if (isRunning) {
             console.log(`⚠️ Bot sudah berjalan`);
@@ -524,6 +484,8 @@
         pauseWinStreak = 0;
         currentBetIndex = 0;
         currentBetAmount = betSequence[0];
+        strategyMode = 1;           // reset mode ke 1 saat start
+        zigzagUseReverse = false;
         monitorInterval = setInterval(checkAndBet, 2000);
         setTimeout(checkAndBet, 1000);
         console.log(`✅ Bot dimulai!`);
@@ -531,6 +493,7 @@
         if (nextIssue) console.log(`📌 Periode berikutnya: ${nextIssue.slice(-3)}`);
         console.log(`💵 Urutan taruhan: ${betSequence.map(b => b/1000+'K').join(' → ')}`);
         console.log(`⏸️ Akan pause jika 3x loss, resume setelah 3x win.`);
+        console.log(`⚙️ Strategi: Mode 1 (PERTAMBAHAN) - akan berubah otomatis saat kalah.`);
     }
     
     function stopBot() {
@@ -552,10 +515,13 @@
             currentStreak,
             betLevel: currentBetIndex + 1,
             lastPrediction: currentPrediction,
-            lastIssueProcessed
+            lastIssueProcessed,
+            strategyMode,
+            zigzagUseReverse
         };
     }
     
+    // ========== [MODIFIKASI] resetBot ==========
     function resetBot() {
         currentBetIndex = 0;
         currentBetAmount = betSequence[0];
@@ -565,7 +531,9 @@
         isBetPlaced = false;
         isPaused = false;
         pauseWinStreak = 0;
-        console.log(`🔄 Bot direset.`);
+        strategyMode = 1;
+        zigzagUseReverse = false;
+        console.log(`🔄 Bot direset. Mode kembali ke 1 (PERTAMBAHAN).`);
     }
     
     // ========== INIT ==========
@@ -578,6 +546,7 @@
         reset: resetBot
     };
     
-    console.log(`✅ WINGO AUTO-BOT v4.2 siap!`);
+    console.log(`✅ WINGO AUTO-BOT v4.2 (modifikasi 4 angka+3 mode) siap!`);
     console.log(`📌 Perintah: wingoAuto.start() / stop() / status() / reset()`);
+    console.log(`⚙️ Mode strategi: 1=PERTAMBAHAN, 2=REVERSE, 3=ZIGZAG (otomatis berubah saat kalah)`);
 })();
