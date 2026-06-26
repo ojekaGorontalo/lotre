@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover" />
+    <title>AutoBet Wingo - Akses & Download</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 20px 12px 40px;
+            color: #fff;
+        }
+        .container {
+            max-width: 720px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            border-radius: 16px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            box-shadow: 0 4px 12px rgba(220,38,38,0.25);
+        }
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header h1 i { font-size: 1.4rem; }
+        .header a {
+            color: white;
+            background: rgba(255,255,255,0.15);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .header a:active { background: rgba(255,255,255,0.3); }
+        .card {
+            background: #0f172a;
+            border-radius: 20px;
+            padding: 24px 20px 28px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            color: white;
+        }
+        .card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card h2 i { color: #fbbf24; }
+        .card p, .card li {
+            font-size: 0.92rem;
+            line-height: 1.6;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 8px;
+        }
+        .card ul { padding-left: 20px; margin: 8px 0; }
+        .card strong { color: #fbbf24; }
+        .highlight-box {
+            background: rgba(251,191,36,0.06);
+            border-left: 4px solid #fbbf24;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin: 12px 0;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 700;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(220,38,38,0.3);
+            text-decoration: none;
+            width: 100%;
+            text-align: center;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: none;
+            color: rgba(255,255,255,0.8);
+        }
+        .btn-secondary:active { background: rgba(255,255,255,0.05); }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 6px;
+        }
+        .form-group .input-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            transition: border-color 0.25s, box-shadow 0.25s;
+        }
+        .form-group .input-wrapper:focus-within {
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220,38,38,0.15);
+        }
+        .form-group .input-wrapper i {
+            color: rgba(255,255,255,0.3);
+            padding: 0 0 0 16px;
+            width: 44px;
+            text-align: center;
+        }
+        .form-group .input-wrapper input {
+            width: 100%;
+            padding: 14px 16px 14px 4px;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+        }
+        .form-group .input-wrapper input::placeholder {
+            color: rgba(255,255,255,0.25);
+        }
+        .error-msg {
+            color: #f87171;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            min-height: 20px;
+        }
+        .success-msg {
+            color: #4ade80;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+        .download-section {
+            margin-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 20px;
+            display: none;
+        }
+        .download-section.active { display: block; }
+        .payment-info {
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+            text-align: center;
+        }
+        .payment-info .rek {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fbbf24;
+            letter-spacing: 2px;
+            background: rgba(0,0,0,0.3);
+            padding: 6px 12px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.15);
+            margin-top: 12px;
+        }
+        @media (max-width: 480px) {
+            .card { padding: 18px 14px; }
+            .header h1 { font-size: 1rem; }
+        }
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <h1><i class="fas fa-robot"></i> AutoBet Wingo</h1>
+        <a href="berandaWingo.html"><i class="fas fa-arrow-left"></i> Kembali</a>
+    </div>
+
+    <!-- PENJELASAN AUTOBET (tanpa detail martingale, mode strategi, pause/resume) -->
+    <div class="card">
+        <h2><i class="fas fa-info-circle"></i> Tentang AutoBet</h2>
+        <p>
+            <strong>AutoBet</strong> adalah bot otomatis untuk permainan WINGO 30 detik. 
+            Bot akan memasang taruhan secara otomatis berdasarkan <strong>prediksi dari dashboard wingo_bot_analytics</strong> (sistem yang sama dengan halaman analitik).
+        </p>
+        <div class="highlight-box">
+            <strong>📌 Fitur Utama:</strong>
+            <ul style="margin-top:4px;">
+                <li>✅ Prediksi otomatis dari data historis</li>
+                <li>✅ Strategi taruhan dinamis (menyesuaikan dengan hasil)</li>
+                <li>✅ Auto-click &amp; deteksi timer</li>
+                <li>✅ <strong>Rumus prediksi dapat disesuaikan</strong> – hubungi admin untuk perubahan (biaya Rp 20.000/update, gratis 1x pada hari pembelian APK)</li>
+            </ul>
+        </div>
+        <p style="margin-top:12px; color: #fca5a5;"><i class="fas fa-exclamation-triangle"></i> <strong>⚠️ Peringatan:</strong> Hasil prediksi tidak 100% akurat. Gunakan dengan bijak dan tanggung jawab pribadi.</p>
+        <div style="background: rgba(251,191,36,0.05); border-radius:10px; padding:12px; margin-top:12px; border:1px solid rgba(251,191,36,0.15);">
+            <p style="font-size:0.85rem; color:#fbbf24; margin:0;">
+                <i class="fas fa-edit"></i> <strong>Kustomisasi Rumus Prediksi:</strong><br>
+                Anda dapat mengubah logika prediksi dengan menghubungi admin. <br>
+                <strong>Biaya:</strong> Rp 20.000 per perubahan.<br>
+                <strong>GRATIS 1x</strong> pada hari pembelian APK (berlaku hanya 1x).
+            </p>
+        </div>
+    </div>
+
+    <!-- VERIFIKASI UID & PEMBAYARAN -->
+    <div class="card">
+        <h2><i class="fas fa-lock"></i> Verifikasi Akses</h2>
+        <p>Masukkan UID Anda yang terdaftar di Wingo Bot untuk melanjutkan ke proses pembayaran dan download APK.</p>
+
+        <div class="form-group">
+            <label for="uidInput"><i class="fas fa-id-card" style="color:#dc2626;"></i> UID Anda</label>
+            <div class="input-wrapper">
+                <i class="fas fa-user"></i>
+                <input type="text" id="uidInput" placeholder="Contoh: 351494" autocomplete="off" />
+            </div>
+        </div>
+        <button class="btn" id="verifyBtn"><i class="fas fa-check-circle"></i> Verifikasi UID</button>
+        <div id="verifyMessage" class="error-msg"></div>
+
+        <!-- Bagian Pembayaran & Download (muncul setelah UID valid) -->
+        <div class="download-section" id="downloadSection">
+            <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px; margin-top: 10px;">
+                <h3 style="color:#fbbf24; margin-bottom: 8px;"><i class="fas fa-credit-card"></i> Pembayaran Rp 150.000</h3>
+                <p>Untuk mendapatkan aplikasi <strong>WinGoPro-Predictor.apk</strong>, lakukan pembayaran sebesar <strong>Rp 150.000</strong> ke rekening berikut:</p>
+                <div class="payment-info">
+                    <div style="font-size:0.9rem; color: rgba(255,255,255,0.6);">Eewallet - DANA</div>
+                    <div class="rek">082311640444</div>
+                    <div style="font-size:0.8rem; color: rgba(255,255,255,0.5);">Inisial FIKR***YUS***</div>
+                </div>
+                <!-- UPDATE TEKS DI BAWAH INI -->
+                <p style="font-size:0.85rem;">Setelah transfer klik tombol dibawah utk menghubungi telegram @PredictorUser</p>
+                <button class="btn" id="payConfirmBtn" style="margin-top: 10px;"><i class="fas fa-check-double"></i> Saya Sudah Bayar</button>
+                <div id="paymentMessage" class="success-msg"></div>
+
+                <!-- Link download (sembunyi, muncul setelah konfirmasi) -->
+                <div id="downloadLink" style="display:none; margin-top: 16px; text-align:center; background: rgba(52,211,153,0.08); padding: 14px; border-radius: 12px;">
+                    <p style="color:#4ade80; font-weight:700;"><i class="fas fa-check-circle"></i> Pembayaran dikonfirmasi!</p>
+                    <a href="#" id="apkDownloadLink" class="btn" style="background: #22c55e; box-shadow: 0 4px 12px rgba(34,197,94,0.3); margin-top:10px; display:inline-block; width:auto;">
+                        <i class="fas fa-download"></i> Download WinGoPro-Predictor.apk
+                    </a>
+                    <p style="font-size:0.7rem; margin-top:10px; color: rgba(255,255,255,0.3);">Link aktif selama 24 jam setelah konfirmasi.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">v4.2 &bull; AutoBet Wingo</div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        // ================================================================
+        // 1. ELEMEN
+        // ================================================================
+        const uidInput = document.getElementById('uidInput');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const verifyMsg = document.getElementById('verifyMessage');
+        const downloadSection = document.getElementById('downloadSection');
+        const payConfirmBtn = document.getElementById('payConfirmBtn');
+        const paymentMsg = document.getElementById('paymentMessage');
+        const downloadLinkDiv = document.getElementById('downloadLink');
+        const apkLink = document.getElementById('apkDownloadLink');
+
+        // ================================================================
+        // 2. FIREBASE URL
+        // ================================================================
+        const FIREBASE_URL = 'https://steady-fin-368617-default-rtdb.firebaseio.com/uids.json';
+
+        // ================================================================
+        // 3. VERIFIKASI UID
+        // ================================================================
+        verifyBtn.addEventListener('click', function() {
+            const uid = uidInput.value.trim();
+            if (!uid) {
+                verifyMsg.textContent = '⚠️ Masukkan UID terlebih dahulu.';
+                verifyMsg.className = 'error-msg';
+                return;
+            }
+
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<span class="spinner"></span> Memeriksa...';
+            verifyMsg.textContent = '';
+
+            fetch(FIREBASE_URL)
+                .then(res => {
+                    if (!res.ok) throw new Error('Gagal terhubung ke server');
+                    return res.json();
+                })
+                .then(data => {
+                    const userData = data[uid];
+                    if (!userData) {
+                        throw new Error('UID tidak terdaftar.');
+                    }
+                    if (userData.active === false || userData.status === 0) {
+                        throw new Error('Akun dinonaktifkan. Hubungi admin.');
+                    }
+                    verifyMsg.textContent = '✅ UID valid! Silakan lanjut ke pembayaran.';
+                    verifyMsg.className = 'success-msg';
+                    downloadSection.classList.add('active');
+                    localStorage.setItem('wingo_verified_uid', uid);
+                })
+                .catch(err => {
+                    verifyMsg.textContent = '❌ ' + err.message;
+                    verifyMsg.className = 'error-msg';
+                })
+                .finally(() => {
+                    verifyBtn.disabled = false;
+                    verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> Verifikasi UID';
+                });
+        });
+
+        // ================================================================
+        // 4. KONFIRMASI PEMBAYARAN & DOWNLOAD
+        // ================================================================
+        payConfirmBtn.addEventListener('click', function() {
+            // Ubah agar membuka link Telegram @PredictorUser
+            window.open('https://t.me/PredictorUser', '_blank');
+            paymentMsg.textContent = '📤 Diarahkan ke Telegram...';
+            paymentMsg.className = 'success-msg';
+            // Tampilkan link download juga (simulasi)
+            setTimeout(() => {
+                downloadLinkDiv.style.display = 'block';
+                paymentMsg.textContent = '✅ Hubungi admin via Telegram untuk konfirmasi pembayaran dan download APK.';
+                paymentMsg.className = 'success-msg';
+                apkLink.href = 'https://example.com/WinGoPro-Predictor.apk';
+            }, 500);
+        });
+
+        // ================================================================
+        // 5. OTOMATIS ISI UID YANG PERNAH DIVERIFIKASI
+        // ================================================================
+        const savedUid = localStorage.getItem('wingo_verified_uid');
+        if (savedUid) {
+            uidInput.value = savedUid;
+        }
+
+        console.log('✅ Halaman AutoBet siap.');
+    })();
+</script>
+</body>
+</html>
