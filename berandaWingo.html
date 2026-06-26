@@ -443,7 +443,7 @@
                             success = true;
                             usedMethod = method.name;
                             console.log('✅ Berhasil mengirim menggunakan metode:', usedMethod);
-                            showToast('📤 Pesan terkirim (' + usedMethod + ')');
+                           // showToast('📤 Pesan terkirim (' + usedMethod + ')');
                             break;
                         }
                     } catch (e) {
@@ -453,7 +453,7 @@
 
                 if (!success) {
                     console.error('❌ Semua metode pengiriman gagal. Tidak ada koneksi ke Kodular.');
-                    showToast('⚠️ Gagal kirim ke Kodular. Periksa console.');
+                    // showToast('⚠️ Gagal kirim ke Kodular. Periksa console.');
                 }
 
                 return success;
