@@ -1,8 +1,9 @@
 // prediksiAI.js - New 3-Mode Strategy (No AI, No Firebase Key)
 
 (function () {
+
   console.clear();
-  console.log("🤖 WinGo Smart Trading Bot - v12.1 (3-Mode Strategy)");
+  console.log("🤖 WinGo Smart Trading Bot - v12.2 (3-Mode Strategy + Streak Tracker)");
 
   /* ========= TELEGRAM ========= */
   const BOT_TOKEN = "8380843917:AAEpz0TiAlug533lGenKM8sDgTFH-0V5wAw";
@@ -20,7 +21,8 @@
   const FIREBASE_URL = "https://wingo-bot-analytics-default-rtdb.firebaseio.com/";
 
   /* ========= SALDO VIRTUAL ========= */
-  let virtualBalance = 2916000;
+  // MODIFIED: saldo awal 502.000
+  let virtualBalance = 502000;
   let totalBets = 0;
   let totalWins = 0;
   let totalLosses = 0;
@@ -37,9 +39,9 @@
     profit: 0,
   };
 
-  /* ========= STRATEGI MARTINGALE ========= */
-  const betSequence = [1000, 3000, 8000, 24000, 72000, 216000, 648000, 1944000];
-  const betLabels = ["1K", "3K", "8K", "24K", "72K", "216K", "648K", "1.944K"];
+  /* ========= STRATEGI MARTINGALE (MODIFIED) ========= */
+  const betSequence = [1000, 3000, 7000, 15000, 31000, 63000, 127000, 247000];
+  const betLabels = ["1K", "3K", "7K", "15K", "31K", "63K", "127K", "247K"];
   let currentBetIndex = 0;
   let lastProcessedIssue = null;
   let currentBetAmount = betSequence[0];
@@ -58,8 +60,13 @@
   const MAX_DATA_LIMIT = 100;
 
   /* ========= 3-MODE STRATEGY ========= */
-  let strategyMode = 1;            // 1 = PERTAMBAHAN, 2 = REVERSE, 3 = ZIGZAG
-  let zigzagUseReverse = false;   // hanya berlaku jika strategyMode === 3
+  let strategyMode = 1;
+  let zigzagUseReverse = false;
+
+  // ========= NEW: STREAK TRACKING =========
+  let currentResultStreak = { result: null, count: 0 };   // untuk hasil aktual (BESAR/KECIL)
+  let lastLosingStreakSent = 0;                           // nilai losing streak terakhir yang sudah dikirim
+  let lastResultStreakSent = 0;                           // panjang result streak terakhir yang sudah dikirim
 
   /* ========= ANALISIS 4 ANGKA TERBARU ========= */
   function analyzeLast4(dataList) {
@@ -88,7 +95,7 @@
     return { prediction: pred, number };
   }
 
-  /* ========= FIREBASE FUNCTIONS (tidak berubah) ========= */
+  /* ========= FIREBASE FUNCTIONS ========= */
   async function sendToFirebase(path, data) {
     try {
       const dataWithTimestamp = { ...data, timestamp: Date.now(), date: new Date().toISOString() };
@@ -111,6 +118,7 @@
   }
 
   async function cleanupFirebaseCollection(path, limit = MAX_DATA_LIMIT) {
+    // ... (sama seperti sebelumnya, tidak diubah)
     try {
       const url = `${FIREBASE_URL}${path}.json`;
       const response = await fetch(url);
@@ -144,12 +152,40 @@
   }
 
   async function cleanupAllCollections() {
-    const collections = ['results', 'predictions', 'game_issues', 'resets', 'balance_changes'];
+    const collections = ['results', 'predictions', 'game_issues', 'resets', 'balance_changes', 'losing_streaks', 'result_streaks'];
     for (const col of collections) {
       await cleanupFirebaseCollection(col);
     }
   }
 
+  // ========= NEW: Fungsi kirim streak ke Firebase =========
+  function sendLosingStreakToFirebase(streakCount) {
+    if (streakCount < 5) return;
+    const data = {
+      streak: streakCount,
+      currentBetLevel: currentBetIndex + 1,
+      balance: virtualBalance,
+      totalBets: totalBets,
+      totalLosses: totalLosses,
+    };
+    sendToFirebase("losing_streaks", data);
+    console.log(`📉 Losing streak ${streakCount}x dikirim ke Firebase`);
+  }
+
+  function sendResultStreakToFirebase(resultType, streakCount) {
+    if (streakCount < 8) return;
+    const data = {
+      result: resultType,
+      streak: streakCount,
+      issue: currentGameData?.issueNumber || null,
+      balance: virtualBalance,
+      totalBets: totalBets,
+    };
+    sendToFirebase("result_streaks", data);
+    console.log(`🔥 Result streak ${resultType} ${streakCount}x dikirim ke Firebase`);
+  }
+
+  // Fungsi lainnya (sendResultToFirebase, sendPredictionToFirebase, dll) tetap sama
   function sendResultToFirebase(apiResultData, prediction, isWin, predictedNumber, gameType = 30) {
     const resultData = {
       issue: apiResultData.issueNumber,
@@ -176,6 +212,7 @@
   }
 
   function sendPredictionToFirebase() {
+    // ... (sama)
     if (!predictedIssue && currentGameData?.issueNumber) {
       console.warn("⚠️ predictedIssue null, menggunakan currentGameData.issueNumber sebagai fallback");
       predictedIssue = currentGameData.issueNumber;
@@ -207,6 +244,7 @@
   }
 
   function sendGameIssueToFirebase(gameData) {
+    // ... (sama)
     if (!gameData || !gameData.issueNumber) return;
     const data = {
       issueNumber: gameData.issueNumber,
@@ -222,6 +260,7 @@
 
   let lastCountdownSent = 0;
   async function sendCountdownToFirebase(remainingSeconds, issueNumber, endTime) {
+    // ... (sama)
     const now = Date.now();
     if (now - lastCountdownSent < 1000) return;
     lastCountdownSent = now;
@@ -237,9 +276,10 @@
   }
 
   function sendResetToFirebase(oldBalance, reason) {
-    sendToFirebase("resets", { oldBalance, newBalance: 2916000, reason, resetTime: new Date().toISOString() });
+    sendToFirebase("resets", { oldBalance, newBalance: 502000, reason, resetTime: new Date().toISOString() });
   }
 
+  // Telegram functions (sama)
   function sendTelegram(msg) {
     if (!ENABLE_TELEGRAM) return;
     sendToGroup(msg, TELEGRAM_GROUPS.primary);
@@ -266,6 +306,7 @@
 
   /* ========= COUNTDOWN TIMER ========= */
   function startCountdown(endTimeStr, issueNumber) {
+    // ... (sama)
     if (countdownInterval) clearInterval(countdownInterval);
     const endTime = new Date(endTimeStr.replace(" ", "T")).getTime();
     function update() {
@@ -284,31 +325,25 @@
     countdownInterval = setInterval(update, 1000);
   }
 
-  /* ========= ANALISIS HISTORIS (hanya untuk menyimpan data unik) ========= */
+  /* ========= ANALISIS HISTORIS ========= */
   function analyzeTrendData(listData) {
     if (!listData || listData.length === 0) return;
-    // Ambil data terbaru
     const newItems = listData.map((item) => ({
       issue: item.issueNumber,
       number: parseInt(item.number),
       result: parseInt(item.number) <= 4 ? "KECIL" : "BESAR",
       colour: item.colour,
     }));
-
-    // Filter agar tidak ada duplikat issue
     const existingIssues = new Set(historicalData.map(d => d.issue));
     for (const item of newItems) {
       if (!existingIssues.has(item.issue)) {
-        historicalData.unshift(item); // tambahkan di awal agar terbaru
+        historicalData.unshift(item);
         existingIssues.add(item.issue);
       }
     }
-
-    // Batasi jumlah data
     if (historicalData.length > 20) {
       historicalData = historicalData.slice(0, 20);
     }
-
     if (historicalData.length >= 4) {
       const recentNumbers = historicalData.slice(0, 4).map(d => d.number);
       console.log(`📊 4 DATA TERBARU: ${recentNumbers.join(", ")}`);
@@ -320,7 +355,6 @@
   /* ========= LOGIKA TARUHAN ========= */
   async function placeBet() {
     console.log("🔍 [DEBUG] placeBet() dipanggil");
-
     if (!isBotActive) {
       console.log("⛔ Bot tidak aktif");
       return false;
@@ -331,16 +365,14 @@
       skipReason = "";
       return false;
     }
-
     if (historicalData.length < 4) {
       console.log("⚠️ Menunggu minimal 4 hasil terbaru. Data saat ini:", historicalData.length);
       return false;
     }
-
     if (virtualBalance < currentBetAmount) {
       console.log("❌ Saldo tidak cukup, reset...");
       sendResetToFirebase(virtualBalance, "saldo_habis");
-      virtualBalance = 2916000;
+      virtualBalance = 502000;
       currentBetIndex = 0;
       currentBetAmount = betSequence[0];
       totalBets = totalWins = totalLosses = currentStreak = profitLoss = 0;
@@ -349,8 +381,12 @@
       lastMotivationSentAtLoss = lastDonationMessageAtWin = 0;
       strategyMode = 1;
       zigzagUseReverse = false;
+      // RESET streak trackers
+      currentResultStreak = { result: null, count: 0 };
+      lastLosingStreakSent = 0;
+      lastResultStreakSent = 0;
       sendTelegram("🚫 <b>SALDO HABIS - RESET OTOMATIS</b>");
-      console.log("🔄 Saldo direset ke 2.916.000");
+      console.log("🔄 Saldo direset ke 502.000");
       return false;
     }
 
@@ -382,7 +418,6 @@
     const modeName = strategyMode === 1 ? "PERTAMBAHAN" : (strategyMode === 2 ? "REVERSE" : "ZIGZAG");
     const metodeAktif = (strategyMode === 3) ? (zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN") : modeName;
     console.log(`📊 4 Data: ${analysisResult.last4.join(",")} 🧮 Total: ${analysisResult.total} 🔢 Digit Akhir: ${analysisResult.digitAkhir} 📈 Pertambahan: ${analysisResult.hasilPertambahan} 🔄 Reverse: ${analysisResult.hasilReverse} ⚙️ Strategy Mode: ${strategyMode} 🎯 Metode Aktif: ${metodeAktif} 🎯 Prediksi: ${currentPrediction}`);
-
     console.log(`🎯 [TARUHAN 30s] Prediksi: ${currentPrediction} (angka ${currentNumberPrediction}) untuk issue ${predictedIssue} | Taruhan: Rp ${currentBetAmount.toLocaleString()}`);
     return true;
   }
@@ -390,6 +425,19 @@
   function processResult(result, apiData) {
     if (!isBetPlaced || !isBotActive) return false;
     const isWin = currentPrediction === result;
+
+    // ===== UPDATE RESULT STREAK (berdasarkan hasil aktual) =====
+    if (currentResultStreak.result === result) {
+      currentResultStreak.count++;
+    } else {
+      currentResultStreak.result = result;
+      currentResultStreak.count = 1;
+    }
+    // Kirim jika streak >= 8 dan baru mencapai angka tersebut
+    if (currentResultStreak.count >= 8 && currentResultStreak.count > lastResultStreakSent) {
+      sendResultStreakToFirebase(result, currentResultStreak.count);
+      lastResultStreakSent = currentResultStreak.count;
+    }
 
     if (isWin) {
       virtualBalance += currentBetAmount * 2;
@@ -401,7 +449,10 @@
       console.log(`✅ WIN | Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
       sendResultToFirebase(apiData, currentPrediction, true, currentNumberPrediction, 30);
 
-      // Mode tetap (tidak berubah)
+      // Reset losing streak sent karena menang
+      lastLosingStreakSent = 0;
+
+      // Mode tetap
       const modeName = strategyMode === 1 ? "PERTAMBAHAN" : (strategyMode === 2 ? "REVERSE" : "ZIGZAG");
       const metode = (strategyMode === 3) ? (zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN") : "-";
       console.log(`⚙️ Tetap menggunakan Mode ${strategyMode} (${modeName}${strategyMode === 3 ? ` - ${metode}` : ""})`);
@@ -418,16 +469,22 @@
       console.log(`❌ LOSS | Prediksi ${currentPrediction} untuk issue ${apiData.issueNumber}`);
       sendResultToFirebase(apiData, currentPrediction, false, currentNumberPrediction, 30);
 
-      // Pindah mode berdasarkan aturan
+      // ===== CEK LOSING STREAK =====
+      const losingStreak = Math.abs(currentStreak);
+      if (losingStreak >= 5 && losingStreak > lastLosingStreakSent) {
+        sendLosingStreakToFirebase(losingStreak);
+        lastLosingStreakSent = losingStreak;
+      }
+
+      // Pindah mode
       if (strategyMode === 1) {
         strategyMode = 2;
         console.log(`➡️ Pindah ke Mode 2 (REVERSE)`);
       } else if (strategyMode === 2) {
         strategyMode = 3;
-        zigzagUseReverse = false; // mulai dengan PERTAMBAHAN
+        zigzagUseReverse = false;
         console.log(`➡️ Pindah ke Mode 3 (ZIGZAG) - mulai dengan PERTAMBAHAN`);
       } else if (strategyMode === 3) {
-        // Tetap Mode 3, ganti metode
         zigzagUseReverse = !zigzagUseReverse;
         console.log(`🔄 Mode 3 tetap aktif, metode berubah menjadi ${zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN"}`);
       }
@@ -455,7 +512,7 @@
       }
     }
 
-    profitLoss = virtualBalance - 2916000;
+    profitLoss = virtualBalance - 502000; // MODIFIED: base saldo 502.000
     isBetPlaced = false;
     predictedIssue = null;
     predictedAt = null;
@@ -495,7 +552,7 @@
             const shortIssue = nextIssue.slice(-3);
             const modeName = strategyMode === 1 ? "PERTAMBAHAN" : (strategyMode === 2 ? "REVERSE" : "ZIGZAG");
             const metode = (strategyMode === 3) ? (zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN") : modeName;
-            const message = `<b>WINGO 30s PREDIKSI v12.1</b>\n<b>🆔 PERIODE ${shortIssue}</b>\n<b>🎯 PREDIKSI: ${currentPrediction} ${betLabels[currentBetIndex]}</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>\n<b>⚙️ MODE: ${modeName}${strategyMode === 3 ? ` (${metode})` : ""}</b>\n─────────────────\n<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n<b>📈 P/L: ${profitLoss >= 0 ? "🟢" : "🔴"} ${profitLoss >= 0 ? "+" : ""}${profitLoss.toLocaleString()}</b>`;
+            const message = `<b>WINGO 30s PREDIKSI v12.2</b>\n<b>🆔 PERIODE ${shortIssue}</b>\n<b>🎯 PREDIKSI: ${currentPrediction} ${betLabels[currentBetIndex]}</b>\n<b>🔢 ANGKA: ${currentNumberPrediction}</b>\n<b>⚙️ MODE: ${modeName}${strategyMode === 3 ? ` (${metode})` : ""}</b>\n─────────────────\n<b>📊 LEVEL: ${currentBetIndex + 1}/${betSequence.length}</b>\n<b>💳 SALDO: Rp ${virtualBalance.toLocaleString()}</b>\n<b>📈 P/L: ${profitLoss >= 0 ? "🟢" : "🔴"} ${profitLoss >= 0 ? "+" : ""}${profitLoss.toLocaleString()}</b>`;
             setTimeout(() => sendTelegram(message), 1500);
           }
           lastProcessedIssue = issueNumber;
@@ -575,7 +632,7 @@
 
   function resetBot() {
     const oldBalance = virtualBalance;
-    virtualBalance = 2916000;
+    virtualBalance = 502000;
     currentBetIndex = 0;
     totalBets = totalWins = totalLosses = currentStreak = profitLoss = 0;
     currentBetAmount = betSequence[0];
@@ -590,23 +647,27 @@
     isBotActive = true;
     strategyMode = 1;
     zigzagUseReverse = false;
+    // RESET streak trackers
+    currentResultStreak = { result: null, count: 0 };
+    lastLosingStreakSent = 0;
+    lastResultStreakSent = 0;
     sendResetToFirebase(oldBalance, "manual_reset");
-    sendTelegram("🔄 <b>BOT DIRESET (v12.1 - 3 Mode)</b>\n💰 Saldo: 2.916.000\n⚙️ Mode: PERTAMBAHAN");
+    sendTelegram("🔄 <b>BOT DIRESET (v12.2 - 3 Mode + Streak Tracker)</b>\n💰 Saldo: 502.000\n⚙️ Mode: PERTAMBAHAN");
   }
 
   /* ========= STARTUP ========= */
   (function start() {
     console.log(`
- 🤖 WINGO SMART TRADING BOT v12.1 - 3 MODE STRATEGY
- 💰 Saldo awal: 2.916.000 (khusus 30 detik)
+ 🤖 WINGO SMART TRADING BOT v12.2 - 3 MODE STRATEGY + STREAK TRACKER
+ 💰 Saldo awal: 502.000 (khusus 30 detik)
  📊 Mode awal: 1 (PERTAMBAHAN)
  🔄 Mode 2 = REVERSE, Mode 3 = ZIGZAG (bergantian PERTAMBAHAN/REVERSE)
- 📡 Firebase aktif (menyimpan semua data + countdown)
+ 📡 Firebase aktif (menyimpan semua data + countdown + streak)
  ✅ Bot siap!`);
-    
+
     setInterval(manualCheck, 30000);
     setTimeout(manualCheck, 3000);
-    
+
     console.log("⏳ Menunggu 4 data pertama untuk memulai prediksi...");
 
     setInterval(cleanupAllCollections, 300000);
@@ -628,6 +689,7 @@
     cleanup: cleanupAllCollections,
     getMode: () => ({ strategyMode, zigzagUseReverse }),
   };
+
   window.wingoBetData = {
     get prediction() { return currentPrediction; },
     get numberPrediction() { return currentNumberPrediction; },
@@ -636,5 +698,6 @@
     get strategyMode() { return strategyMode; },
     get zigzagUseReverse() { return zigzagUseReverse; },
   };
+
   console.log("✅ Bot ready! Gunakan window.wingoBot untuk kontrol.");
 })();
