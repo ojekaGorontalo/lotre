@@ -36,7 +36,7 @@
             margin: 0 auto;
         }
 
-        /* ===== HEADER (sama seperti di analytics) ===== */
+        /* ===== HEADER ===== */
         .header {
             background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
             border-radius: 16px;
@@ -208,6 +208,49 @@
             margin-top: 8px;
         }
 
+        /* ===== LOADING OVERLAY ===== */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 9999;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #loadingOverlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #dc2626;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            color: rgba(255,255,255,0.8);
+        }
+
         /* ===== TOAST ===== */
         #toast {
             position: fixed;
@@ -291,22 +334,22 @@
                     <div class="arrow"><i class="fas fa-chevron-right"></i></div>
                 </a>
 
-                <!-- Tombol 2: WinGo Prediction (kirim ke Kodular) -->
+                <!-- Tombol 2: WinGo Prediction (loading + redirect) -->
                 <button class="menu-btn" id="btnPrediction">
                     <div class="icon prediction"><i class="fas fa-chart-line"></i></div>
                     <div class="label">
                         🔮 WinGo Prediction
-                        <small>Kirim perintah prediksi</small>
+                        <small>Buka halaman prediksi</small>
                     </div>
                     <div class="arrow"><i class="fas fa-chevron-right"></i></div>
                 </button>
 
-                <!-- Tombol 3: Auto Betting (kirim UID ke Kodular) -->
+                <!-- Tombol 3: Auto Betting (loading + redirect) -->
                 <button class="menu-btn" id="btnAutoBet">
                     <div class="icon betting"><i class="fas fa-robot"></i></div>
                     <div class="label">
                         🤖 Auto Betting
-                        <small>Mulai bot dengan UID Anda</small>
+                        <small>Buka halaman betting</small>
                     </div>
                     <div class="arrow"><i class="fas fa-chevron-right"></i></div>
                 </button>
@@ -321,6 +364,12 @@
         </div><!-- end card -->
 
     </div><!-- end container -->
+
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">⏳ Mengalihkan...</div>
+    </div>
 
     <!-- TOAST -->
     <div id="toast"></div>
@@ -337,6 +386,8 @@
             const btnPrediction = document.getElementById('btnPrediction');
             const btnAutoBet = document.getElementById('btnAutoBet');
             const toast = document.getElementById('toast');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingText = loadingOverlay.querySelector('.loading-text');
 
             // ================================================================
             // 2. CEK LOGIN & AMBIL DATA USER
@@ -351,112 +402,31 @@
             } catch (_) {}
 
             if (!userData || !userData.uid) {
-                // Belum login → redirect ke login
                 window.location.href = 'loginwingobot.html';
                 return;
             }
 
-            // Tampilkan data user
             const displayName = userData.nickName || userData.uid || 'Pengguna';
             userDisplayName.textContent = '👤 ' + displayName;
 
             // ================================================================
-            // 3. FUNGSI KIRIM KE KODULAR (DIPERBAIKI)
+            // 3. FUNGSI LOADING & REDIRECT
             // ================================================================
-            function sendToKodular(message) {
-                console.log('[Kirim ke Kodular] Pesan:', message);
+            function showLoading(text) {
+                loadingText.textContent = text || '⏳ Mengalihkan...';
+                loadingOverlay.classList.add('active');
+            }
 
-                // Daftar metode yang akan dicoba secara berurutan
-                const methods = [
-                    // Metode utama Kodular (setWebViewString)
-                    {
-                        name: 'AppInventor.setWebViewString',
-                        fn: function() {
-                            if (window.AppInventor && typeof window.AppInventor.setWebViewString === 'function') {
-                                window.AppInventor.setWebViewString(message);
-                                return true;
-                            }
-                            return false;
-                        }
-                    },
-                    {
-                        name: 'Kodular.setWebViewString',
-                        fn: function() {
-                            if (window.Kodular && typeof window.Kodular.setWebViewString === 'function') {
-                                window.Kodular.setWebViewString(message);
-                                return true;
-                            }
-                            return false;
-                        }
-                    },
-                    // Metode lama (webViewString sebagai fungsi – kadang masih dipakai)
-                    {
-                        name: 'AppInventor.webViewString (function)',
-                        fn: function() {
-                            if (window.AppInventor && typeof window.AppInventor.webViewString === 'function') {
-                                window.AppInventor.webViewString(message);
-                                return true;
-                            }
-                            return false;
-                        }
-                    },
-                    {
-                        name: 'Kodular.webViewString (function)',
-                        fn: function() {
-                            if (window.Kodular && typeof window.Kodular.webViewString === 'function') {
-                                window.Kodular.webViewString(message);
-                                return true;
-                            }
-                            return false;
-                        }
-                    },
-                    // Metode untuk iframe / WebView yang mendukung postMessage
-                    {
-                        name: 'postMessage ke parent',
-                        fn: function() {
-                            if (window.parent && window.parent !== window) {
-                                window.parent.postMessage(message, '*');
-                                return true;
-                            }
-                            return false;
-                        }
-                    },
-                    // Custom bridge (jika ada)
-                    {
-                        name: 'WingoBridge.sendMessage',
-                        fn: function() {
-                            if (window.WingoBridge && typeof window.WingoBridge.sendMessage === 'function') {
-                                window.WingoBridge.sendMessage(message);
-                                return true;
-                            }
-                            return false;
-                        }
-                    }
-                ];
+            function hideLoading() {
+                loadingOverlay.classList.remove('active');
+            }
 
-                let success = false;
-                let usedMethod = 'tidak ada';
-
-                for (let method of methods) {
-                    try {
-                        if (method.fn()) {
-                            success = true;
-                            usedMethod = method.name;
-                            console.log('✅ Berhasil mengirim menggunakan metode:', usedMethod);
-                           // showToast('📤 Pesan terkirim (' + usedMethod + ')');
-                            break;
-                        }
-                    } catch (e) {
-                        console.warn('Metode ' + method.name + ' gagal:', e);
-                    }
-                }
-
-                if (!success) {
-                    console.error('❌ Semua metode pengiriman gagal. Tidak ada koneksi ke Kodular.');
-                    // showToast('⚠️ Gagal kirim ke Kodular. Periksa console.');
-                }
-
-                return success;
+            function redirectWithLoading(url, text) {
+                showLoading(text || '⏳ Mengalihkan...');
+                // Beri waktu 1 detik agar loading terlihat
+                setTimeout(function() {
+                    window.location.href = url;
+                }, 1000);
             }
 
             // ================================================================
@@ -479,9 +449,8 @@
 
             // --- Prediksi ---
             btnPrediction.addEventListener('click', function() {
-                const message = 'wingo_prediction:open';
-                console.log('🔮 Tombol Prediksi diklik');
-                sendToKodular(message);
+                console.log('🔮 WinGo Prediction diklik → redirect ke prediksi');
+                redirectWithLoading('https://55predictor.netlify.app/wingo_bot_analytics', '🔮 Membuka halaman prediksi...');
             });
 
             // --- Auto Betting ---
@@ -489,19 +458,18 @@
                 const uid = userData.uid;
                 if (!uid) {
                     showToast('❌ UID tidak ditemukan. Silakan login ulang.');
-                    console.error('❌ UID tidak ada di userData');
                     return;
                 }
-                const message = 'wingo_autobet:' + uid;
-                console.log('🤖 Tombol Auto Betting diklik, UID:', uid);
-                sendToKodular(message);
+                console.log('🤖 Auto Betting diklik, UID:', uid, '→ redirect ke 551br.com');
+                // Simpan UID ke localStorage agar bisa digunakan di halaman 55five (opsional)
+                localStorage.setItem('wingo_uid', uid);
+                redirectWithLoading('https://551br.com', '🤖 Membuka halaman betting...');
             });
 
             // --- Logout ---
             logoutBtn.addEventListener('click', function() {
                 localStorage.removeItem('wingo_user');
                 showToast('👋 Logout berhasil');
-                console.log('👤 Logout, redirect ke login');
                 setTimeout(() => {
                     window.location.href = 'loginwingobot.html';
                 }, 500);
@@ -512,10 +480,8 @@
             // ================================================================
             console.log('✅ Wingo Beranda siap (tema merah).');
             console.log('👤 User:', userData);
-            console.log('🔍 Deteksi window.AppInventor:', typeof window.AppInventor);
-            console.log('🔍 Deteksi window.Kodular:', typeof window.Kodular);
-            console.log('🔍 Deteksi window.WingoBridge:', typeof window.WingoBridge);
-            console.log('📌 Metode pengiriman akan dicoba secara otomatis.');
+            console.log('🔄 Tombol Prediction → redirect ke prediksi');
+            console.log('🔄 Tombol Auto Bet → redirect ke 551br.com');
 
         })();
     </script>
