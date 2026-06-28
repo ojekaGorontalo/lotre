@@ -1,7 +1,7 @@
 // ============================================================
 // WINGO AUTO-BOT v4.3 - SYNC PREDIKSI & NOMINAL DARI FIREBASE
 // PAUSE SETELAH 3x LOSS, RESUME SETELAH 3x WIN
-// UID TETAP 1996092
+// UID TETAP 351494
 // ============================================================
 
 (function() {
@@ -54,9 +54,9 @@
     }
 
     // ============================================================
-    // 1. VERIFIKASI UID (TETAP 1996092)
+    // 1. VERIFIKASI UID (TETAP 351494)
     // ============================================================
-    var validUID = '1996092';
+    var validUID = '351494';
     var userId = prompt('🔐 Masukkan UID Anda untuk mengakses bot:', '');
     if (userId === null || userId.trim() === '') {
         console.warn('⛔ Verifikasi dibatalkan.');
