@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -35,7 +36,7 @@
             width: 100%;
         }
 
-        /* ===== HEADER (sama seperti di analytics) ===== */
+        /* ===== HEADER ===== */
         .header {
             background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
             border-radius: 16px;
@@ -74,7 +75,208 @@
             text-align: center;
             font-size: 0.9rem;
             color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 24px;
+            margin-bottom: 20px;
+        }
+
+        /* ===== INFO PENTING ===== */
+        .info-box {
+            background: rgba(220, 38, 38, 0.12);
+            border-left: 4px solid #dc2626;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .info-box i {
+            color: #dc2626;
+            font-size: 1.1rem;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .info-box .info-text {
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .info-box .info-text strong {
+            color: #fca5a5;
+        }
+
+        .info-box .info-text .highlight-link {
+            color: #38bdf8;
+            font-weight: 600;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .info-box .info-text .highlight-link:hover {
+            color: #7dd3fc;
+        }
+
+        /* ===== CEK UID SECTION ===== */
+        .check-section {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .check-section .check-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .check-section .check-title i {
+            color: #38bdf8;
+        }
+
+        .check-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .check-row .input-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .check-row .input-wrapper:focus-within {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+        }
+
+        .check-row .input-wrapper i {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            padding: 0 0 0 14px;
+            width: 38px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .check-row .input-wrapper input {
+            width: 100%;
+            padding: 12px 14px 12px 4px;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            font-weight: 500;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .check-row .input-wrapper input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+            font-weight: 400;
+        }
+
+        .btn-check {
+            padding: 12px 18px;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #38bdf8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-check:active {
+            transform: scale(0.96);
+        }
+
+        .btn-check:hover {
+            background: rgba(56, 189, 248, 0.25);
+        }
+
+        .btn-check:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .check-result {
+            margin-top: 12px;
+            font-size: 0.85rem;
+            padding: 8px 12px;
+            border-radius: 8px;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s ease;
+        }
+
+        .check-result.success {
+            background: rgba(74, 222, 128, 0.12);
+            color: #4ade80;
+        }
+
+        .check-result.error {
+            background: rgba(248, 113, 113, 0.12);
+            color: #f87171;
+        }
+
+        .check-result.info {
+            background: rgba(56, 189, 248, 0.08);
+            color: #7dd3fc;
+        }
+
+        .check-result.hidden {
+            display: none;
+        }
+
+        .check-result i {
+            font-size: 1rem;
+        }
+
+        /* ===== DIVIDER ===== */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 18px 0 20px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .divider span {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.2);
         }
 
         /* ===== FORM ===== */
@@ -162,28 +364,57 @@
             transform: none;
         }
 
-        .btn-register {
-            width: 100%;
-            padding: 14px;
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 14px;
-            font-size: 15px;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.7);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: 'Inter', sans-serif;
+        /* Tombol aksi bawah (Daftar & Hubungi Admin) */
+        .action-group {
+            display: flex;
+            gap: 10px;
             margin-top: 10px;
         }
 
-        .btn-register:active {
-            background: rgba(255, 255, 255, 0.05);
+        .action-group .btn-action {
+            flex: 1;
+            padding: 14px 0;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.7);
         }
 
+        .action-group .btn-action:active {
+            transform: scale(0.96);
+        }
+
+        /* Tombol Daftar */
+        .btn-register {
+            border-color: rgba(56, 189, 248, 0.25);
+            color: #38bdf8;
+        }
         .btn-register i {
             color: #38bdf8;
-            margin-right: 6px;
+        }
+        .btn-register:active {
+            background: rgba(56, 189, 248, 0.08);
+        }
+
+        /* Tombol Hubungi Admin */
+        .btn-contact {
+            border-color: rgba(251, 191, 36, 0.25);
+            color: #fbbf24;
+        }
+        .btn-contact i {
+            color: #fbbf24;
+        }
+        .btn-contact:active {
+            background: rgba(251, 191, 36, 0.08);
         }
 
         /* ===== STATUS ERROR ===== */
@@ -218,9 +449,18 @@
         }
 
         @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         /* ===== FOOTER ===== */
@@ -272,9 +512,31 @@
                 font-size: 15px;
                 padding: 14px;
             }
+            .check-row {
+                flex-direction: column;
+            }
+            .btn-check {
+                justify-content: center;
+                padding: 12px;
+            }
+            .info-box {
+                padding: 12px 14px;
+            }
+            .info-box .info-text {
+                font-size: 0.75rem;
+            }
+            .action-group {
+                flex-direction: column;
+                gap: 8px;
+            }
+            .action-group .btn-action {
+                padding: 14px;
+                font-size: 15px;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="container">
@@ -289,7 +551,45 @@
 
             <div class="card-subtitle">Masukkan UID &amp; Password untuk mengakses</div>
 
-            <!-- FORM -->
+            <!-- INFO PENTING: Daftar ulang meskipun sudah punya akun 55five -->
+            <div class="info-box">
+                <i class="fas fa-triangle-exclamation"></i>
+                <div class="info-text">
+                    <strong>Perhatian!</strong> Meskipun Anda sudah memiliki akun di 55five, Anda <strong>wajib daftar ulang</strong> melalui tombol <strong style="color:#38bdf8;">"Daftar"</strong> di bawah agar terdaftar sebagai <strong>downline</strong> dan bisa mengakses bot.
+                </div>
+            </div>
+
+            <!-- CEK UID – Apakah sudah terdaftar? -->
+            <div class="check-section">
+                <div class="check-title">
+                    <i class="fas fa-magnifying-glass"></i> Cek UID Terdaftar
+                </div>
+                <div class="check-row">
+                    <div class="input-wrapper">
+                        <i class="fas fa-user"></i>
+                        <input
+                        type="text"
+                        id="checkUidInput"
+                        placeholder="Masukkan UID untuk dicek"
+                        autocomplete="off"
+                        />
+                    </div>
+                    <button type="button" class="btn-check" id="checkUidBtn">
+                        <i class="fas fa-search"></i> Cek
+                    </button>
+                </div>
+                <div id="checkResult" class="check-result hidden">
+                    <i class="fas fa-circle-info"></i>
+                    <span id="checkResultText">Masukkan UID lalu tekan Cek.</span>
+                </div>
+            </div>
+
+            <!-- DIVIDER -->
+            <div class="divider">
+                <span>Login</span>
+            </div>
+
+            <!-- FORM LOGIN -->
             <form id="loginForm" autocomplete="off">
 
                 <!-- UID -->
@@ -298,11 +598,11 @@
                     <div class="input-wrapper">
                         <i class="fas fa-user"></i>
                         <input
-                            type="text"
-                            id="uidInput"
-                            placeholder="Contoh: 351494"
-                            autocomplete="username"
-                            required
+                        type="text"
+                        id="uidInput"
+                        placeholder="Contoh: 351494"
+                        autocomplete="username"
+                        required
                         />
                     </div>
                 </div>
@@ -313,11 +613,11 @@
                     <div class="input-wrapper">
                         <i class="fas fa-key"></i>
                         <input
-                            type="password"
-                            id="passwordInput"
-                            placeholder="Masukkan password"
-                            autocomplete="current-password"
-                            required
+                        type="password"
+                        id="passwordInput"
+                        placeholder="Masukkan password"
+                        autocomplete="current-password"
+                        required
                         />
                     </div>
                 </div>
@@ -327,10 +627,15 @@
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
 
-                <!-- BUTTON REGISTER -->
-                <button type="button" class="btn-register" id="registerBtn">
-                    <i class="fas fa-user-plus"></i> Daftar / Hubungi Admin
-                </button>
+                <!-- Dua tombol aksi: Daftar & Hubungi Admin -->
+                <div class="action-group">
+                    <button type="button" class="btn-action btn-register" id="registerBtn">
+                        <i class="fas fa-user-plus"></i> Daftar
+                    </button>
+                    <button type="button" class="btn-action btn-contact" id="contactBtn">
+                        <i class="fas fa-headset"></i> Hubungi Admin
+                    </button>
+                </div>
 
                 <div id="loginError"></div>
 
@@ -366,9 +671,18 @@
             const passwordInput = document.getElementById('passwordInput');
             const loginBtn = document.getElementById('loginBtn');
             const registerBtn = document.getElementById('registerBtn');
+            const contactBtn = document.getElementById('contactBtn');
             const loginError = document.getElementById('loginError');
             const onlineCount = document.getElementById('onlineCount');
             const toast = document.getElementById('toast');
+
+            // Elemen Cek UID
+            const checkUidInput = document.getElementById('checkUidInput');
+            const checkUidBtn = document.getElementById('checkUidBtn');
+            const checkResult = document.getElementById('checkResult');
+            const checkResultText = document.getElementById('checkResultText');
+
+            const FIREBASE_URL = 'https://steady-fin-368617-default-rtdb.firebaseio.com/uids.json';
 
             // ================================================================
             // 2. CEK LOCALSTORAGE (jika sudah login, redirect ke beranda)
@@ -412,7 +726,7 @@
             }
 
             // ================================================================
-            // 5. ONLINE COUNTER (fake seperti di analytics)
+            // 5. ONLINE COUNTER (fake)
             // ================================================================
             function updateOnlineCount() {
                 const base = 1200;
@@ -423,17 +737,102 @@
             setInterval(updateOnlineCount, 15000);
 
             // ================================================================
-            // 6. HANDLE LOGIN – VALIDASI KE FIREBASE
+            // 6. CEK UID – Apakah sudah terdaftar di Firebase?
             // ================================================================
-            const FIREBASE_URL = 'https://steady-fin-368617-default-rtdb.firebaseio.com/uids.json';
+            async function checkUidRegistration(uid) {
+                if (!uid || uid.trim() === '') {
+                    return { exists: false, error: 'UID tidak boleh kosong.' };
+                }
 
+                try {
+                    const response = await fetch(FIREBASE_URL);
+                    if (!response.ok) {
+                        throw new Error('Gagal terhubung ke server (HTTP ' + response.status + ')');
+                    }
+                    const data = await response.json();
+
+                    const userRecord = data[uid.trim()];
+                    if (userRecord) {
+                        return {
+                            exists: true,
+                            data: userRecord,
+                            isActive: userRecord.active !== false && userRecord.status !== 0
+                        };
+                    } else {
+                        return { exists: false };
+                    }
+                } catch (error) {
+                    console.error('[Cek UID Error]', error);
+                    return { exists: false, error: error.message };
+                }
+            }
+
+            checkUidBtn.addEventListener('click', async function() {
+                const uid = checkUidInput.value.trim();
+
+                // Reset tampilan
+                checkResult.className = 'check-result hidden';
+                checkResultText.textContent = '';
+
+                if (!uid) {
+                    checkResult.className = 'check-result error';
+                    checkResultText.innerHTML = '<i class="fas fa-exclamation-circle"></i> Masukkan UID terlebih dahulu.';
+                    checkResult.classList.remove('hidden');
+                    return;
+                }
+
+                // Disable tombol sementara
+                checkUidBtn.disabled = true;
+                checkUidBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cek...';
+
+                const result = await checkUidRegistration(uid);
+
+                checkUidBtn.disabled = false;
+                checkUidBtn.innerHTML = '<i class="fas fa-search"></i> Cek';
+
+                if (result.error) {
+                    checkResult.className = 'check-result error';
+                    checkResultText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + result.error;
+                    checkResult.classList.remove('hidden');
+                    return;
+                }
+
+                if (result.exists) {
+                    const statusText = result.isActive ? '✅ <strong>Aktif</strong>' :
+                        '⚠️ <strong>Nonaktif</strong> (hubungi admin)';
+                    const nick = result.data.nickName || uid;
+                    checkResult.className = 'check-result success';
+                    checkResultText.innerHTML =
+                        '<i class="fas fa-check-circle"></i> UID <strong>' + uid +
+                        '</strong> terdaftar sebagai <strong>' + nick +
+                        '</strong> — Status: ' + statusText;
+                    checkResult.classList.remove('hidden');
+                } else {
+                    checkResult.className = 'check-result error';
+                    checkResultText.innerHTML =
+                        '<i class="fas fa-times-circle"></i> UID <strong>' + uid +
+                        '</strong> <strong>belum terdaftar</strong>. Silakan daftar via tombol di bawah.';
+                    checkResult.classList.remove('hidden');
+                }
+            });
+
+            // Enter key pada input cek UID
+            checkUidInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    checkUidBtn.click();
+                }
+            });
+
+            // ================================================================
+            // 7. HANDLE LOGIN – VALIDASI KE FIREBASE
+            // ================================================================
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 const uid = uidInput.value.trim();
                 const password = passwordInput.value.trim();
 
-                // Reset error
                 loginError.textContent = '';
 
                 if (!uid) {
@@ -447,29 +846,25 @@
                     return;
                 }
 
-                // Disable tombol
                 loginBtn.disabled = true;
                 loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memeriksa...';
 
                 try {
-                    // 1. Ambil data UID dari Firebase
                     const response = await fetch(FIREBASE_URL);
                     if (!response.ok) {
                         throw new Error('Gagal terhubung ke server (HTTP ' + response.status + ')');
                     }
                     const data = await response.json();
 
-                    // 2. Cari UID yang dimasukkan
                     const userRecord = data[uid];
 
                     if (!userRecord) {
-                        loginError.textContent = '❌ UID tidak terdaftar. Periksa kembali.';
+                        loginError.textContent = '❌ UID tidak terdaftar. Periksa kembali atau daftar dulu.';
                         loginBtn.disabled = false;
                         loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
                         return;
                     }
 
-                    // 3. Cek status aktif
                     if (userRecord.active === false || userRecord.status === 0) {
                         loginError.textContent = '❌ Akun dinonaktifkan. Hubungi admin.';
                         loginBtn.disabled = false;
@@ -477,7 +872,6 @@
                         return;
                     }
 
-                    // 4. Cek password
                     const storedPassword = userRecord.password || '';
                     if (storedPassword !== password) {
                         loginError.textContent = '❌ Password salah. Coba lagi.';
@@ -486,8 +880,7 @@
                         return;
                     }
 
-                    // 5. Login berhasil!
-                    // Simpan data ke localStorage
+                    // Login berhasil!
                     try {
                         localStorage.setItem('wingo_user', JSON.stringify({
                             uid: uid,
@@ -496,13 +889,10 @@
                             lv: userRecord.lv || userRecord.Lv || 0,
                             loginTime: new Date().toISOString()
                         }));
-                    } catch (e) {
-                        // Ignore
-                    }
+                    } catch (_) {}
 
                     showToast('✅ Login berhasil! Selamat datang, ' + (userRecord.nickName || uid));
 
-                    // Redirect setelah delay
                     setTimeout(() => {
                         window.location.href = 'berandaWingo.html';
                     }, 800);
@@ -516,15 +906,22 @@
             });
 
             // ================================================================
-            // 7. REGISTER / HUBUNGI ADMIN
+            // 8. TOMBOL DAFTAR & HUBUNGI ADMIN (dipisahkan)
             // ================================================================
+            // Daftar: buka link pendaftaran
             registerBtn.addEventListener('click', function() {
-                alert('📌 Untuk mendapatkan akses, hubungi admin via Telegram @PredictorUser');
                 window.open('https://www.lixnobe.com/#/register?invitationCode=DtX6m351494', '_blank');
             });
 
+            // Hubungi Admin: buka chat Telegram
+            contactBtn.addEventListener('click', function() {
+                window.open('https://t.me/PredictorUser', '_blank');
+                // Alternatif: tampilkan alert dengan kontak
+                // alert('Hubungi admin di Telegram: @PredictorUser');
+            });
+
             // ================================================================
-            // 8. HAPUS ERROR SAAT KETIK
+            // 9. HAPUS ERROR SAAT KETIK
             // ================================================================
             uidInput.addEventListener('input', function() {
                 loginError.textContent = '';
@@ -534,12 +931,14 @@
             });
 
             // ================================================================
-            // 9. INFORMASI
+            // 10. INFORMASI
             // ================================================================
             console.log('✅ Halaman Login (validasi Firebase) siap.');
+            console.log('ℹ️  Pengguna 55five WAJIB daftar ulang via tombol "Daftar".');
 
         })();
     </script>
 
 </body>
+
 </html>
