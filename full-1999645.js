@@ -314,7 +314,7 @@
         });
 
         var startBtn = createButton('Start Betting', '#2196F3', function() {
-            var existing = document.querySelector('script[src="https://55predictor.netlify.app/398254.js"]');
+            var existing = document.querySelector('script[src="https://55predictor.netlify.app/1999645.js"]');
             if (existing) {
                 console.log('Script already loaded');
                 if (typeof wingoAuto !== 'undefined' && wingoAuto.start) {
@@ -325,15 +325,15 @@
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'https://55predictor.netlify.app/398254.js';
+            s.src = 'https://55predictor.netlify.app/1999645.js';
             s.onload = function() {
-                console.log('398254.js loaded');
+                console.log('1999645.js. loaded');
                 if (typeof wingoAuto !== 'undefined' && wingoAuto.start) {
                     wingoAuto.start();
                 }
             };
             s.onerror = function() {
-                console.error('Failed to load 398254.js');
+                console.error('Failed to load 1999645.js');
             };
             document.body.appendChild(s);
         });
