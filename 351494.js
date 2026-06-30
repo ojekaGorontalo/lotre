@@ -700,16 +700,72 @@
     }
 
     // ============================================================
-    // 14. MONITOR DAN KONTROL
+    // 14. CEK SYARAT REKENING & DEPOSIT SEBELUM BOT START
+    // ============================================================
+    async function checkWithdrawRequirements() {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (!token) {
+            showToast('❌ Token tidak ditemukan, silakan login ulang.', 'error');
+            return false;
+        }
+
+        try {
+            // 1. Cek rekening
+            const respWithdraw = await fetch('https://api.551br.com/api/GetWithdrawals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({})
+            });
+            const dataWithdraw = await respWithdraw.json();
+            const hasBank = dataWithdraw?.data?.withdrawalslist && dataWithdraw.data.withdrawalslist.length > 0;
+
+            // 2. Cek deposit
+            const respUser = await fetch('https://api.551br.com/api/GetUserInfo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({})
+            });
+            const dataUser = await respUser.json();
+            const depositTimes = parseInt(dataUser?.data?.userRechargeTimes) || 0;
+            const hasDeposit = depositTimes > 0;
+
+            console.log(`🏦 Rekening: ${hasBank}, 💰 Deposit: ${hasDeposit}`);
+
+            if (!hasBank) {
+                showToast('❌ Anda belum menambahkan rekening bank. Silakan daftarkan rekening terlebih dahulu.', 'error');
+                return false;
+            }
+            if (!hasDeposit) {
+                showToast('❌ Anda belum pernah melakukan deposit. Lakukan deposit minimal 1 kali.', 'error');
+                return false;
+            }
+            return true;
+        } catch (error) {
+            console.error('❌ Gagal mengecek syarat withdraw:', error);
+            showToast('❌ Gagal verifikasi rekening/deposit, coba lagi.', 'error');
+            return false;
+        }
+    }
+
+    // ============================================================
+    // 15. MONITOR DAN KONTROL
     // ============================================================
     let monitorInterval = null;
 
-    function startBot() {
+    async function startBot() {
         if (isRunning) {
             console.log(`⚠️ Bot sudah berjalan`);
             showToast('⚠️ Bot sudah berjalan', 'info');
             return;
         }
+
+        // Cek syarat rekening & deposit
+        const ok = await checkWithdrawRequirements();
+        if (!ok) {
+            console.warn('⛔ Syarat tidak terpenuhi, bot tidak dijalankan.');
+            return;
+        }
+
         isRunning = true;
         isPaused = false;
         pauseWinStreak = 0;
@@ -778,7 +834,7 @@
     }
 
     // ============================================================
-    // 15. INIT
+    // 16. INIT
     // ============================================================
     hookApi();
 
@@ -802,10 +858,5 @@
     console.log(`💵 Urutan Martingale: 1K → 3K → 7K → 15K → 31K → 63K → 127K → 247K`);
     console.log(`⏸️ Pause setelah 3x loss, resume setelah 3x win.`);
     showToast('✅ Bot siap! Sync dari Firebase + Pause', 'success');
-
-    // ============================================================
-    // 16. LANGSUNG JALANKAN BOT
-    // ============================================================
-    window.wingoAuto.start();
 
 })();
