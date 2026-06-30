@@ -1,6 +1,7 @@
 // ============================================================
 // WINGO AUTO-BOT v5.0 - HARCODE PREDIKSI (Tanpa Firebase)
 // Metode: Dual Core (SUM / TREND) + Pause 3x Loss / Resume 3x Win
+// TANPA CEK REKENING & DEPOSIT
 // ============================================================
 
 (function() {
@@ -581,53 +582,7 @@
     }
 
     // ============================================================
-    // 10. CEK SYARAT REKENING & DEPOSIT (opsional, tetap dipertahankan)
-    // ============================================================
-    async function checkWithdrawRequirements() {
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-        if (!token) {
-            showToast('❌ Token tidak ditemukan, silakan login ulang.', 'error');
-            return false;
-        }
-        try {
-            // Cek rekening
-            const respWithdraw = await fetch('https://api.551br.com/api/GetWithdrawals', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({})
-            });
-            const dataWithdraw = await respWithdraw.json();
-            const hasBank = dataWithdraw?.data?.withdrawalslist && dataWithdraw.data.withdrawalslist.length > 0;
-
-            // Cek deposit
-            const respUser = await fetch('https://api.551br.com/api/GetUserInfo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({})
-            });
-            const dataUser = await respUser.json();
-            const depositTimes = parseInt(dataUser?.data?.userRechargeTimes) || 0;
-            const hasDeposit = depositTimes > 0;
-
-            console.log(`🏦 Rekening: ${hasBank}, 💰 Deposit: ${hasDeposit}`);
-            if (!hasBank) {
-                showToast('❌ Anda belum menambahkan rekening bank.', 'error');
-                return false;
-            }
-            if (!hasDeposit) {
-                showToast('❌ Anda belum pernah melakukan deposit.', 'error');
-                return false;
-            }
-            return true;
-        } catch (error) {
-            console.error('❌ Gagal mengecek syarat:', error);
-            showToast('❌ Gagal verifikasi, coba lagi.', 'error');
-            return false;
-        }
-    }
-
-    // ============================================================
-    // 11. MONITOR DAN KONTROL
+    // 10. MONITOR DAN KONTROL (tanpa verifikasi)
     // ============================================================
     let monitorInterval = null;
 
@@ -638,11 +593,7 @@
             return;
         }
 
-        const ok = await checkWithdrawRequirements();
-        if (!ok) {
-            console.warn('⛔ Syarat tidak terpenuhi, bot tidak dijalankan.');
-            return;
-        }
+        // Verifikasi rekening & deposit TIDAK ADA LAGI
 
         isRunning = true;
         isPaused = false;
@@ -708,7 +659,7 @@
     }
 
     // ============================================================
-    // 12. INIT
+    // 11. INIT
     // ============================================================
     hookApi();
 
@@ -719,7 +670,7 @@
         reset: resetBot
     };
 
-    console.log(`✅ WINGO AUTO-BOT v5.0 (Hardcode Dual Core) siap!`);
+    console.log(`✅ WINGO AUTO-BOT v5.0 (Hardcode Dual Core - Tanpa Verifikasi) siap!`);
     console.log(`📌 Perintah: wingoAuto.start() / stop() / status() / reset()`);
     console.log(`🧠 Metode: Dual Core (SUM/TREND) - berganti setelah 2x kalah.`);
     console.log(`💵 Urutan Martingale: 1K → 3K → 7K → 15K → 31K → 63K → 127K → 247K`);
@@ -727,7 +678,7 @@
     showToast('✅ Bot siap! Hardcode Dual Core', 'success');
 
     // ============================================================
-    // 13. OTOMATIS START (jika diinginkan, komentar jika tidak)
+    // 12. OTOMATIS START (jika diinginkan, komentar jika tidak)
     // ============================================================
     // window.wingoAuto.start(); // uncomment jika ingin auto-start
 
