@@ -1,6 +1,6 @@
 // ============================================================
-// WINGO AUTO-BOT v7.0 - 3-MODE PREDIKSI + MARTINGALE 8 LEVEL
-// TANPA PAUSE, TANPA KOMPENSASI
+// WINGO AUTO-BOT v8.0 - 3-MODE PREDIKSI + MARTINGALE 8 LEVEL
+// TANPA PAUSE, TANPA KOMPENSASI, TANPA FIREBASE
 // ============================================================
 
 (function() {
@@ -105,16 +105,13 @@
     let strategyMode = 1;          // 1 = PERTAMBAHAN, 2 = REVERSE, 3 = ZIGZAG
     let zigzagUseReverse = false;  // untuk mode 3
 
-    // Saldo virtual (opsional untuk log)
+    // Saldo virtual (hanya untuk log, tidak mempengaruhi keputusan)
     let virtualBalance = 502000;
     let totalBets = 0;
     let totalWins = 0;
     let totalLosses = 0;
     let currentStreak = 0;
     let profitLoss = 0;
-
-    // Firebase URL (opsional, untuk logging)
-    const FIREBASE_URL = "https://wingo-bot-analytics-default-rtdb.firebaseio.com/";
 
     // ============================================================
     // 3. FUNGSI PREDIKSI 3-MODE
@@ -257,9 +254,9 @@
         if (isBetPlaced) {
             const isWin = (currentPrediction === result);
             if (isWin) {
-                processWin(issueNumber, number, result);
+                processWin();
             } else {
-                processLoss(issueNumber, number, result);
+                processLoss();
             }
             isBetPlaced = false;
         }
@@ -269,8 +266,8 @@
     // ============================================================
     // 6. LOGIKA MENANG / KALAH (TANPA PAUSE, TANPA KOMPENSASI)
     // ============================================================
-    function processWin(issue, number, result) {
-        console.log(`✅ MENANG! Periode ${issue.slice(-3)}`);
+    function processWin() {
+        console.log(`✅ MENANG!`);
         virtualBalance += currentBetAmount * 2;
         totalWins++;
         currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
@@ -284,8 +281,8 @@
         showToast(`✅ Menang! Level 1 (1K)`, 'success');
     }
 
-    function processLoss(issue, number, result) {
-        console.log(`❌ KALAH! Periode ${issue.slice(-3)}`);
+    function processLoss() {
+        console.log(`❌ KALAH!`);
         virtualBalance -= currentBetAmount;
         totalLosses++;
         currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
@@ -591,7 +588,7 @@
 
         monitorInterval = setInterval(checkAndBet, 2000);
         setTimeout(checkAndBet, 1000);
-        console.log(`✅ Bot dimulai! (3-Mode Strategy - Tanpa Pause)`);
+        console.log(`✅ Bot dimulai! (3-Mode Strategy - Tanpa Firebase)`);
         console.log(`📊 Data saat ini: ${historicalData.length} periode`);
         if (nextIssue) console.log(`📌 Periode berikutnya: ${nextIssue.slice(-3)}`);
         console.log(`💵 Urutan Martingale: ${betSequence.map(b => b/1000+'K').join(' → ')}`);
@@ -659,12 +656,12 @@
         reset: resetBot
     };
 
-    console.log(`✅ WINGO AUTO-BOT v7.0 (3-Mode Strategy) siap!`);
+    console.log(`✅ WINGO AUTO-BOT v8.0 (Tanpa Firebase) siap!`);
     console.log(`📌 Perintah: wingoAuto.start() / stop() / status() / reset()`);
     console.log(`🧠 Mode: 1=PERTAMBAHAN, 2=REVERSE, 3=ZIGZAG (berganti saat kalah)`);
     console.log(`💵 Urutan Martingale: 1K → 3K → 7K → 15K → 31K → 63K → 127K → 247K`);
-    console.log(`⏹️ Tanpa pause, tanpa kompensasi loss.`);
-    showToast('✅ Bot siap! 3-Mode Strategy', 'success');
+    console.log(`⏹️ Tanpa pause, tanpa kompensasi, tanpa Firebase.`);
+    showToast('✅ Bot siap! 3-Mode Strategy (No Firebase)', 'success');
 
     // ============================================================
     // 12. OTOMATIS START
