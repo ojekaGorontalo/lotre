@@ -8,7 +8,7 @@
         window.BotSettings = {
             targetProfit: 0,
             stopLoss: 0,
-            maxBetLevel: 8,          // tetap dipakai sebagai batas maksimal level yang boleh dipakai (opsional)
+            maxBetLevel: 8,
             maxWinStreak: 0,
             maxLossStreak: 0,
             sessionTimeout: 0,
@@ -17,7 +17,8 @@
             betCooldown: 10000,
             autoConfirm: true,
             betLevels: [1000, 3000, 7000, 15000, 31000, 63000, 127000, 247000],
-            resetLevelAfterLoss: 0   // default nonaktif
+            resetLevelAfterLoss: 0,
+            predictionMethod: 'tiga_mode' // default: 3-Mode
         };
     }
 
@@ -39,7 +40,7 @@
     }
 
     // ================================================================
-    // 2. TOAST NOTIFICATION (sama)
+    // 2. TOAST NOTIFICATION
     // ================================================================
     function showToast(message, type) {
         var old = document.getElementById('wingoToast');
@@ -184,7 +185,7 @@
     }
 
     // ================================================================
-    // 5. MODAL SETTING (LENGKAP + LEVEL DINAMIS + RESET LEVEL)
+    // 5. MODAL SETTING (LENGKAP + LEVEL DINAMIS + RESET LEVEL + DROPDOWN METODE)
     // ================================================================
     function showSettings() {
         var existing = document.getElementById('wingo-settings-overlay');
@@ -411,6 +412,51 @@
         renderLevels();
         panel.appendChild(levelContainer);
 
+        // ========== DROPDOWN PILIHAN RUMUS PREDIKSI ==========
+        var methodContainer = document.createElement('div');
+        methodContainer.style.cssText = 'margin-bottom:14px;';
+
+        var methodLabel = document.createElement('label');
+        methodLabel.innerText = '🧠 Pilih Rumus Prediksi';
+        methodLabel.style.cssText = 'display:block; font-size:14px; font-weight:600; color:#e0e0e0; margin-bottom:2px;';
+        methodContainer.appendChild(methodLabel);
+
+        var methodSelect = document.createElement('select');
+        methodSelect.id = 'wingo-method-select';
+        methodSelect.style.cssText = `
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #555;
+            background: #333;
+            color: white;
+            font-size: 15px;
+            outline: none;
+            box-sizing: border-box;
+        `;
+        // Opsi metode (3 pilihan)
+        var methodOptions = [
+            { value: 'tiga_mode', text: '3-Mode (PERTAMBAHAN → REVERSE → ZIGZAG)' },
+            { value: 'toggle_dua_kalah', text: 'Toggle 2 Kalah (Trend ↔ Sum)' },
+            { value: 'zigzag_override', text: 'Zig-Zag + Strict Trend Override' }
+        ];
+        methodOptions.forEach(function(opt) {
+            var option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.text;
+            if (opt.value === (window.BotSettings.predictionMethod || 'tiga_mode')) {
+                option.selected = true;
+            }
+            methodSelect.appendChild(option);
+        });
+        methodContainer.appendChild(methodSelect);
+
+        var methodDesc = document.createElement('div');
+        methodDesc.style.cssText = 'font-size:12px; color:#aaa; margin-top:4px;';
+        methodDesc.innerText = 'Pilih strategi prediksi KECIL/BESAR yang akan digunakan bot.';
+        methodContainer.appendChild(methodDesc);
+        panel.appendChild(methodContainer);
+
         // ========== TOMBOL SIMPAN & TUTUP ==========
         var btnContainer = document.createElement('div');
         btnContainer.style.cssText = 'display:flex; gap:8px; margin-top:16px;';
@@ -440,8 +486,8 @@
             window.BotSettings.sessionTimeout = parseInt(document.getElementById('wingo-session').value) || 0;
             window.BotSettings.minBetTime = parseInt(document.getElementById('wingo-min-bet').value) || 8;
             window.BotSettings.maxBetTime = parseInt(document.getElementById('wingo-max-bet').value) || 25;
-            // Reset Level After Loss
             window.BotSettings.resetLevelAfterLoss = parseInt(document.getElementById('wingo-reset-level-loss').value) || 0;
+            window.BotSettings.predictionMethod = document.getElementById('wingo-method-select').value;
 
             // Pastikan betLevels sudah tersimpan
             var levelInputs = levelList.querySelectorAll('input[type="number"]');
@@ -462,7 +508,8 @@
                       '&minbet=' + window.BotSettings.minBetTime +
                       '&maxbet=' + window.BotSettings.maxBetTime +
                       '&levels=' + window.BotSettings.betLevels.join(',') +
-                      '&resetloss=' + window.BotSettings.resetLevelAfterLoss;
+                      '&resetloss=' + window.BotSettings.resetLevelAfterLoss +
+                      '&method=' + window.BotSettings.predictionMethod;
             sendToKodular(msg);
 
             showToast('✅ Pengaturan disimpan!', 'success');
@@ -503,7 +550,7 @@
     }
 
     // ================================================================
-    // 6. WingoNav GLOBAL OBJECT (untuk kontrol UI dari luar)
+    // 6. WingoNav GLOBAL OBJECT
     // ================================================================
     var WingoNav = {
         create: function() {
