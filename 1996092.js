@@ -2,7 +2,7 @@
     'use strict';
 
     // ============================================================
-    // 0. TOAST NOTIFICATION (sama persis)
+    // 0. TOAST NOTIFICATION
     // ============================================================
     function showToast(message, type) {
         const oldToast = document.getElementById('wingoToast');
@@ -48,7 +48,7 @@
     }
 
     // ============================================================
-    // 1. KONFIGURASI DAN STATE (hanya tambah mode)
+    // 1. KONFIGURASI DAN STATE (dengan integrasi BotSettings)
     // ============================================================
     const CONFIG = {
         autoConfirm: true,
@@ -57,30 +57,60 @@
         betCooldown: 10000,
     };
 
+    // Baca pengaturan dari window.BotSettings
+    if (window.BotSettings) {
+        if (window.BotSettings.minBetTime !== undefined) CONFIG.minBetTime = window.BotSettings.minBetTime;
+        if (window.BotSettings.maxBetTime !== undefined) CONFIG.maxBetTime = window.BotSettings.maxBetTime;
+        if (window.BotSettings.betCooldown !== undefined) CONFIG.betCooldown = window.BotSettings.betCooldown;
+        if (window.BotSettings.autoConfirm !== undefined) CONFIG.autoConfirm = window.BotSettings.autoConfirm;
+    }
+
+    // Urutan Martingale (default, akan diambil dari BotSettings)
+    let betSequence = [1000, 3000, 7000, 15000, 31000, 63000, 127000, 247000];
+    if (window.BotSettings && window.BotSettings.betLevels && window.BotSettings.betLevels.length > 0) {
+        betSequence = window.BotSettings.betLevels.slice();
+    }
+
+    // ===== STATE BOT =====
     let isRunning = false;
     let isProcessing = false;
     let lastBetTime = 0;
     let lastIssueProcessed = null;
 
     let currentPrediction = null;
-    let currentBetAmount = 1000;
+    let currentBetAmount = betSequence[0] || 1000;
     let currentBetIndex = 0;
     let isBetPlaced = false;
 
     let historicalData = [];
-    let currentStreak = 0;
-    let nextIssue = null;
-    let lastProcessedIssue = null;
+    let currentStreak = 0;          // positif = win streak, negatif = loss streak
+    let sessionStartTime = 0;
 
-    const betSequence = [1000, 3000, 7000, 15000, 31000, 63000, 127000, 247000];
-    const betLabels = ["1K", "3K", "7K", "15K", "31K", "63K", "127K", "247K"];
+    // ===== TRACKING PROFIT / LOSS =====
+    let totalProfit = 0;            // keuntungan/kerugian bersih sejak start/reset
 
-    // ===== 3-MODE STATE (menggantikan Dual Core) =====
+    // ===== 3-MODE STATE =====
     let strategyMode = 1;           // 1=PERTAMBAHAN, 2=REVERSE, 3=ZIGZAG
-    let zigzagUseReverse = false;   // hanya untuk mode 3
+    let zigzagUseReverse = false;
+
+    // ===== PARAMETER STOP (diambil dari BotSettings) =====
+    let targetProfit = 0;
+    let stopLoss = 0;
+    let maxWinStreak = 0;
+    let maxLossStreak = 0;
+    let sessionTimeout = 0;         // dalam detik
+
+    // Baca parameter stop dari window.BotSettings
+    if (window.BotSettings) {
+        targetProfit = window.BotSettings.targetProfit || 0;
+        stopLoss = window.BotSettings.stopLoss || 0;
+        maxWinStreak = window.BotSettings.maxWinStreak || 0;
+        maxLossStreak = window.BotSettings.maxLossStreak || 0;
+        sessionTimeout = window.BotSettings.sessionTimeout || 0;
+    }
 
     // ============================================================
-    // 2. FUNGSI PREDIKSI 3-MODE (dari prediksiAI.js)
+    // 2. FUNGSI PREDIKSI 3-MODE (tidak berubah)
     // ============================================================
     function analyzeLast4(dataList) {
         if (!dataList || dataList.length < 4) {
@@ -133,7 +163,6 @@
         return pred;
     }
 
-    // Fungsi update mode saat kalah (mirip updateDualCoreState)
     function updateModeOnLoss() {
         if (strategyMode === 1) {
             strategyMode = 2;
@@ -153,7 +182,7 @@
     }
 
     // ============================================================
-    // 3. HOOK API (sama persis)
+    // 3. HOOK API (sama)
     // ============================================================
     function hookApi() {
         const originalFetch = window.fetch;
@@ -205,7 +234,7 @@
     }
 
     // ============================================================
-    // 4. PROSES DATA HASIL PERIODE (ubah minimal data ke 4)
+    // 4. PROSES DATA HASIL PERIODE
     // ============================================================
     function analyzeTrendData(listData) {
         if (!listData || listData.length < 5) return;
@@ -249,37 +278,107 @@
     }
 
     // ============================================================
-    // 5. PROSES MENANG / KALAH (dengan update mode saat kalah)
+    // 5. PROSES MENANG / KALAH (dengan update profit & streak)
     // ============================================================
     function processWin() {
         console.log(`✅ MENANG!`);
+        // Update profit: menang dapat 2x modal, profit bersih = currentBetAmount
+        totalProfit += currentBetAmount;
+        // Update streak
         currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
+
+        // Reset level
         currentBetIndex = 0;
-        currentBetAmount = betSequence[0];
-        console.log(`✅ MENANG! Reset level ke 1 (Rp ${currentBetAmount.toLocaleString()}). Streak: ${currentStreak}`);
-        showToast(`✅ Menang! Reset level 1. Streak ${currentStreak}`, 'success');
+        currentBetAmount = betSequence[0] || 1000;
+
+        console.log(`✅ MENANG! Profit +${currentBetAmount.toLocaleString()}, total profit: ${totalProfit.toLocaleString()}`);
+        showToast(`✅ Menang! Profit +${currentBetAmount/1000}K`, 'success');
+
+        // Cek kondisi stop setelah menang
+        if (checkStopConditions()) {
+            stopBotWithReason();
+        }
     }
 
     function processLoss() {
         console.log(`❌ KALAH!`);
+        // Update profit: kalah rugi sebesar currentBetAmount
+        totalProfit -= currentBetAmount;
+        // Update streak
         currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
 
-        // Update mode sesuai 3-mode
+        // Update mode
         updateModeOnLoss();
 
-        // Naikkan level Martingale
+        // Naik level
         if (currentBetIndex < betSequence.length - 1) {
             currentBetIndex++;
             currentBetAmount = betSequence[currentBetIndex];
         } else {
             console.warn(`⚠️ Sudah di level maksimal (${betSequence.length} level). Tidak bisa naik lagi.`);
         }
-        console.log(`❌ KALAH! Naik level ke ${currentBetIndex+1} (Rp ${currentBetAmount.toLocaleString()})`);
+        console.log(`❌ KALAH! Rugi -${currentBetAmount.toLocaleString()}, total profit: ${totalProfit.toLocaleString()}`);
         showToast(`❌ Kalah! Level ${currentBetIndex+1} (${currentBetAmount/1000}K)`, 'error');
+
+        // Cek kondisi stop setelah kalah
+        if (checkStopConditions()) {
+            stopBotWithReason();
+        }
     }
 
     // ============================================================
-    // 6. FUNGSI TARUHAN (sama persis)
+    // 6. CEK KONDISI STOP (target profit, stop loss, streak, timeout)
+    // ============================================================
+    function checkStopConditions() {
+        let reason = '';
+
+        // Target Profit (jika targetProfit > 0)
+        if (targetProfit > 0 && totalProfit >= targetProfit) {
+            reason = `🎯 Target Profit tercapai: Rp ${totalProfit.toLocaleString()} (≥ Rp ${targetProfit.toLocaleString()})`;
+            return reason;
+        }
+
+        // Stop Loss (jika stopLoss > 0)
+        if (stopLoss > 0 && totalProfit <= -stopLoss) {
+            reason = `🛑 Stop Loss tercapai: Rp ${totalProfit.toLocaleString()} (≤ -Rp ${stopLoss.toLocaleString()})`;
+            return reason;
+        }
+
+        // Max Win Streak (jika maxWinStreak > 0)
+        if (maxWinStreak > 0 && currentStreak >= maxWinStreak) {
+            reason = `🔥 Max Win Streak tercapai: ${currentStreak} kemenangan berturut-turut`;
+            return reason;
+        }
+
+        // Max Loss Streak (jika maxLossStreak > 0)
+        if (maxLossStreak > 0 && currentStreak <= -maxLossStreak) {
+            reason = `❌ Max Loss Streak tercapai: ${Math.abs(currentStreak)} kekalahan berturut-turut`;
+            return reason;
+        }
+
+        // Session Timeout (jika sessionTimeout > 0)
+        if (sessionTimeout > 0 && sessionStartTime > 0) {
+            const elapsed = (Date.now() - sessionStartTime) / 1000;
+            if (elapsed >= sessionTimeout) {
+                reason = `⏱️ Session Timeout: ${Math.floor(elapsed)} detik (batas ${sessionTimeout} detik)`;
+                return reason;
+            }
+        }
+
+        return null; // tidak ada kondisi yang terpenuhi
+    }
+
+    function stopBotWithReason() {
+        const reason = checkStopConditions();
+        if (reason) {
+            console.log(`⏹️ Bot berhenti otomatis: ${reason}`);
+            showToast(`⏹️ ${reason}`, 'error');
+            stopBot(); // stop bot, tidak akan restart otomatis
+        }
+    }
+
+    // ============================================================
+    // 7. FUNGSI TARUHAN (sama)
     // ============================================================
     function placeBet() {
         const pred = getPrediction();
@@ -297,7 +396,7 @@
     }
 
     // ============================================================
-    // 7. EKSEKUSI TARUHAN (checkAndBet) - SAMA PERSIS dengan v5.1
+    // 8. EKSEKUSI TARUHAN (checkAndBet) - tambahkan cek stop di awal
     // ============================================================
     async function checkAndBet() {
         if (!isRunning) {
@@ -305,6 +404,12 @@
             return;
         }
         if (isProcessing) return;
+
+        // Cek kondisi stop sebelum melakukan apapun
+        if (checkStopConditions()) {
+            stopBotWithReason();
+            return;
+        }
 
         const now = Date.now();
         if (now - lastBetTime < CONFIG.betCooldown) return;
@@ -316,7 +421,7 @@
             return;
         }
         if (timer.seconds < CONFIG.minBetTime || timer.seconds > CONFIG.maxBetTime) return;
-        if (historicalData.length < 4) {   // diubah dari 5 ke 4
+        if (historicalData.length < 4) {
             console.log(`⏳ Data historis: ${historicalData.length}/4, menunggu...`);
             showToast(`⏳ Data historis ${historicalData.length}/4`, 'info');
             return;
@@ -363,7 +468,7 @@
     }
 
     // ============================================================
-    // 8. FUNGSI UTILITY (Timer, Click, Popup) - SAMA PERSIS v5.1
+    // 9. FUNGSI UTILITY (Timer, Click, Popup) - SAMA
     // ============================================================
     function getTimerInfo() {
         const timerSelectors = [
@@ -527,7 +632,7 @@
     }
 
     // ============================================================
-    // 9. MONITOR DAN KONTROL (startBot disesuaikan)
+    // 10. MONITOR DAN KONTROL
     // ============================================================
     let monitorInterval = null;
 
@@ -538,12 +643,24 @@
             return;
         }
 
+        // Reset state
         isRunning = true;
         currentBetIndex = 0;
-        currentBetAmount = betSequence[0];
-        // Inisialisasi mode 3-mode
+        currentBetAmount = betSequence[0] || 1000;
         strategyMode = 1;
         zigzagUseReverse = false;
+        totalProfit = 0;
+        currentStreak = 0;
+        sessionStartTime = Date.now();
+
+        // Baca ulang parameter stop dari window.BotSettings (jika ada perubahan dari UI)
+        if (window.BotSettings) {
+            targetProfit = window.BotSettings.targetProfit || 0;
+            stopLoss = window.BotSettings.stopLoss || 0;
+            maxWinStreak = window.BotSettings.maxWinStreak || 0;
+            maxLossStreak = window.BotSettings.maxLossStreak || 0;
+            sessionTimeout = window.BotSettings.sessionTimeout || 0;
+        }
 
         monitorInterval = setInterval(checkAndBet, 2000);
         setTimeout(checkAndBet, 1000);
@@ -552,6 +669,11 @@
         if (nextIssue) console.log(`📌 Periode berikutnya: ${nextIssue.slice(-3)}`);
         console.log(`💵 Urutan Martingale: ${betSequence.map(b => b/1000+'K').join(' → ')}`);
         console.log(`🧠 Metode: 3-Mode Strategy (PERTAMBAHAN → REVERSE → ZIGZAG)`);
+        console.log(`🎯 Target Profit: ${targetProfit > 0 ? 'Rp '+targetProfit.toLocaleString() : 'Nonaktif'}`);
+        console.log(`🛑 Stop Loss: ${stopLoss > 0 ? 'Rp '+stopLoss.toLocaleString() : 'Nonaktif'}`);
+        console.log(`🔥 Max Win Streak: ${maxWinStreak > 0 ? maxWinStreak : 'Nonaktif'}`);
+        console.log(`❌ Max Loss Streak: ${maxLossStreak > 0 ? maxLossStreak : 'Nonaktif'}`);
+        console.log(`⏱️ Session Timeout: ${sessionTimeout > 0 ? sessionTimeout+' detik' : 'Nonaktif'}`);
         showToast('✅ Bot started! Level 1 (1K) Mode PERTAMBAHAN', 'success');
     }
 
@@ -577,28 +699,103 @@
             lastPrediction: currentPrediction,
             strategyMode,
             zigzagUseReverse,
-            currentBetAmount
+            currentBetAmount,
+            totalProfit,
+            sessionElapsed: sessionStartTime > 0 ? Math.floor((Date.now() - sessionStartTime)/1000) : 0
         };
-        const statusMsg = `🟢 Running: ${info.isRunning}\n📊 Level: ${info.betLevel} (${currentBetAmount/1000}K)\n🔥 Streak: ${info.currentStreak}\n🎯 Prediksi: ${info.lastPrediction || '-'}\n🧠 Mode: ${modeName}${strategyMode === 3 ? ` (${metode})` : ''}\n📈 Data: ${info.historicalCount}/4`;
+        const statusMsg = `🟢 Running: ${info.isRunning}\n📊 Level: ${info.betLevel} (${currentBetAmount/1000}K)\n🔥 Streak: ${info.currentStreak}\n💰 Profit: ${info.totalProfit > 0 ? '+' : ''}${info.totalProfit.toLocaleString()}\n🎯 Prediksi: ${info.lastPrediction || '-'}\n🧠 Mode: ${modeName}${strategyMode === 3 ? ` (${metode})` : ''}\n📈 Data: ${info.historicalCount}/4\n⏱️ Waktu: ${info.sessionElapsed} detik`;
         showToast(statusMsg, 'info');
         return info;
     }
 
     function resetBot() {
+        // Hentikan bot jika berjalan
+        if (isRunning) stopBot();
+
+        // Reset semua state
         currentBetIndex = 0;
-        currentBetAmount = betSequence[0];
+        currentBetAmount = betSequence[0] || 1000;
         currentStreak = 0;
         historicalData = [];
         lastIssueProcessed = null;
         isBetPlaced = false;
         strategyMode = 1;
         zigzagUseReverse = false;
+        totalProfit = 0;
+        sessionStartTime = 0;
+
         console.log(`🔄 Bot direset. Mode 1 (PERTAMBAHAN), Level 1 (1K).`);
         showToast('🔄 Bot reset! Level 1, Mode PERTAMBAHAN', 'success');
     }
 
     // ============================================================
-    // 10. INIT & HOOK API
+    // 11. FUNGSI UPDATE KONFIGURASI DARI UI
+    // ============================================================
+    window.updateBotConfig = function(settings) {
+        if (!settings) return;
+        let changed = false;
+
+        if (settings.minBetTime !== undefined && settings.minBetTime !== CONFIG.minBetTime) {
+            CONFIG.minBetTime = settings.minBetTime;
+            changed = true;
+        }
+        if (settings.maxBetTime !== undefined && settings.maxBetTime !== CONFIG.maxBetTime) {
+            CONFIG.maxBetTime = settings.maxBetTime;
+            changed = true;
+        }
+        if (settings.betCooldown !== undefined && settings.betCooldown !== CONFIG.betCooldown) {
+            CONFIG.betCooldown = settings.betCooldown;
+            changed = true;
+        }
+        if (settings.autoConfirm !== undefined && settings.autoConfirm !== CONFIG.autoConfirm) {
+            CONFIG.autoConfirm = settings.autoConfirm;
+            changed = true;
+        }
+
+        // Parameter stop
+        if (settings.targetProfit !== undefined) {
+            targetProfit = settings.targetProfit;
+            changed = true;
+        }
+        if (settings.stopLoss !== undefined) {
+            stopLoss = settings.stopLoss;
+            changed = true;
+        }
+        if (settings.maxWinStreak !== undefined) {
+            maxWinStreak = settings.maxWinStreak;
+            changed = true;
+        }
+        if (settings.maxLossStreak !== undefined) {
+            maxLossStreak = settings.maxLossStreak;
+            changed = true;
+        }
+        if (settings.sessionTimeout !== undefined) {
+            sessionTimeout = settings.sessionTimeout;
+            changed = true;
+        }
+
+        // Perbarui urutan Martingale
+        if (settings.betLevels && Array.isArray(settings.betLevels) && settings.betLevels.length > 0) {
+            const currentSeq = betSequence.join(',');
+            const newSeq = settings.betLevels.join(',');
+            if (currentSeq !== newSeq) {
+                betSequence = settings.betLevels.slice();
+                currentBetIndex = 0;
+                currentBetAmount = betSequence[0] || 1000;
+                console.log(`📊 Urutan Martingale diperbarui: ${betSequence.map(b => b/1000+'K').join(' → ')}`);
+                showToast(`📊 Level taruhan diperbarui (${betSequence.length} level)`, 'info');
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            console.log('✅ Konfigurasi bot diperbarui dari UI:', CONFIG);
+            showToast('✅ Konfigurasi bot diperbarui', 'success');
+        }
+    };
+
+    // ============================================================
+    // 12. INIT & HOOK API
     // ============================================================
     hookApi();
 
@@ -609,15 +806,15 @@
         reset: resetBot
     };
 
-    console.log(`✅ WINGO AUTO-BOT v6.3 (3-Mode Strategy + Auto Click Safe) siap!`);
+    console.log(`✅ WINGO AUTO-BOT v6.5 (3-Mode + Auto Stop Conditions) siap!`);
     console.log(`📌 Perintah: wingoAuto.start() / stop() / status() / reset()`);
     console.log(`🧠 Metode: 3-Mode (PERTAMBAHAN → REVERSE → ZIGZAG)`);
-    console.log(`💵 Urutan Martingale: 1K → 3K → 7K → 15K → 31K → 63K → 127K → 247K`);
-    console.log(`⏱️ Rentang taruhan: ${CONFIG.minBetTime}-${CONFIG.maxBetTime} detik (sama seperti versi aman)`);
+    console.log(`💵 Urutan Martingale: ${betSequence.map(b => b/1000+'K').join(' → ')}`);
+    console.log(`⏱️ Rentang taruhan: ${CONFIG.minBetTime}-${CONFIG.maxBetTime} detik`);
     showToast('✅ Bot siap!', 'success');
 
     // ============================================================
-    // 11. VERIFIKASI UID & AUTO START
+    // 13. VERIFIKASI UID & AUTO START
     // ============================================================
     var validUID = '1996092';
     var userId = prompt('🔐 Masukkan UID Anda untuk mengakses bot:', '');
