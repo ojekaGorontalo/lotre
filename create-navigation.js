@@ -16,7 +16,8 @@
             maxBetTime: 25,
             betCooldown: 10000,
             autoConfirm: true,
-            betLevels: [1000, 3000, 7000, 15000, 31000, 63000, 127000, 247000] // default
+            betLevels: [1000, 3000, 7000, 15000, 31000, 63000, 127000, 247000],
+            resetLevelAfterLoss: 0   // default nonaktif
         };
     }
 
@@ -183,7 +184,7 @@
     }
 
     // ================================================================
-    // 5. MODAL SETTING (LENGKAP + LEVEL DINAMIS)
+    // 5. MODAL SETTING (LENGKAP + LEVEL DINAMIS + RESET LEVEL)
     // ================================================================
     function showSettings() {
         var existing = document.getElementById('wingo-settings-overlay');
@@ -296,6 +297,10 @@
         addInputGroup('⏳ Max Bet Time (detik)', 'wingo-max-bet', 'detik', 'number', window.BotSettings.maxBetTime,
             'Bot hanya akan bertaruh jika waktu tersisa ≤ nilai ini. (misal 25 detik)');
 
+        // --- FITUR BARU: Reset Level After Loss Streak ---
+        addInputGroup('🔄 Reset Level After Loss Streak', 'wingo-reset-level-loss', '0 = nonaktif', 'number', window.BotSettings.resetLevelAfterLoss || 0,
+            'Jika kalah berturut-turut mencapai angka ini, level taruhan akan di-reset ke level 1. Isi 0 untuk nonaktif.');
+
         // ========== AREA LEVEL BETTING DINAMIS ==========
         var levelContainer = document.createElement('div');
         levelContainer.style.cssText = 'margin: 16px 0 12px 0; border-top: 1px solid #444; padding-top: 12px;';
@@ -396,7 +401,6 @@
                 font-size: 14px;
             `;
             addBtn.addEventListener('click', function() {
-                // Tambah level baru dengan nominal 1000
                 window.BotSettings.betLevels.push(1000);
                 renderLevels();
             });
@@ -404,7 +408,6 @@
             levelList.appendChild(addRow);
         }
 
-        // Render awal
         renderLevels();
         panel.appendChild(levelContainer);
 
@@ -437,16 +440,17 @@
             window.BotSettings.sessionTimeout = parseInt(document.getElementById('wingo-session').value) || 0;
             window.BotSettings.minBetTime = parseInt(document.getElementById('wingo-min-bet').value) || 8;
             window.BotSettings.maxBetTime = parseInt(document.getElementById('wingo-max-bet').value) || 25;
+            // Reset Level After Loss
+            window.BotSettings.resetLevelAfterLoss = parseInt(document.getElementById('wingo-reset-level-loss').value) || 0;
 
-            // Pastikan betLevels sudah tersimpan (render sudah sync via event change)
-            // Tapi jika ada input yang belum trigger change, kita paksa baca ulang dari DOM
+            // Pastikan betLevels sudah tersimpan
             var levelInputs = levelList.querySelectorAll('input[type="number"]');
             var newLevels = [];
             levelInputs.forEach(function(inp) {
                 var val = parseInt(inp.value) || 0;
                 if (val > 0) newLevels.push(val);
             });
-            if (newLevels.length === 0) newLevels = [1000]; // fallback
+            if (newLevels.length === 0) newLevels = [1000];
             window.BotSettings.betLevels = newLevels;
 
             // Kirim ke Kodular (opsional)
@@ -457,7 +461,8 @@
                       '&session=' + window.BotSettings.sessionTimeout +
                       '&minbet=' + window.BotSettings.minBetTime +
                       '&maxbet=' + window.BotSettings.maxBetTime +
-                      '&levels=' + window.BotSettings.betLevels.join(',');
+                      '&levels=' + window.BotSettings.betLevels.join(',') +
+                      '&resetloss=' + window.BotSettings.resetLevelAfterLoss;
             sendToKodular(msg);
 
             showToast('✅ Pengaturan disimpan!', 'success');
