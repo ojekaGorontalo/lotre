@@ -2,15 +2,15 @@
     'use strict';
 
     // ============================================================
-    // 0. TOAST NOTIFICATION (sama persis)
+    // 0. TOAST NOTIFICATION
     // ============================================================
     function showToast(message, type) {
-        const oldToast = document.getElementById('wingoToast');
+        var oldToast = document.getElementById('wingoToast');
         if (oldToast) oldToast.remove();
 
-        const toast = document.createElement('div');
+        var toast = document.createElement('div');
         toast.id = 'wingoToast';
-        let bgColor = '#1e293b';
+        var bgColor = '#1e293b';
         if (type === 'success') bgColor = '#22c55e';
         else if (type === 'error') bgColor = '#ef4444';
         else if (type === 'info') bgColor = '#3b82f6';
@@ -40,63 +40,93 @@
         toast.textContent = message;
         document.body.appendChild(toast);
 
-        setTimeout(() => {
+        setTimeout(function() {
             toast.style.opacity = '0';
             toast.style.transform = 'translateX(-50%) translateY(10px)';
-            setTimeout(() => toast.remove(), 400);
+            setTimeout(function() { toast.remove(); }, 400);
         }, 4000);
     }
 
     // ============================================================
-    // 1. KONFIGURASI DAN STATE (hanya tambah mode)
+    // 1. KONFIGURASI (ambil dari window.BotSettings jika ada)
     // ============================================================
-    const CONFIG = {
-        autoConfirm: true,
-        minBetTime: 8,
-        maxBetTime: 25,
-        betCooldown: 10000,
+    function getConfig() {
+        var defaults = {
+            autoConfirm: true,
+            minBetTime: 8,
+            maxBetTime: 25,
+            betCooldown: 10000,
+            targetProfit: 0,
+            stopLoss: 0,
+            maxBetLevel: 8,
+            maxWinStreak: 0,
+            maxLossStreak: 0,
+            sessionTimeout: 0
+        };
+        if (window.BotSettings) {
+            return Object.assign({}, defaults, window.BotSettings);
+        }
+        return defaults;
+    }
+
+    var CONFIG = getConfig();
+
+    // Fungsi untuk update CONFIG dari luar (dipanggil oleh wingogamenav.js saat setting disimpan)
+    window.updateBotConfig = function(newSettings) {
+        CONFIG = Object.assign(CONFIG, newSettings);
+        console.log('🔄 CONFIG diperbarui:', CONFIG);
+        showToast('⚙️ Setting bot diperbarui', 'info');
     };
 
-    let isRunning = false;
-    let isProcessing = false;
-    let lastBetTime = 0;
-    let lastIssueProcessed = null;
+    // ============================================================
+    // 2. STATE BOT
+    // ============================================================
+    var isRunning = false;
+    var isProcessing = false;
+    var lastBetTime = 0;
+    var lastIssueProcessed = null;
 
-    let currentPrediction = null;
-    let currentBetAmount = 1000;
-    let currentBetIndex = 0;
-    let isBetPlaced = false;
+    var currentPrediction = null;
+    var currentBetAmount = 1000;
+    var currentBetIndex = 0;
+    var isBetPlaced = false;
 
-    let historicalData = [];
-    let currentStreak = 0;
-    let nextIssue = null;
-    let lastProcessedIssue = null;
+    var historicalData = [];
+    var currentStreak = 0;
+    var nextIssue = null;
+    var lastProcessedIssue = null;
 
-    const betSequence = [1000, 3000, 7000, 15000, 31000, 63000, 127000, 247000];
-    const betLabels = ["1K", "3K", "7K", "15K", "31K", "63K", "127K", "247K"];
+    // Tracking profit/loss
+    var totalProfit = 0;
+    var totalLoss = 0;
+    var sessionTimer = null;
 
-    // ===== 3-MODE STATE (menggantikan Dual Core) =====
-    let strategyMode = 1;           // 1=PERTAMBAHAN, 2=REVERSE, 3=ZIGZAG
-    let zigzagUseReverse = false;   // hanya untuk mode 3
+    var betSequence = [1000, 3000, 7000, 15000, 31000, 63000, 127000, 247000];
+    var betLabels = ["1K", "3K", "7K", "15K", "31K", "63K", "127K", "247K"];
+
+    // 3-MODE
+    var strategyMode = 1;
+    var zigzagUseReverse = false;
 
     // ============================================================
-    // 2. FUNGSI PREDIKSI 3-MODE (dari prediksiAI.js)
+    // 3. FUNGSI PREDIKSI
     // ============================================================
     function analyzeLast4(dataList) {
         if (!dataList || dataList.length < 4) {
             throw new Error("Data kurang dari 4");
         }
-        const last4 = dataList.slice(0, 4).map(item => parseInt(item.number, 10));
-        const total = last4.reduce((a, b) => a + b, 0);
-        const digitAkhir = total % 10;
-        const hasilPertambahan = digitAkhir <= 4 ? "KECIL" : "BESAR";
-        const hasilReverse = hasilPertambahan === "KECIL" ? "BESAR" : "KECIL";
-        return { last4, total, digitAkhir, hasilPertambahan, hasilReverse };
+        var last4 = dataList.slice(0, 4).map(function(item) { return parseInt(item.number, 10); });
+        var total = last4.reduce(function(a, b) { return a + b; }, 0);
+        var digitAkhir = total % 10;
+        var hasilPertambahan = digitAkhir <= 4 ? "KECIL" : "BESAR";
+        var hasilReverse = hasilPertambahan === "KECIL" ? "BESAR" : "KECIL";
+        return { last4: last4, total: total, digitAkhir: digitAkhir, hasilPertambahan: hasilPertambahan, hasilReverse: hasilReverse };
     }
 
     function getPredictionFromMode(analysisResult) {
-        const { hasilPertambahan, hasilReverse } = analysisResult;
-        let pred = "";
+        var hasilPertambahan = analysisResult.hasilPertambahan;
+        var hasilReverse = analysisResult.hasilReverse;
+        var pred = "";
         if (strategyMode === 1) {
             pred = hasilPertambahan;
         } else if (strategyMode === 2) {
@@ -108,17 +138,17 @@
     }
 
     function getPrediction() {
-        const last4 = historicalData.slice(0, 4);
+        var last4 = historicalData.slice(0, 4);
         if (last4.length < 4) {
             if (historicalData.length > 0) {
-                const fallback = historicalData[0].result;
-                console.log(`⚠️ Data <4, pakai fallback: ${fallback}`);
+                var fallback = historicalData[0].result;
+                console.log('⚠️ Data <4, pakai fallback: ' + fallback);
                 return fallback;
             }
             return "KECIL";
         }
 
-        let analysisResult;
+        var analysisResult;
         try {
             analysisResult = analyzeLast4(last4);
         } catch (e) {
@@ -126,74 +156,75 @@
             return "KECIL";
         }
 
-        const pred = getPredictionFromMode(analysisResult);
-        const modeName = strategyMode === 1 ? "PERTAMBAHAN" : (strategyMode === 2 ? "REVERSE" : "ZIGZAG");
-        const metode = (strategyMode === 3) ? (zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN") : modeName;
-        console.log(`🎯 Mode ${strategyMode} (${metode}) → Prediksi: ${pred} dari 4 angka ${analysisResult.last4.join(', ')}`);
+        var pred = getPredictionFromMode(analysisResult);
+        var modeName = strategyMode === 1 ? "PERTAMBAHAN" : (strategyMode === 2 ? "REVERSE" : "ZIGZAG");
+        var metode = (strategyMode === 3) ? (zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN") : modeName;
+        console.log('🎯 Mode ' + strategyMode + ' (' + metode + ') → Prediksi: ' + pred + ' dari 4 angka ' + analysisResult.last4.join(', '));
         return pred;
     }
 
-    // Fungsi update mode saat kalah (mirip updateDualCoreState)
     function updateModeOnLoss() {
         if (strategyMode === 1) {
             strategyMode = 2;
-            console.log(`➡️ Pindah ke Mode 2 (REVERSE)`);
+            console.log('➡️ Pindah ke Mode 2 (REVERSE)');
             showToast('🔄 Beralih ke Mode REVERSE', 'info');
         } else if (strategyMode === 2) {
             strategyMode = 3;
             zigzagUseReverse = false;
-            console.log(`➡️ Pindah ke Mode 3 (ZIGZAG) - mulai PERTAMBAHAN`);
+            console.log('➡️ Pindah ke Mode 3 (ZIGZAG) - mulai PERTAMBAHAN');
             showToast('🔄 Beralih ke Mode ZIGZAG (PERTAMBAHAN)', 'info');
         } else if (strategyMode === 3) {
             zigzagUseReverse = !zigzagUseReverse;
-            const metode = zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN";
-            console.log(`🔄 Mode 3 tetap, metode berubah menjadi ${metode}`);
-            showToast(`🔄 ZIGZAG → ${metode}`, 'info');
+            var metode = zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN";
+            console.log('🔄 Mode 3 tetap, metode berubah menjadi ' + metode);
+            showToast('🔄 ZIGZAG → ' + metode, 'info');
         }
     }
 
     // ============================================================
-    // 3. HOOK API (sama persis)
+    // 4. HOOK API
     // ============================================================
     function hookApi() {
-        const originalFetch = window.fetch;
-        window.fetch = function(...args) {
-            return originalFetch.apply(this, arguments).then(response => {
-                const url = args[0] || '';
+        var originalFetch = window.fetch;
+        window.fetch = function() {
+            var args = arguments;
+            return originalFetch.apply(this, arguments).then(function(response) {
+                var url = args[0] || '';
                 if (typeof url === 'string') {
                     if (url.includes('GetGameIssue')) {
-                        response.clone().json().then(data => {
-                            if (data?.data?.issueNumber) {
+                        response.clone().json().then(function(data) {
+                            if (data && data.data && data.data.issueNumber) {
                                 nextIssue = data.data.issueNumber;
-                                console.log(`📡 Periode baru: ${nextIssue.slice(-3)}`);
+                                console.log('📡 Periode baru: ' + nextIssue.slice(-3));
                             }
-                        }).catch(() => {});
+                        }).catch(function() {});
                     } else if (url.includes('GetNoaverageEmerdList')) {
-                        response.clone().json().then(data => {
+                        response.clone().json().then(function(data) {
                             processData(data);
-                        }).catch(() => {});
+                        }).catch(function() {});
                     }
                 }
                 return response;
             });
         };
 
-        const originalOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(...args) {
-            const url = args[1] || '';
+        var originalOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function() {
+            var args = arguments;
+            var url = args[1] || '';
             this.addEventListener('load', function() {
                 if (typeof url === 'string') {
                     if (url.includes('GetNoaverageEmerdList')) {
                         try {
-                            const data = JSON.parse(this.responseText);
+                            var data = JSON.parse(this.responseText);
                             processData(data);
                         } catch (e) {}
                     } else if (url.includes('GetGameIssue')) {
                         try {
-                            const data = JSON.parse(this.responseText);
-                            if (data?.data?.issueNumber) {
+                            var data = JSON.parse(this.responseText);
+                            if (data && data.data && data.data.issueNumber) {
                                 nextIssue = data.data.issueNumber;
-                                console.log(`📡 Periode baru: ${nextIssue.slice(-3)}`);
+                                console.log('📡 Periode baru: ' + nextIssue.slice(-3));
                             }
                         } catch (e) {}
                     }
@@ -205,39 +236,41 @@
     }
 
     // ============================================================
-    // 4. PROSES DATA HASIL PERIODE (ubah minimal data ke 4)
+    // 5. PROSES DATA
     // ============================================================
     function analyzeTrendData(listData) {
         if (!listData || listData.length < 5) return;
-        const results = listData.map(item => ({
-            issue: item.issueNumber,
-            number: parseInt(item.number),
-            result: parseInt(item.number) <= 4 ? "KECIL" : "BESAR",
-            colour: item.colour
-        }));
-        historicalData = [...results, ...historicalData].slice(0, 20);
-        console.log(`📊 Data historis terkini: ${historicalData.length} periode`);
+        var results = listData.map(function(item) {
+            return {
+                issue: item.issueNumber,
+                number: parseInt(item.number),
+                result: parseInt(item.number) <= 4 ? "KECIL" : "BESAR",
+                colour: item.colour
+            };
+        });
+        historicalData = results.concat(historicalData).slice(0, 20);
+        console.log('📊 Data historis terkini: ' + historicalData.length + ' periode');
         if (historicalData.length >= 4) {
-            const last4 = historicalData.slice(0,4).map(d => d.number).join(', ');
-            console.log(`   Angka 4 terakhir: ${last4}`);
+            var last4 = historicalData.slice(0,4).map(function(d) { return d.number; }).join(', ');
+            console.log('   Angka 4 terakhir: ' + last4);
         }
     }
 
     function processData(data) {
-        const list = data?.data?.list;
+        var list = data && data.data && data.data.list;
         if (!list || list.length === 0) return;
-        const item = list[0];
+        var item = list[0];
         if (!item.issueNumber || !item.number) return;
-        const issueNumber = item.issueNumber;
-        const number = parseInt(item.number);
-        const result = number <= 4 ? "KECIL" : "BESAR";
+        var issueNumber = item.issueNumber;
+        var number = parseInt(item.number);
+        var result = number <= 4 ? "KECIL" : "BESAR";
         if (lastProcessedIssue === issueNumber) return;
 
-        console.log(`📥 Hasil periode ${issueNumber.slice(-3)}: ${number} (${result})`);
+        console.log('📥 Hasil periode ' + issueNumber.slice(-3) + ': ' + number + ' (' + result + ')');
         analyzeTrendData(list);
 
         if (isBetPlaced) {
-            const isWin = (currentPrediction === result);
+            var isWin = (currentPrediction === result);
             if (isWin) {
                 processWin();
             } else {
@@ -249,40 +282,73 @@
     }
 
     // ============================================================
-    // 5. PROSES MENANG / KALAH (dengan update mode saat kalah)
+    // 6. PROSES MENANG / KALAH (dengan stop condition)
     // ============================================================
     function processWin() {
-        console.log(`✅ MENANG!`);
+        console.log('✅ MENANG!');
+        totalProfit += currentBetAmount;
+
+        // CEK TARGET PROFIT
+        if (CONFIG.targetProfit > 0 && totalProfit >= CONFIG.targetProfit) {
+            showToast('🎯 Target Profit ' + CONFIG.targetProfit.toLocaleString() + ' tercapai! Bot stop.', 'success');
+            stopBot();
+            return;
+        }
+
         currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
+        // CEK MAX WIN STREAK
+        if (CONFIG.maxWinStreak > 0 && currentStreak >= CONFIG.maxWinStreak) {
+            showToast('🔥 Win Streak ' + currentStreak + ' kali! Bot stop.', 'success');
+            stopBot();
+            return;
+        }
+
         currentBetIndex = 0;
         currentBetAmount = betSequence[0];
-        console.log(`✅ MENANG! Reset level ke 1 (Rp ${currentBetAmount.toLocaleString()}). Streak: ${currentStreak}`);
-        showToast(`✅ Menang! Reset level 1. Streak ${currentStreak}`, 'success');
+        console.log('✅ MENANG! Reset level ke 1 (Rp ' + currentBetAmount.toLocaleString() + '). Streak: ' + currentStreak);
+        showToast('✅ Menang! Reset level 1. Streak ' + currentStreak, 'success');
     }
 
     function processLoss() {
-        console.log(`❌ KALAH!`);
-        currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
+        console.log('❌ KALAH!');
+        totalLoss += currentBetAmount;
 
-        // Update mode sesuai 3-mode
+        // CEK STOP LOSS
+        if (CONFIG.stopLoss > 0 && totalLoss >= CONFIG.stopLoss) {
+            showToast('🛑 Stop Loss ' + CONFIG.stopLoss.toLocaleString() + ' tercapai! Bot stop.', 'error');
+            stopBot();
+            return;
+        }
+
+        currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
+        // CEK MAX LOSS STREAK
+        if (CONFIG.maxLossStreak > 0 && Math.abs(currentStreak) >= CONFIG.maxLossStreak) {
+            showToast('❌ Loss Streak ' + Math.abs(currentStreak) + ' kali! Bot stop.', 'error');
+            stopBot();
+            return;
+        }
+
         updateModeOnLoss();
 
-        // Naikkan level Martingale
-        if (currentBetIndex < betSequence.length - 1) {
+        // CEK LEVEL MAKSIMAL
+        if (currentBetIndex < betSequence.length - 1 && currentBetIndex < CONFIG.maxBetLevel - 1) {
             currentBetIndex++;
             currentBetAmount = betSequence[currentBetIndex];
         } else {
-            console.warn(`⚠️ Sudah di level maksimal (${betSequence.length} level). Tidak bisa naik lagi.`);
+            console.warn('⚠️ Mencapai batas level maksimal (' + CONFIG.maxBetLevel + ')! Reset ke level 1.');
+            showToast('⚠️ Batas level ' + CONFIG.maxBetLevel + ', reset ke 1K', 'info');
+            currentBetIndex = 0;
+            currentBetAmount = betSequence[0];
         }
-        console.log(`❌ KALAH! Naik level ke ${currentBetIndex+1} (Rp ${currentBetAmount.toLocaleString()})`);
-        showToast(`❌ Kalah! Level ${currentBetIndex+1} (${currentBetAmount/1000}K)`, 'error');
+        console.log('❌ KALAH! Level ke ' + (currentBetIndex+1) + ' (Rp ' + currentBetAmount.toLocaleString() + ')');
+        showToast('❌ Kalah! Level ' + (currentBetIndex+1) + ' (' + (currentBetAmount/1000) + 'K)', 'error');
     }
 
     // ============================================================
-    // 6. FUNGSI TARUHAN (sama persis)
+    // 7. FUNGSI TARUHAN
     // ============================================================
     function placeBet() {
-        const pred = getPrediction();
+        var pred = getPrediction();
         if (!pred) {
             console.warn('⚠️ Tidak ada prediksi, skip taruhan');
             showToast('⚠️ Tidak ada prediksi', 'error');
@@ -291,13 +357,13 @@
 
         currentPrediction = pred;
         isBetPlaced = true;
-        console.log(`🎯 Taruhan ditempatkan: ${currentPrediction} (Level ${currentBetIndex+1}, Rp ${currentBetAmount.toLocaleString()})`);
-        showToast(`🎯 Taruhan ${currentPrediction} (Level ${currentBetIndex+1})`, 'info');
+        console.log('🎯 Taruhan ditempatkan: ' + currentPrediction + ' (Level ' + (currentBetIndex+1) + ', Rp ' + currentBetAmount.toLocaleString() + ')');
+        showToast('🎯 Taruhan ' + currentPrediction + ' (Level ' + (currentBetIndex+1) + ')', 'info');
         return true;
     }
 
     // ============================================================
-    // 7. EKSEKUSI TARUHAN (checkAndBet) - SAMA PERSIS dengan v5.1
+    // 8. EKSEKUSI TARUHAN
     // ============================================================
     async function checkAndBet() {
         if (!isRunning) {
@@ -306,82 +372,83 @@
         }
         if (isProcessing) return;
 
-        const now = Date.now();
+        var now = Date.now();
         if (now - lastBetTime < CONFIG.betCooldown) return;
 
-        const timer = getTimerInfo();
+        var timer = getTimerInfo();
         if (!timer) {
-            console.warn(`⚠️ Timer tidak terdeteksi`);
+            console.warn('⚠️ Timer tidak terdeteksi');
             showToast('⚠️ Timer tidak terdeteksi', 'error');
             return;
         }
         if (timer.seconds < CONFIG.minBetTime || timer.seconds > CONFIG.maxBetTime) return;
-        if (historicalData.length < 4) {   // diubah dari 5 ke 4
-            console.log(`⏳ Data historis: ${historicalData.length}/4, menunggu...`);
-            showToast(`⏳ Data historis ${historicalData.length}/4`, 'info');
+        if (historicalData.length < 4) {
+            console.log('⏳ Data historis: ' + historicalData.length + '/4, menunggu...');
+            showToast('⏳ Data historis ' + historicalData.length + '/4', 'info');
             return;
         }
-        const currentPeriode = nextIssue ? nextIssue.slice(-3) : timer.seconds.toString();
+        var currentPeriode = nextIssue ? nextIssue.slice(-3) : timer.seconds.toString();
         if (lastIssueProcessed === currentPeriode) {
-            console.log(`⏳ Periode ${currentPeriode} sudah diproses`);
+            console.log('⏳ Periode ' + currentPeriode + ' sudah diproses');
             return;
         }
 
         isProcessing = true;
         try {
-            console.log(`🚀 Memulai proses taruhan untuk periode ${currentPeriode}`);
+            console.log('🚀 Memulai proses taruhan untuk periode ' + currentPeriode);
             if (!placeBet()) return;
 
-            const btnSelectors = currentPrediction === 'BESAR'
+            var btnSelectors = currentPrediction === 'BESAR'
                 ? ['.Betting__C-foot-b', '[class*="besar"]', 'button:contains("BESAR")']
                 : ['.Betting__C-foot-s', '[class*="kecil"]', 'button:contains("KECIL")'];
-            const betButton = findElement(btnSelectors);
+            var betButton = findElement(btnSelectors);
             if (!betButton) {
-                console.warn(`⚠️ Tombol ${currentPrediction} tidak ditemukan`);
-                showToast(`⚠️ Tombol ${currentPrediction} tidak ditemukan`, 'error');
+                console.warn('⚠️ Tombol ' + currentPrediction + ' tidak ditemukan');
+                showToast('⚠️ Tombol ' + currentPrediction + ' tidak ditemukan', 'error');
                 return;
             }
-            const style = window.getComputedStyle(betButton);
+            var style = window.getComputedStyle(betButton);
             if (style.opacity === '0.5' || style.pointerEvents === 'none') {
-                console.warn(`⚠️ Tombol ${currentPrediction} tidak aktif (disabled)`);
-                showToast(`⚠️ Tombol ${currentPrediction} disabled`, 'error');
+                console.warn('⚠️ Tombol ' + currentPrediction + ' tidak aktif (disabled)');
+                showToast('⚠️ Tombol ' + currentPrediction + ' disabled', 'error');
                 return;
             }
-            console.log(`🖱️ Mengklik tombol ${currentPrediction}`);
+            console.log('🖱️ Mengklik tombol ' + currentPrediction);
             safeClick(betButton);
             await wait(1500);
             await processPopup(currentBetAmount);
             lastBetTime = Date.now();
             lastIssueProcessed = currentPeriode;
-            console.log(`✅ Taruhan selesai untuk periode ${currentPeriode}`);
+            console.log('✅ Taruhan selesai untuk periode ' + currentPeriode);
         } catch (error) {
-            console.error(`❌ Error dalam checkAndBet:`, error);
-            showToast(`❌ Error: ${error.message}`, 'error');
+            console.error('❌ Error dalam checkAndBet:', error);
+            showToast('❌ Error: ' + error.message, 'error');
         } finally {
             isProcessing = false;
         }
     }
 
     // ============================================================
-    // 8. FUNGSI UTILITY (Timer, Click, Popup) - SAMA PERSIS v5.1
+    // 9. UTILITY FUNCTIONS
     // ============================================================
     function getTimerInfo() {
-        const timerSelectors = [
+        var timerSelectors = [
             '.timer', '.countdown', '.van-count-down',
             '[class*="timer"]', '[class*="countdown"]',
             '.Betting__C-head-t', '.game-timer',
             '.time-count', '.betting-timer', '.round-timer',
             '.number', '.time'
         ];
-        for (let sel of timerSelectors) {
-            const els = document.querySelectorAll(sel);
-            for (let el of els) {
+        for (var i = 0; i < timerSelectors.length; i++) {
+            var els = document.querySelectorAll(timerSelectors[i]);
+            for (var j = 0; j < els.length; j++) {
+                var el = els[j];
                 if (el && el.textContent.trim()) {
-                    const text = el.textContent.trim();
+                    var text = el.textContent.trim();
                     if (text.match(/\d+/) || text.includes(':')) {
-                        let seconds = 0;
+                        var seconds = 0;
                         if (text.includes(':')) {
-                            const parts = text.split(':');
+                            var parts = text.split(':');
                             seconds = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1].split('.')[0]) || 0);
                         } else if (text.includes('.')) {
                             seconds = parseFloat(text) || 0;
@@ -389,20 +456,21 @@
                             seconds = parseInt(text) || 0;
                         }
                         if (seconds > 0) {
-                            console.log(`⏳ Timer: ${seconds} detik`);
-                            return { seconds: Math.floor(seconds), text };
+                            console.log('⏳ Timer: ' + seconds + ' detik');
+                            return { seconds: Math.floor(seconds), text: text };
                         }
                     }
                 }
             }
         }
-        const allElements = document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5');
-        for (let el of allElements) {
-            const text = el.textContent.trim();
+        var allElements = document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5');
+        for (var k = 0; k < allElements.length; k++) {
+            var el = allElements[k];
+            var text = el.textContent.trim();
             if (text && (text.includes(':') || /^\d{1,2}$/.test(text) || /^\d{1,2}\.\d$/.test(text))) {
-                let seconds = 0;
+                var seconds = 0;
                 if (text.includes(':')) {
-                    const parts = text.split(':');
+                    var parts = text.split(':');
                     seconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
                 } else if (text.includes('.')) {
                     seconds = parseFloat(text);
@@ -410,8 +478,8 @@
                     seconds = parseInt(text);
                 }
                 if (seconds > 0 && seconds < 60) {
-                    console.log(`⏳ Timer (alternatif): ${seconds} detik`);
-                    return { seconds: Math.floor(seconds), text };
+                    console.log('⏳ Timer (alternatif): ' + seconds + ' detik');
+                    return { seconds: Math.floor(seconds), text: text };
                 }
             }
         }
@@ -423,20 +491,21 @@
         try { el.click(); return true; } catch (e) { return false; }
     }
 
-    function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function wait(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 
-    function findElement(selectors, container = document) {
-        for (let s of selectors) {
-            const el = container.querySelector(s);
+    function findElement(selectors, container) {
+        container = container || document;
+        for (var i = 0; i < selectors.length; i++) {
+            var el = container.querySelector(selectors[i]);
             if (el) return el;
         }
         return null;
     }
 
     async function processPopup(amount) {
-        console.log(`🔍 Mencari popup untuk memasang taruhan...`);
-        for (let i = 0; i < 15; i++) {
-            const popup = findElement([
+        console.log('🔍 Mencari popup untuk memasang taruhan...');
+        for (var i = 0; i < 15; i++) {
+            var popup = findElement([
                 '.van-popup.van-popup--bottom',
                 '.van-popup',
                 '.bet-popup',
@@ -444,57 +513,59 @@
                 '[class*="modal"]'
             ]);
             if (popup && popup.style.display !== 'none') {
-                console.log(`✅ Popup ditemukan`);
+                console.log('✅ Popup ditemukan');
                 await fillAmount(popup, amount);
                 return;
             }
             await wait(200);
         }
-        console.warn(`⚠️ Popup tidak muncul setelah 3 detik`);
+        console.warn('⚠️ Popup tidak muncul setelah 3 detik');
         showToast('⚠️ Popup taruhan tidak muncul', 'error');
     }
 
     async function fillAmount(popup, amount) {
-        const input = popup.querySelector('input[type="tel"], input[type="number"]');
+        var input = popup.querySelector('input[type="tel"], input[type="number"]');
         if (input) {
-            console.log(`💵 Mengisi nominal: ${amount} (${amount/1000}K)`);
+            console.log('💵 Mengisi nominal: ' + amount + ' (' + (amount/1000) + 'K)');
             input.value = '';
             await wait(300);
-            const multiplier = amount / 1000;
+            var multiplier = amount / 1000;
             input.value = multiplier.toString();
             input.dispatchEvent(new Event('input', { bubbles: true }));
             await wait(1000);
             if (CONFIG.autoConfirm) await confirmBet(popup);
             return;
         }
-        const buttons = popup.querySelectorAll('button, div, span');
-        for (let btn of buttons) {
-            const txt = btn.textContent || '';
-            const num = parseInt(txt.replace(/[^\d]/g, ''));
+        var buttons = popup.querySelectorAll('button, div, span');
+        for (var i = 0; i < buttons.length; i++) {
+            var btn = buttons[i];
+            var txt = btn.textContent || '';
+            var num = parseInt(txt.replace(/[^\d]/g, ''));
             if (num === amount) {
-                console.log(`🖱️ Klik tombol cepat: ${txt.trim()}`);
+                console.log('🖱️ Klik tombol cepat: ' + txt.trim());
                 safeClick(btn);
                 await wait(1000);
                 if (CONFIG.autoConfirm) await confirmBet(popup);
                 return;
             }
         }
-        for (let btn of buttons) {
-            const txt = btn.textContent || '';
+        for (var j = 0; j < buttons.length; j++) {
+            var btn = buttons[j];
+            var txt = btn.textContent || '';
             if (txt.includes('x2') || txt.includes('X2')) {
-                console.log(`🖱️ Klik tombol X2`);
+                console.log('🖱️ Klik tombol X2');
                 safeClick(btn);
                 await wait(1000);
                 if (CONFIG.autoConfirm) await confirmBet(popup);
                 return;
             }
         }
-        console.warn(`⚠️ Tidak bisa mengisi nominal ${amount}`);
-        showToast(`⚠️ Gagal isi nominal ${amount/1000}K`, 'error');
+        console.warn('⚠️ Tidak bisa mengisi nominal ' + amount);
+        showToast('⚠️ Gagal isi nominal ' + (amount/1000) + 'K', 'error');
     }
 
     async function confirmBet(popup) {
-        const confirmSelectors = [
+        var confirmSelectors = [
             '.Betting__Popup-foot-s',
             '.van-button--primary',
             '[class*="confirm"]',
@@ -504,54 +575,72 @@
             'button:contains("TARUH")',
             'button:contains("BET")'
         ];
-        for (let selector of confirmSelectors) {
-            let button = null;
+        for (var i = 0; i < confirmSelectors.length; i++) {
+            var selector = confirmSelectors[i];
+            var button = null;
             if (selector.includes('contains')) {
-                const text = selector.match(/contains\("([^"]+)"\)/)[1];
-                const btns = popup.querySelectorAll('button');
-                for (let btn of btns) {
-                    if (btn.textContent.includes(text)) { button = btn; break; }
+                var text = selector.match(/contains\("([^"]+)"\)/)[1];
+                var btns = popup.querySelectorAll('button');
+                for (var j = 0; j < btns.length; j++) {
+                    if (btns[j].textContent.includes(text)) { button = btns[j]; break; }
                 }
             } else {
                 button = popup.querySelector(selector);
             }
             if (button) {
-                console.log(`✅ Mengklik tombol konfirmasi: ${button.textContent.trim()}`);
+                console.log('✅ Mengklik tombol konfirmasi: ' + button.textContent.trim());
                 await wait(800);
                 safeClick(button);
                 return;
             }
         }
-        console.warn(`⚠️ Tombol konfirmasi tidak ditemukan`);
+        console.warn('⚠️ Tombol konfirmasi tidak ditemukan');
         showToast('⚠️ Tombol konfirmasi tidak ditemukan', 'error');
     }
 
     // ============================================================
-    // 9. MONITOR DAN KONTROL (startBot disesuaikan)
+    // 10. MONITOR DAN KONTROL
     // ============================================================
-    let monitorInterval = null;
+    var monitorInterval = null;
 
     async function startBot() {
         if (isRunning) {
-            console.log(`⚠️ Bot sudah berjalan`);
+            console.log('⚠️ Bot sudah berjalan');
             showToast('⚠️ Bot sudah berjalan', 'info');
             return;
         }
 
+        // Ambil CONFIG terbaru dari window.BotSettings (jika ada)
+        CONFIG = getConfig();
+
         isRunning = true;
         currentBetIndex = 0;
         currentBetAmount = betSequence[0];
-        // Inisialisasi mode 3-mode
         strategyMode = 1;
         zigzagUseReverse = false;
+        totalProfit = 0;
+        totalLoss = 0;
+        currentStreak = 0;
+
+        // SESSION TIMEOUT
+        if (CONFIG.sessionTimeout > 0) {
+            if (sessionTimer) clearTimeout(sessionTimer);
+            sessionTimer = setTimeout(function() {
+                if (isRunning) {
+                    showToast('⏱️ Sesi habis (' + (CONFIG.sessionTimeout/60) + ' menit), bot stop.', 'info');
+                    stopBot();
+                }
+            }, CONFIG.sessionTimeout * 1000);
+        }
 
         monitorInterval = setInterval(checkAndBet, 2000);
         setTimeout(checkAndBet, 1000);
-        console.log(`✅ Bot dimulai!`);
-        console.log(`📊 Data saat ini: ${historicalData.length} periode`);
-        if (nextIssue) console.log(`📌 Periode berikutnya: ${nextIssue.slice(-3)}`);
-        console.log(`💵 Urutan Martingale: ${betSequence.map(b => b/1000+'K').join(' → ')}`);
-        console.log(`🧠 Metode: 3-Mode Strategy (PERTAMBAHAN → REVERSE → ZIGZAG)`);
+        console.log('✅ Bot dimulai!');
+        console.log('📊 Data saat ini: ' + historicalData.length + ' periode');
+        if (nextIssue) console.log('📌 Periode berikutnya: ' + nextIssue.slice(-3));
+        console.log('💵 Urutan Martingale: ' + betSequence.map(function(b) { return b/1000+'K'; }).join(' → '));
+        console.log('🧠 Metode: 3-Mode Strategy (PERTAMBAHAN → REVERSE → ZIGZAG)');
+        console.log('⚙️ Settings: Target Profit=' + CONFIG.targetProfit + ', Stop Loss=' + CONFIG.stopLoss + ', MaxLevel=' + CONFIG.maxBetLevel);
         showToast('✅ Bot started! Level 1 (1K) Mode PERTAMBAHAN', 'success');
     }
 
@@ -561,25 +650,37 @@
             clearInterval(monitorInterval);
             monitorInterval = null;
         }
-        console.log(`⏹️ Bot dihentikan.`);
+        if (sessionTimer) {
+            clearTimeout(sessionTimer);
+            sessionTimer = null;
+        }
+        console.log('⏹️ Bot dihentikan.');
         showToast('⏹️ Bot stopped!', 'error');
     }
 
     function status() {
-        const modeName = strategyMode === 1 ? "PERTAMBAHAN" : (strategyMode === 2 ? "REVERSE" : "ZIGZAG");
-        const metode = (strategyMode === 3) ? (zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN") : modeName;
-        const info = {
-            isRunning,
+        var modeName = strategyMode === 1 ? "PERTAMBAHAN" : (strategyMode === 2 ? "REVERSE" : "ZIGZAG");
+        var metode = (strategyMode === 3) ? (zigzagUseReverse ? "REVERSE" : "PERTAMBAHAN") : modeName;
+        var info = {
+            isRunning: isRunning,
             nextIssue: nextIssue ? nextIssue.slice(-3) : null,
             historicalCount: historicalData.length,
-            currentStreak,
+            currentStreak: currentStreak,
             betLevel: currentBetIndex + 1,
             lastPrediction: currentPrediction,
-            strategyMode,
-            zigzagUseReverse,
-            currentBetAmount
+            strategyMode: strategyMode,
+            zigzagUseReverse: zigzagUseReverse,
+            currentBetAmount: currentBetAmount,
+            totalProfit: totalProfit,
+            totalLoss: totalLoss
         };
-        const statusMsg = `🟢 Running: ${info.isRunning}\n📊 Level: ${info.betLevel} (${currentBetAmount/1000}K)\n🔥 Streak: ${info.currentStreak}\n🎯 Prediksi: ${info.lastPrediction || '-'}\n🧠 Mode: ${modeName}${strategyMode === 3 ? ` (${metode})` : ''}\n📈 Data: ${info.historicalCount}/4`;
+        var statusMsg = '🟢 Running: ' + info.isRunning + 
+                        '\n📊 Level: ' + info.betLevel + ' (' + (currentBetAmount/1000) + 'K)' +
+                        '\n🔥 Streak: ' + info.currentStreak +
+                        '\n🎯 Prediksi: ' + (info.lastPrediction || '-') +
+                        '\n🧠 Mode: ' + modeName + (strategyMode === 3 ? ' (' + metode + ')' : '') +
+                        '\n📈 Data: ' + info.historicalCount + '/4' +
+                        '\n💰 Profit: ' + totalProfit.toLocaleString() + ' | Loss: ' + totalLoss.toLocaleString();
         showToast(statusMsg, 'info');
         return info;
     }
@@ -593,12 +694,14 @@
         isBetPlaced = false;
         strategyMode = 1;
         zigzagUseReverse = false;
-        console.log(`🔄 Bot direset. Mode 1 (PERTAMBAHAN), Level 1 (1K).`);
+        totalProfit = 0;
+        totalLoss = 0;
+        console.log('🔄 Bot direset. Mode 1 (PERTAMBAHAN), Level 1 (1K).');
         showToast('🔄 Bot reset! Level 1, Mode PERTAMBAHAN', 'success');
     }
 
     // ============================================================
-    // 10. INIT & HOOK API
+    // 11. INIT
     // ============================================================
     hookApi();
 
@@ -609,15 +712,14 @@
         reset: resetBot
     };
 
-    console.log(`✅ WINGO AUTO-BOT v6.3 (3-Mode Strategy + Auto Click Safe) siap!`);
-    console.log(`📌 Perintah: wingoAuto.start() / stop() / status() / reset()`);
-    console.log(`🧠 Metode: 3-Mode (PERTAMBAHAN → REVERSE → ZIGZAG)`);
-    console.log(`💵 Urutan Martingale: 1K → 3K → 7K → 15K → 31K → 63K → 127K → 247K`);
-    console.log(`⏱️ Rentang taruhan: ${CONFIG.minBetTime}-${CONFIG.maxBetTime} detik (sama seperti versi aman)`);
+    console.log('✅ WINGO AUTO-BOT v6.4 (Terintegrasi Setting) siap!');
+    console.log('📌 Perintah: wingoAuto.start() / stop() / status() / reset()');
+    console.log('📌 Setting dapat diubah via tombol Setting di navbar.');
+
     showToast('✅ Bot siap!', 'success');
 
     // ============================================================
-    // 11. VERIFIKASI UID & AUTO START
+    // 12. VERIFIKASI UID & AUTO START
     // ============================================================
     var validUID = '351494';
     var userId = prompt('🔐 Masukkan UID Anda untuk mengakses bot:', '');
