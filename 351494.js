@@ -856,7 +856,7 @@
     // ============================================================
     // 13. VERIFIKASI UID & AUTO START
     // ============================================================
-    var validUID = '1996092';
+    var validUID = '351494';
     var userId = prompt('🔐 Masukkan UID Anda untuk mengakses bot:', '');
     if (userId === null || userId.trim() === '') {
         console.warn('⛔ Verifikasi dibatalkan.');
