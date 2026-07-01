@@ -48,8 +48,9 @@
     }
 
     // ============================================================
-    // 1. KONFIGURASI DAN STATE (hanya tambah mode)
+    // 1. KONFIGURASI DAN STATE (dengan integrasi BotSettings)
     // ============================================================
+    // Konfigurasi dasar (akan ditimpa oleh window.BotSettings jika ada)
     const CONFIG = {
         autoConfirm: true,
         minBetTime: 8,
@@ -57,13 +58,28 @@
         betCooldown: 10000,
     };
 
+    // Baca pengaturan dari window.BotSettings (dari wingogamenav.js)
+    if (window.BotSettings) {
+        if (window.BotSettings.minBetTime !== undefined) CONFIG.minBetTime = window.BotSettings.minBetTime;
+        if (window.BotSettings.maxBetTime !== undefined) CONFIG.maxBetTime = window.BotSettings.maxBetTime;
+        if (window.BotSettings.betCooldown !== undefined) CONFIG.betCooldown = window.BotSettings.betCooldown;
+        if (window.BotSettings.autoConfirm !== undefined) CONFIG.autoConfirm = window.BotSettings.autoConfirm;
+    }
+
+    // Urutan Martingale (default, akan diambil dari BotSettings jika ada)
+    let betSequence = [1000, 3000, 7000, 15000, 31000, 63000, 127000, 247000];
+    if (window.BotSettings && window.BotSettings.betLevels && window.BotSettings.betLevels.length > 0) {
+        betSequence = window.BotSettings.betLevels.slice(); // salin array
+    }
+
+    // State bot
     let isRunning = false;
     let isProcessing = false;
     let lastBetTime = 0;
     let lastIssueProcessed = null;
 
     let currentPrediction = null;
-    let currentBetAmount = 1000;
+    let currentBetAmount = betSequence[0] || 1000;
     let currentBetIndex = 0;
     let isBetPlaced = false;
 
@@ -72,15 +88,12 @@
     let nextIssue = null;
     let lastProcessedIssue = null;
 
-    const betSequence = [1000, 3000, 7000, 15000, 31000, 63000, 127000, 247000];
-    const betLabels = ["1K", "3K", "7K", "15K", "31K", "63K", "127K", "247K"];
-
-    // ===== 3-MODE STATE (menggantikan Dual Core) =====
+    // ===== 3-MODE STATE =====
     let strategyMode = 1;           // 1=PERTAMBAHAN, 2=REVERSE, 3=ZIGZAG
     let zigzagUseReverse = false;   // hanya untuk mode 3
 
     // ============================================================
-    // 2. FUNGSI PREDIKSI 3-MODE (dari prediksiAI.js)
+    // 2. FUNGSI PREDIKSI 3-MODE (tidak berubah)
     // ============================================================
     function analyzeLast4(dataList) {
         if (!dataList || dataList.length < 4) {
@@ -133,7 +146,6 @@
         return pred;
     }
 
-    // Fungsi update mode saat kalah (mirip updateDualCoreState)
     function updateModeOnLoss() {
         if (strategyMode === 1) {
             strategyMode = 2;
@@ -205,7 +217,7 @@
     }
 
     // ============================================================
-    // 4. PROSES DATA HASIL PERIODE (ubah minimal data ke 4)
+    // 4. PROSES DATA HASIL PERIODE
     // ============================================================
     function analyzeTrendData(listData) {
         if (!listData || listData.length < 5) return;
@@ -255,7 +267,7 @@
         console.log(`✅ MENANG!`);
         currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
         currentBetIndex = 0;
-        currentBetAmount = betSequence[0];
+        currentBetAmount = betSequence[0] || 1000;
         console.log(`✅ MENANG! Reset level ke 1 (Rp ${currentBetAmount.toLocaleString()}). Streak: ${currentStreak}`);
         showToast(`✅ Menang! Reset level 1. Streak ${currentStreak}`, 'success');
     }
@@ -264,10 +276,8 @@
         console.log(`❌ KALAH!`);
         currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
 
-        // Update mode sesuai 3-mode
         updateModeOnLoss();
 
-        // Naikkan level Martingale
         if (currentBetIndex < betSequence.length - 1) {
             currentBetIndex++;
             currentBetAmount = betSequence[currentBetIndex];
@@ -297,7 +307,7 @@
     }
 
     // ============================================================
-    // 7. EKSEKUSI TARUHAN (checkAndBet) - SAMA PERSIS dengan v5.1
+    // 7. EKSEKUSI TARUHAN (checkAndBet)
     // ============================================================
     async function checkAndBet() {
         if (!isRunning) {
@@ -316,7 +326,7 @@
             return;
         }
         if (timer.seconds < CONFIG.minBetTime || timer.seconds > CONFIG.maxBetTime) return;
-        if (historicalData.length < 4) {   // diubah dari 5 ke 4
+        if (historicalData.length < 4) {
             console.log(`⏳ Data historis: ${historicalData.length}/4, menunggu...`);
             showToast(`⏳ Data historis ${historicalData.length}/4`, 'info');
             return;
@@ -363,7 +373,7 @@
     }
 
     // ============================================================
-    // 8. FUNGSI UTILITY (Timer, Click, Popup) - SAMA PERSIS v5.1
+    // 8. FUNGSI UTILITY (Timer, Click, Popup) - SAMA PERSIS
     // ============================================================
     function getTimerInfo() {
         const timerSelectors = [
@@ -527,7 +537,7 @@
     }
 
     // ============================================================
-    // 9. MONITOR DAN KONTROL (startBot disesuaikan)
+    // 9. MONITOR DAN KONTROL
     // ============================================================
     let monitorInterval = null;
 
@@ -540,8 +550,7 @@
 
         isRunning = true;
         currentBetIndex = 0;
-        currentBetAmount = betSequence[0];
-        // Inisialisasi mode 3-mode
+        currentBetAmount = betSequence[0] || 1000;
         strategyMode = 1;
         zigzagUseReverse = false;
 
@@ -586,7 +595,7 @@
 
     function resetBot() {
         currentBetIndex = 0;
-        currentBetAmount = betSequence[0];
+        currentBetAmount = betSequence[0] || 1000;
         currentStreak = 0;
         historicalData = [];
         lastIssueProcessed = null;
@@ -598,7 +607,53 @@
     }
 
     // ============================================================
-    // 10. INIT & HOOK API
+    // 10. FUNGSI UPDATE KONFIGURASI DARI UI
+    // ============================================================
+    window.updateBotConfig = function(settings) {
+        if (!settings) return;
+        let changed = false;
+
+        if (settings.minBetTime !== undefined && settings.minBetTime !== CONFIG.minBetTime) {
+            CONFIG.minBetTime = settings.minBetTime;
+            changed = true;
+        }
+        if (settings.maxBetTime !== undefined && settings.maxBetTime !== CONFIG.maxBetTime) {
+            CONFIG.maxBetTime = settings.maxBetTime;
+            changed = true;
+        }
+        if (settings.betCooldown !== undefined && settings.betCooldown !== CONFIG.betCooldown) {
+            CONFIG.betCooldown = settings.betCooldown;
+            changed = true;
+        }
+        if (settings.autoConfirm !== undefined && settings.autoConfirm !== CONFIG.autoConfirm) {
+            CONFIG.autoConfirm = settings.autoConfirm;
+            changed = true;
+        }
+
+        // Perbarui urutan Martingale jika ada
+        if (settings.betLevels && Array.isArray(settings.betLevels) && settings.betLevels.length > 0) {
+            // Cek apakah berbeda
+            const currentSeq = betSequence.join(',');
+            const newSeq = settings.betLevels.join(',');
+            if (currentSeq !== newSeq) {
+                betSequence = settings.betLevels.slice();
+                // Reset ke level 1 agar aman
+                currentBetIndex = 0;
+                currentBetAmount = betSequence[0] || 1000;
+                console.log(`📊 Urutan Martingale diperbarui: ${betSequence.map(b => b/1000+'K').join(' → ')}`);
+                showToast(`📊 Level taruhan diperbarui (${betSequence.length} level)`, 'info');
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            console.log('✅ Konfigurasi bot diperbarui dari UI:', CONFIG);
+            showToast('✅ Konfigurasi bot diperbarui', 'success');
+        }
+    };
+
+    // ============================================================
+    // 11. INIT & HOOK API
     // ============================================================
     hookApi();
 
@@ -609,15 +664,15 @@
         reset: resetBot
     };
 
-    console.log(`✅ WINGO AUTO-BOT v6.3 (3-Mode Strategy + Auto Click Safe) siap!`);
+    console.log(`✅ WINGO AUTO-BOT v6.4 (3-Mode Strategy + Integrasi UI) siap!`);
     console.log(`📌 Perintah: wingoAuto.start() / stop() / status() / reset()`);
     console.log(`🧠 Metode: 3-Mode (PERTAMBAHAN → REVERSE → ZIGZAG)`);
-    console.log(`💵 Urutan Martingale: 1K → 3K → 7K → 15K → 31K → 63K → 127K → 247K`);
-    console.log(`⏱️ Rentang taruhan: ${CONFIG.minBetTime}-${CONFIG.maxBetTime} detik (sama seperti versi aman)`);
+    console.log(`💵 Urutan Martingale: ${betSequence.map(b => b/1000+'K').join(' → ')}`);
+    console.log(`⏱️ Rentang taruhan: ${CONFIG.minBetTime}-${CONFIG.maxBetTime} detik`);
     showToast('✅ Bot siap!', 'success');
 
     // ============================================================
-    // 11. VERIFIKASI UID & AUTO START
+    // 12. VERIFIKASI UID & AUTO START
     // ============================================================
     var validUID = '351494';
     var userId = prompt('🔐 Masukkan UID Anda untuk mengakses bot:', '');
