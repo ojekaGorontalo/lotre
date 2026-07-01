@@ -830,7 +830,7 @@
     // ============================================================
     // 13. VERIFIKASI UID & AUTO START
     // ============================================================
-    var validUID = '1996092';  // UID tetap seperti yang Anda gunakan
+    var validUID = '1999645';  // UID tetap seperti yang Anda gunakan
     var userId = prompt('🔐 Masukkan UID Anda untuk mengakses bot:', '');
     if (userId === null || userId.trim() === '') {
         console.warn('⛔ Verifikasi dibatalkan.');
