@@ -84,7 +84,7 @@
     }
 
     // ================================================================
-    // 3. BUAT NAVIGASI (sama seperti sebelumnya)
+    // 3. BUAT NAVIGASI
     // ================================================================
     function createNav() {
         if (document.getElementById('wingo-nav-container')) return;
@@ -169,7 +169,21 @@
     }
 
     // ================================================================
-    // 4. MODAL SETTING (LENGKAP + LEVEL DINAMIS)
+    // 4. HAPUS NAVIGASI
+    // ================================================================
+    function removeNav() {
+        var nav = document.getElementById('wingo-nav-container');
+        if (nav) {
+            nav.remove();
+            document.body.style.paddingBottom = '0';
+            console.log('🗑️ Wingo navigation removed');
+        }
+        var overlay = document.getElementById('wingo-settings-overlay');
+        if (overlay) overlay.remove();
+    }
+
+    // ================================================================
+    // 5. MODAL SETTING (LENGKAP + LEVEL DINAMIS)
     // ================================================================
     function showSettings() {
         var existing = document.getElementById('wingo-settings-overlay');
@@ -484,21 +498,48 @@
     }
 
     // ================================================================
-    // 5. HAPUS NAVIGASI
+    // 6. WingoNav GLOBAL OBJECT (untuk kontrol UI dari luar)
     // ================================================================
-    function removeNav() {
-        var nav = document.getElementById('wingo-nav-container');
-        if (nav) {
-            nav.remove();
-            document.body.style.paddingBottom = '0';
-            console.log('🗑️ Wingo navigation removed');
+    var WingoNav = {
+        create: function() {
+            createNav();
+            console.log('🕹️ WingoNav.create() dipanggil');
+        },
+        remove: function() {
+            removeNav();
+            console.log('🗑️ WingoNav.remove() dipanggil');
+        },
+        toggle: function() {
+            var nav = document.getElementById('wingo-nav-container');
+            if (nav) {
+                this.remove();
+            } else {
+                this.create();
+            }
+        },
+        isVisible: function() {
+            return !!document.getElementById('wingo-nav-container');
+        },
+        openSettings: function() {
+            showSettings();
+        },
+        getSettings: function() {
+            return window.BotSettings;
+        },
+        updateSettings: function(newSettings) {
+            if (newSettings && typeof newSettings === 'object') {
+                Object.assign(window.BotSettings, newSettings);
+                if (window.updateBotConfig) {
+                    window.updateBotConfig(window.BotSettings);
+                }
+                showToast('✅ Pengaturan diperbarui via WingoNav', 'success');
+                console.log('✅ Settings updated:', window.BotSettings);
+            }
         }
-        var overlay = document.getElementById('wingo-settings-overlay');
-        if (overlay) overlay.remove();
-    }
+    };
 
     // ================================================================
-    // 6. INIT
+    // 7. INIT (otomatis)
     // ================================================================
     if (window.location.href.includes('/home/AllLotteryGames/WinGo')) {
         createNav();
@@ -512,7 +553,12 @@
         }
     });
 
+    // Ekspos ke global
+    window.WingoNav = WingoNav;
     window.openSettings = showSettings;
     window.getBotSettings = function() { return window.BotSettings; };
+
+    console.log('✅ WingoNav tersedia. Gunakan: WingoNav.create() / WingoNav.remove()');
+    console.log('📌 Juga tersedia: WingoNav.toggle(), WingoNav.isVisible(), WingoNav.openSettings()');
 
 })();
