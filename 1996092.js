@@ -78,6 +78,12 @@
         maxBetLevel = window.BotSettings.maxBetLevel;
     }
 
+    // --- FITUR BARU: Reset Level After Loss Streak ---
+    let resetLevelAfterLoss = 0; // default nonaktif
+    if (window.BotSettings && window.BotSettings.resetLevelAfterLoss !== undefined) {
+        resetLevelAfterLoss = window.BotSettings.resetLevelAfterLoss;
+    }
+
     // State bot
     let isRunning = false;
     let isProcessing = false;
@@ -273,7 +279,7 @@
     }
 
     // ============================================================
-    // 5. PROSES MENANG / KALAH (dengan update streak, profit, dan cek kondisi stop)
+    // 5. PROSES MENANG / KALAH (dengan update streak, profit, reset level, dan cek kondisi stop)
     // ============================================================
     function processWin() {
         console.log(`✅ MENANG!`);
@@ -282,7 +288,7 @@
         // Update streak
         winStreak++;
         lossStreak = 0;
-        currentStreak = winStreak; // bisa pakai currentStreak juga
+        currentStreak = winStreak;
 
         // Reset level ke 1
         currentBetIndex = 0;
@@ -319,6 +325,14 @@
         } else {
             console.warn(`⚠️ Sudah mencapai batas maxBetLevel (${maxBetLevel}), tidak naik level.`);
             // Tetap di level saat ini
+        }
+
+        // --- FITUR BARU: Reset level jika loss streak mencapai batas ---
+        if (resetLevelAfterLoss > 0 && lossStreak >= resetLevelAfterLoss) {
+            currentBetIndex = 0;
+            currentBetAmount = betSequence[0] || 1000;
+            console.log(`🔄 Reset level ke 1 karena loss streak ${lossStreak} mencapai batas ${resetLevelAfterLoss}`);
+            showToast(`🔄 Reset level ke 1 (loss streak ${lossStreak})`, 'info');
         }
 
         console.log(`❌ KALAH! Level sekarang ${currentBetIndex+1} (Rp ${currentBetAmount.toLocaleString()}). Loss streak: ${lossStreak}`);
@@ -640,6 +654,11 @@
             return;
         }
 
+        // Ambil ulang setting resetLevelAfterLoss dari window.BotSettings (bisa berubah via UI)
+        if (window.BotSettings && window.BotSettings.resetLevelAfterLoss !== undefined) {
+            resetLevelAfterLoss = window.BotSettings.resetLevelAfterLoss;
+        }
+
         // Reset state
         isRunning = true;
         currentBetIndex = 0;
@@ -663,6 +682,7 @@
         console.log(`💵 Urutan Martingale: ${betSequence.map(b => b/1000+'K').join(' → ')}`);
         console.log(`🧠 Metode: 3-Mode Strategy (PERTAMBAHAN → REVERSE → ZIGZAG)`);
         console.log(`🔢 MaxBetLevel: ${maxBetLevel}`);
+        console.log(`🔄 Reset Level After Loss: ${resetLevelAfterLoss === 0 ? 'Nonaktif' : resetLevelAfterLoss + 'x'}`);
         showToast('✅ Bot started! Level 1 (1K) Mode PERTAMBAHAN', 'success');
     }
 
@@ -772,9 +792,15 @@
             changed = true;
         }
 
+        // Update resetLevelAfterLoss
+        if (settings.resetLevelAfterLoss !== undefined) {
+            resetLevelAfterLoss = settings.resetLevelAfterLoss;
+            window.BotSettings.resetLevelAfterLoss = settings.resetLevelAfterLoss;
+            changed = true;
+        }
+
         // Update targetProfit, stopLoss, maxWinStreak, maxLossStreak, sessionTimeout
-        // Tidak perlu disimpan di CONFIG, karena akan dibaca langsung dari settings di checkAndStopIfNeeded
-        // Tapi kita simpan di window.BotSettings agar konsisten
+        // disimpan di window.BotSettings agar konsisten
         if (settings.targetProfit !== undefined) {
             window.BotSettings.targetProfit = settings.targetProfit;
             changed = true;
@@ -818,12 +844,13 @@
         reset: resetBot
     };
 
-    console.log(`✅ WINGO AUTO-BOT v6.5 (3-Mode Strategy + Integrasi UI + Stop Kondisi) siap!`);
+    console.log(`✅ WINGO AUTO-BOT v6.5 (3-Mode Strategy + Integrasi UI + Stop Kondisi + Reset Level) siap!`);
     console.log(`📌 Perintah: wingoAuto.start() / stop() / status() / reset()`);
     console.log(`🧠 Metode: 3-Mode (PERTAMBAHAN → REVERSE → ZIGZAG)`);
     console.log(`💵 Urutan Martingale: ${betSequence.map(b => b/1000+'K').join(' → ')}`);
     console.log(`⏱️ Rentang taruhan: ${CONFIG.minBetTime}-${CONFIG.maxBetTime} detik`);
     console.log(`🔢 MaxBetLevel: ${maxBetLevel}`);
+    console.log(`🔄 Reset Level After Loss: ${resetLevelAfterLoss === 0 ? 'Nonaktif' : resetLevelAfterLoss + 'x'}`);
     showToast('✅ Bot siap!', 'success');
 
     // ============================================================
